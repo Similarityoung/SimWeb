@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Html学习笔记 on SimiYoung</title>
-    <link>//localhost:1313/tags/html%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+    <link>http://localhost:1313/tags/html%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
     <description>Recent content in Html学习笔记 on SimiYoung</description>
     <generator>Hugo -- 0.131.0</generator>
     <language>zh-cn</language>
     <lastBuildDate>Thu, 27 Jun 2024 22:17:44 +0800</lastBuildDate>
-    <atom:link href="//localhost:1313/tags/html%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:1313/tags/html%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>HTML</title>
-      <link>//localhost:1313/posts/1.-html/</link>
+      <link>http://localhost:1313/posts/1.-html/</link>
       <pubDate>Thu, 27 Jun 2024 22:17:44 +0800</pubDate>
-      <guid>//localhost:1313/posts/1.-html/</guid>
+      <guid>http://localhost:1313/posts/1.-html/</guid>
       <description>div和span的区别 &amp;lt;span&amp;gt;和&amp;lt;div&amp;gt;唯一的区别在于：&amp;lt;span&amp;gt;是不换行的，而&amp;lt;div&amp;gt;是换行的。
 如果单独在网页中插入这两个元素，不会对页面产生任何的影响。这两个元素是专门为定义CSS样式而生的。或者说，DIV+CSS来实现各种样式。
 div在浏览器中，默认是不会增加任何的效果的，但是语义变了，div中的所有元素是一个小区域。 div标签是一个容器级标签，里面什么都能放，甚至可以放div自己。

@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Js学习笔记 on SimiYoung</title>
-    <link>//localhost:1313/tags/js%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+    <link>http://localhost:1313/tags/js%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
     <description>Recent content in Js学习笔记 on SimiYoung</description>
     <generator>Hugo -- 0.131.0</generator>
     <language>zh-cn</language>
     <lastBuildDate>Wed, 07 Aug 2024 22:17:44 +0800</lastBuildDate>
-    <atom:link href="//localhost:1313/tags/js%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:1313/tags/js%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>JavaScript</title>
-      <link>//localhost:1313/posts/3.-javascript/</link>
+      <link>http://localhost:1313/posts/3.-javascript/</link>
       <pubDate>Wed, 07 Aug 2024 22:17:44 +0800</pubDate>
-      <guid>//localhost:1313/posts/3.-javascript/</guid>
+      <guid>http://localhost:1313/posts/3.-javascript/</guid>
       <description>JavaScript 教程 在 HTML 中，JavaScript 代码必须位于标签之间。
 能够在 HTML 文档中放置任意数量的脚本。
 脚本可被放置与 HTML 页面的 &amp;lt;body&amp;gt; 或 &amp;lt;head&amp;gt; 部分中，或兼而有之。

@@ -1,4 +1,4 @@
-baseURL: "" # 网址这个地方可以先放空
+baseURL: "https://sim-1jp0cfnwz-similarityoungs-projects.vercel.app/" # 网址这个地方可以先放空
 title: SimiYoung # 这个网站叫什么名字
 theme: PaperMod # 主要是增加这个配对主题
 languageCode: zh-cn
