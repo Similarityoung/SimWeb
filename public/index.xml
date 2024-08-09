@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>SimiYoung</title>
-    <link>http://localhost:1313/</link>
+    <link>https://sim-web.vercel.app/</link>
     <description>Recent content on SimiYoung</description>
     <generator>Hugo -- 0.131.0</generator>
     <language>zh-cn</language>
     <lastBuildDate>Wed, 07 Aug 2024 22:17:44 +0800</lastBuildDate>
-    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://sim-web.vercel.app/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>JavaScript</title>
-      <link>http://localhost:1313/posts/3.-javascript/</link>
+      <link>https://sim-web.vercel.app/posts/3.-javascript/</link>
       <pubDate>Wed, 07 Aug 2024 22:17:44 +0800</pubDate>
-      <guid>http://localhost:1313/posts/3.-javascript/</guid>
+      <guid>https://sim-web.vercel.app/posts/3.-javascript/</guid>
       <description>JavaScript 教程 在 HTML 中，JavaScript 代码必须位于标签之间。
 能够在 HTML 文档中放置任意数量的脚本。
 脚本可被放置与 HTML 页面的 &amp;lt;body&amp;gt; 或 &amp;lt;head&amp;gt; 部分中，或兼而有之。
@@ -27,9 +27,9 @@
     </item>
     <item>
       <title>CSS</title>
-      <link>http://localhost:1313/posts/2.-css/</link>
+      <link>https://sim-web.vercel.app/posts/2.-css/</link>
       <pubDate>Mon, 01 Jul 2024 17:39:44 +0800</pubDate>
-      <guid>http://localhost:1313/posts/2.-css/</guid>
+      <guid>https://sim-web.vercel.app/posts/2.-css/</guid>
       <description>字体属性的说明 （1）网页中不是所有字体都能用，因为这个字体要看用户的电脑里面装没装，比如你设置：
 1 font-family: &amp;#34;华文彩云&amp;#34;; 上方代码中，如果用户的 Windows 电脑里面没有这个字体，那么就会变成宋体。
 页面中，中文我们一般使用：微软雅黑、宋体、黑体。英文使用：Arial、Times New Roman。页面中如果需要其他的字体，就需要单独安装字体，或者切图。
@@ -42,9 +42,9 @@ CSS 整体感知 我们先来看一段简单的 css 代码：
     </item>
     <item>
       <title>HTML</title>
-      <link>http://localhost:1313/posts/1.-html/</link>
+      <link>https://sim-web.vercel.app/posts/1.-html/</link>
       <pubDate>Thu, 27 Jun 2024 22:17:44 +0800</pubDate>
-      <guid>http://localhost:1313/posts/1.-html/</guid>
+      <guid>https://sim-web.vercel.app/posts/1.-html/</guid>
       <description>div和span的区别 &amp;lt;span&amp;gt;和&amp;lt;div&amp;gt;唯一的区别在于：&amp;lt;span&amp;gt;是不换行的，而&amp;lt;div&amp;gt;是换行的。
 如果单独在网页中插入这两个元素，不会对页面产生任何的影响。这两个元素是专门为定义CSS样式而生的。或者说，DIV+CSS来实现各种样式。
 div在浏览器中，默认是不会增加任何的效果的，但是语义变了，div中的所有元素是一个小区域。 div标签是一个容器级标签，里面什么都能放，甚至可以放div自己。
