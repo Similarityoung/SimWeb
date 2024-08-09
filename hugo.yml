@@ -16,7 +16,6 @@ minify:
 # params底下的应该是PaperMod的设置
 params:
   env: production
-  title: SimiYoung
   description: "ExampleSite description"
   keywords: [Blog, Portfolio, PaperMod]
   author: Similarityoung
@@ -127,7 +126,7 @@ markup:
         # anchorLineNos: true
         codeFences: true  
         guessSyntax: true
-        lineNos: true
+        lineNumbers: true
         # noClasses: false
         # style: monokai
         style: darcula
