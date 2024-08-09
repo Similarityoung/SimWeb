@@ -1,0 +1,164 @@
+baseURL: "" # 网址这个地方可以先放空
+title: SimiYoung # 这个网站叫什么名字
+theme: PaperMod # 主要是增加这个配对主题
+languageCode: zh-cn
+
+# 一页显示5篇文章
+paginate: 5
+# 要表情！
+enableEmoji: true
+
+minify:
+  disableXML: true
+  minifyOutput: true
+
+# params底下的应该是PaperMod的设置
+params:
+  env: production
+  title: SimiYoung
+  description: "ExampleSite description"
+  keywords: [Blog, Portfolio, PaperMod]
+  author: Similarityoung
+  # image: "img/NAVI-SiberianRailway.gif"
+  defaultTheme: auto
+  ShowReadingTime: true
+  # 刚开始很疑惑为什么我的博文没有像demo站一样在一个框框里，后来发现是第一篇文章有特别的显示设置，把下面这行加上就好啦
+  disableSpecial1stPost: true
+  ShowPostNavLinks: true
+  ShowBreadCrumbs: true # 面包屑导航
+  ShowCodeCopyButtons: true
+  ShowRssButtonInSectionTermList: true
+  ShowShareButtons: true # 分享按钮
+  ShowPostNavLinks: true # 文章前后页按钮
+  ShowToc: true # 显示目录
+  TocOpen: false # 自动展开目录
+  ShowLastMod: true #显示文章更新时间
+  hideFooter: false # 隐藏页脚
+  ShowWordCount: true
+  VisitCount: true
+  showbreadcrumbs: true #顶部显示当前路径
+
+  # profileMode:
+  #   enabled: true
+  #   title: 独立之精神，自由之思想
+  #   subtitle: "👏🏼欢迎光临寒舍</br>👇联系方式"
+  #   imageUrl: "img/NAVI-SiberianRailway.gif"
+
+  homeInfoParams:
+    Title: '我来到，我看见，我记录。' # 主题
+    Content: '急雨收残暑，梧桐一叶惊。' # 描述
+  ShareButtons: ["telegram", "twitter", "reddit"] # To customize which share buttons to be enabled on page
+  socialIcons:
+  - name: github
+    url: "https://github.com/Similarityoung"
+  - name: "bilibili"
+    url: "https://space.bilibili.com/352322454"
+  - name: "qq"
+    url: "https://qm.qq.com/q/KcWxumKgU2"
+  - name: "email"
+    url: "mailto:zeruiyoung@gmail.com"
+  - name: "RSS"
+    url: "index.html"
+
+  label:
+    icon: "duck.gif"
+    iconHeight: 40
+
+  assets:
+    favicon: "img/duck.gif"
+    favicon16x16: "img/duck.gif"
+    favicon32x32: "img/NAVI-SiberianRailway.gif"
+    apple_touch_icon: "img/NAVI-SiberianRailway.gif"
+    safari_pinned_tab: "img/NAVI-SiberianRailway.gif"
+
+  fuseOpts:
+    isCaseSensitive: false
+    shouldSort: true
+    location: 0
+    distance: 1000
+    threshold: 1
+    minMatchCharLength: 0
+    keys: ["title", "permalink", "summary"]
+
+taxonomies:
+  tag: "tags"
+  ca: "categories"
+
+  
+
+permalinks: #浏览器链接显示方式
+  post: "/:title/"
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON 
+
+# 在页面上方加入菜单
+menu:
+  main:
+    - name: Home
+      # 回到主页
+      url: /
+      # 指定“首页”作为第一个出现的
+      weight: 1
+    - name: Tags
+      url: tags/
+      weight: 2
+    - name: Categories
+      url: categories/
+      weight: 3
+    - identifier: archives
+      name: Archives
+      url: /archives/
+      weight: 4
+    - identifier: search
+      name: Search
+      url: /search/
+      weight: 5
+
+markup:
+    goldmark:
+        renderer:
+            unsafe: true # HUGO 默认转义 Markdown 文件中的 HTML 代码，如需开启的话
+    highlight:
+        # anchorLineNos: true
+        codeFences: true  
+        guessSyntax: true
+        lineNos: true
+        # noClasses: false
+        # style: monokai
+        style: darcula
+
+        # codeFences：代码围栏功能，这个功能一般都要设为 true 的，不然很难看，就是干巴巴的-代码文字，没有颜色。
+        # guessSyntax：猜测语法，这个功能建议设置为 true, 如果你没有设置要显示的语言则会自动匹配。
+        # hl_Lines：高亮的行号，一般这个不设置，因为每个代码块我们可能希望让高亮的地方不一样。
+        # lineNoStart：行号从编号几开始，一般从 1 开始。
+        # lineNos：是否显示行号，我比较喜欢显示，所以我设置的为 true.
+        # lineNumbersInTable：使用表来格式化行号和代码,而不是 标签。这个属性一般设置为 true.
+        # noClasses：使用 class 标签，而不是内嵌的内联样式
+
+privacy:
+    vimeo:
+        disabled: false
+        simple: true
+
+    twitter:
+        disabled: false
+        enableDNT: true
+        simple: true
+
+    instagram:
+        disabled: false
+        simple: true
+
+    youtube:
+        disabled: false
+        privacyEnhanced: true
+
+services:
+    instagram:
+        disableInlineCSS: true
+    twitter:
+        disableInlineCSS: true
