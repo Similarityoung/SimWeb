@@ -1,4 +1,4 @@
-baseURL: "https://sim-web.vercel.app" # 网址这个地方可以先放空
+baseURL: "https://simi.host" # 网址这个地方可以先放空
 # relativeURLs: true
 title: SimiYoung # 这个网站叫什么名字
 theme: PaperMod # 主要是增加这个配对主题
