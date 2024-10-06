@@ -58,7 +58,7 @@ params:
   - name: "email"
     url: "mailto:zeruiyoung@gmail.com"
   - name: "RSS"
-    url: "index.html"
+    url: "index.xml"
 
   label:
     icon: "duck.gif"
