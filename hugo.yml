@@ -16,7 +16,7 @@ minify:
 # params底下的应该是PaperMod的设置
 params:
   env: production
-  description: "ExampleSite description"
+  description: "feedId:65727811169872896+userId:59911112743813120"
   keywords: [Blog, Portfolio, PaperMod]
   author: Similarityoung
   # image: "img/NAVI-SiberianRailway.gif"
