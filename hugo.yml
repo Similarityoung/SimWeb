@@ -3,6 +3,8 @@ baseURL: "https://simi.host" # 网址这个地方可以先放空
 title: SimiYoung # 这个网站叫什么名字
 theme: PaperMod # 主要是增加这个配对主题
 languageCode: zh-cn
+description: "feedId:65727811169872896+userId:59911112743813120"
+
 
 # 一页显示5篇文章
 paginate: 5
@@ -16,7 +18,6 @@ minify:
 # params底下的应该是PaperMod的设置
 params:
   env: production
-  description: "feedId:65727811169872896+userId:59911112743813120"
   keywords: [Blog, Portfolio, PaperMod]
   author: Similarityoung
   # image: "img/NAVI-SiberianRailway.gif"
