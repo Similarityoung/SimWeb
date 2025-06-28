@@ -5,7 +5,7 @@ tags:
 categories:
   - Gateway
 date: 2025-05-27T21:54:03+08:00
-draft: true
+draft: false
 ---
 ## 1. 引言
 
@@ -24,34 +24,26 @@ draft: true
 - **网络过滤器链 (`NetworkFilterChain`)**: 请求在 `Http2ListenerService` 接收后，会经过此处理链。我们需要在这里集成 gRPC 流处理逻辑。
     
 
-## 3. 设计方案
+## 3. 设计方案嵌入式标准 gRPC 服务器与 `grpc.UnknownServiceHandler`
 
-### 方案一：嵌入式标准 gRPC 服务器与 `grpc.UnknownServiceHandler`
-
-#### 3.1. 核心思想
+### 3.1. 核心思想
 
 修改 `Http2ListenerService`，使其内部的 `http.Server` 的 `Handler` 直接设置为一个标准的 `grpc.Server` 实例。这个嵌入的 `grpc.Server` 利用 `grpc.UnknownServiceHandler` 选项来捕获所有未在网关显式注册的 gRPC 服务调用，然后在其 Handler 内部使用 `grpcdynamic` 将这些调用动态代理到后端。
 
-#### 3.2. 工作流程
+### 3.2. 工作流程
 
 1. **Listener 初始化**:
     
     - 在 `Http2ListenerService` 启动时，不再使用通用的 `h2c.NewHandler(http.Handler, *http2.Server)`，而是创建一个 `grpc.Server` 实例。
-        
-    - `grpcServer := grpc.NewServer(grpc.UnknownServiceHandler(myDynamicGrpcProxyHandler))`
-        
-    - `Http2ListenerService` 内部的 `http.Server.Handler` 设置为这个 `grpcServer`。
-        
+
 2. **请求处理**:
     
     - 当一个 gRPC 客户端连接到此 Listener 并发起 RPC 调用时，请求直接由这个嵌入的 `grpcServer` 处理。
-        
-    - 由于没有服务被显式注册到 `grpcServer` 上，所有调用都会被路由到 `myDynamicGrpcProxyHandler`。
-        
-3. **`myDynamicGrpcProxyHandler` 函数**:
-    
-    - `func myDynamicGrpcProxyHandler(srv interface{}, serverStream grpc.ServerStream) error`
-        
+
+    - 由于没有服务被显式注册到 `grpcServer` 上，所有调用都会被路由到 `UnknownServiceHandler`。
+
+3. **`UnknownServiceHandler` 函数**:
+
     - **解析请求**: 从 `serverStream.Context()` 和 `grpc.MethodFromServerStream(serverStream)` 获取完整方法名（如 `/package.Service/Method`）、元数据等。
         
     - **路由与服务发现**: 根据方法名中的服务部分，查询 Pixiu 路由配置，找到目标后端集群。
@@ -59,287 +51,252 @@ draft: true
     - **获取方法描述符**: 获取目标方法的 `MethodDescriptor`。
         
     - **后端连接**: 获取到目标集群的 `grpc.ClientConn`。
-        
-    - **动态调用与流代理**:
-        
-        - 创建 `grpcdynamic.Stub`。
-            
-        - 根据 `MethodDescriptor` 判断流类型。
-            
-        - **关键流处理逻辑**: 在 `grpc.ServerStream` (代表客户端到网关的流) 和 `grpcdynamic.[StreamType]` (代表网关到后端的流) 之间双向泵送数据。
-            
-            - **客户端流**:
-                
-                - 调用 `stub.InvokeRpcClientStream()` 获得 `grpcdynamic.ClientStream` (gatewayToBackendStream)。
-                    
-                - 启动 goroutine 从 `serverStream.RecvMsg()` 读取客户端消息，通过 `gatewayToBackendStream.SendMsg()` 发送。
-                    
-                - 客户端发送完毕后 (`RecvMsg` 返回 `io.EOF`)，调用 `gatewayToBackendStream.CloseSend()`。
-                    
-                - 调用 `gatewayToBackendStream.CloseAndReceive()` 获取后端响应。
-                    
-                - 通过 `serverStream.SendMsg()` 将响应发回客户端。
-                    
-            - **服务端流**:
-                
-                - 从 `serverStream.RecvMsg()` 读取客户端的单个请求。
-                    
-                - 调用 `stub.InvokeRpcServerStream()` 获得 `grpcdynamic.ServerStream` (gatewayToBackendStream)。
-                    
-                - 启动 goroutine 从 `gatewayToBackendStream.RecvMsg()` 读取后端响应，通过 `serverStream.SendMsg()` 发回客户端。
-                    
-            - **双向流**: 结合上述两者，使用两个 goroutine 进行双向数据泵送。
-                
-            - **一元调用**: 简化版，收一个，发一个，再收一个，再发一个。
-                
-        - **元数据与错误处理**: 通过 `serverStream.SetHeader()`, `serverStream.SendHeader()`, `serverStream.SetTrailer()` 和返回的 `error` (可转换为 `status.Status`) 来处理与客户端的元数据和错误交互。同时处理与后端 `grpcdynamic` 流的元数据和错误。
-            
 
-#### 3.3. 伪代码 (针对双向流的核心代理逻辑)
+### 3.3. 伪代码
 
-```go
-// func myDynamicGrpcProxyHandler(srv interface{}, clientToGatewayStream grpc.ServerStream) error
-// ... 获取 methodDesc, backendConn, dynStub ...
+#### 3.3.1 grpc_proxy_filter.go 与后端建立连接
 
-if methodDesc.IsClientStreaming() && methodDesc.IsServerStreaming() {
-    gatewayToBackendStream, err := dynStub.InvokeRpcBidiStream(clientToGatewayStream.Context(), methodDesc)
-    if err != nil { return err }
+```pseudocode
+// -----------------------------------------------------------------
+// grpc_proxy_filter.go 的伪代码表示
+// -----------------------------------------------------------------
 
-    errChan := make(chan error, 2)
-
-    // Client -> Gateway -> Backend
-    go func() {
-        defer gatewayToBackendStream.CloseSend() // 通知后端客户端流结束
-        for {
-            // 假设 msg 是从 clientToGatewayStream 正确读取的类型
-            msg := dynamic.NewMessage(methodDesc.GetInputType()) // 或直接使用 clientToGatewayStream 的消息类型
-            if err := clientToGatewayStream.RecvMsg(msg); err == io.EOF {
-                errChan <- nil // 客户端正常关闭发送
-                return
-            } else if err != nil {
-                errChan <- err
-                return
-            }
-            if err := gatewayToBackendStream.SendMsg(msg); err != nil {
-                errChan <- err
-                return
-            }
-        }
-    }()
-
-    // Backend -> Gateway -> Client
-    go func() {
-        for {
-            respMsg, err := gatewayToBackendStream.RecvMsg() // 已经是 proto.Message
-            if err == io.EOF {
-                errChan <- nil // 后端正常关闭发送
-                return
-            } else if err != nil {
-                errChan <- err
-                return
-            }
-            if err := clientToGatewayStream.SendMsg(respMsg); err != nil {
-                errChan <- err
-                return
-            }
-        }
-    }()
-
-    // 等待两个方向的流都结束或出错
-    for i := 0; i < 2; i++ {
-        if err := <-errChan; err != nil {
-            // 可能需要更复杂的错误合并逻辑
-            return err
-        }
-    }
-    return nil
+// 定义 Filter 结构体，它包含配置和一个用于缓存后端连接的池子
+FILTER GrpcProxyFilter {
+    Config: Filter配置 // (例如超时时间等)
+    ConnectionPool: 线程安全的Map // (键: 后端地址, 值: gRPC连接)
+    Mutex: 读写锁 // (用于保护连接池的创建操作)
 }
-// ... 其他流类型的处理 ...
+
+// 1. Handle - 过滤器的主入口函数
+FUNCTION Handle(请求上下文):
+    // 从请求上下文中获取路由结果，确定要去哪个集群
+    目标集群 = 请求上下文.路由信息.集群名
+
+    // 从集群中选择一个健康的后端服务地址
+    后端地址 = 集群管理器.选择一个后端(目标集群)
+
+    // 调用流处理函数，并传入后端地址
+    RETURN handleStream(请求上下文, 后端地址)
+END FUNCTION
+
+
+// 2. handleStream - 核心的流处理函数
+FUNCTION handleStream(请求上下文, 后端地址):
+    // 从连接池获取或创建一个到后端的长连接
+    后端连接 = getOrCreateConnection(后端地址)
+    IF 后端连接 IS NULL:
+        设置请求错误("获取后端连接失败")
+        RETURN 停止处理
+
+    // 使用后端连接，创建一个通向后端的新gRPC流
+    // (关键点: 强制使用 "passthrough" 编解码器，只传递原始字节)
+    后端流 = 后端连接.创建新流(使用Passthrough编解码器)
+
+    // 启动两个goroutine，实现双向数据转发
+    START GOROUTINE forward(FROM=请求上下文.客户端流, TO=后端流)
+    START GOROUTINE forward(FROM=后端流, TO=请求上下文.客户端流)
+
+    // 等待两个转发任务完成，并处理可能发生的错误
+    等待所有goroutine结束
+
+    RETURN 继续处理
+END FUNCTION
+
+
+// 3. getOrCreateConnection - 连接池管理
+FUNCTION getOrCreateConnection(后端地址):
+    // --- 乐观锁定路径 ---
+    // 首先，不加锁，尝试从连接池中读取连接
+    连接 = ConnectionPool.Get(后端地址)
+    IF 连接存在 AND 连接是健康的:
+        日志("复用已有连接")
+        RETURN 连接
+
+    // --- 悲观锁定路径 ---
+    // 如果没有找到或连接不健康，则获取一个写锁，准备创建新连接
+    获取写锁()
+    DEFER 释放写锁() // 确保函数结束时释放锁
+
+    // 双重检查：在等待锁的过程中，可能有其他goroutine已经创建了连接
+    连接 = ConnectionPool.Get(后端地址)
+    IF 连接存在 AND 连接是健康的:
+        RETURN 连接
+
+    // 确定需要创建新连接
+    日志("创建到 %s 的新连接", 后端地址)
+    新连接 = createConnection(后端地址)
+    
+    // 将新连接存入池中
+    ConnectionPool.Set(后端地址, 新连接)
+
+    // 为新连接启动一个独立的健康检查监控
+    START GOROUTINE monitorConnection(新连接, 后端地址)
+
+    RETURN 新连接
+END FUNCTION
+
+
+// 4. monitorConnection - 单个连接的健康检查器
+FUNCTION monitorConnection(连接, 地址):
+    // 创建一个每30秒触发一次的定时器
+    定时器 = 每30秒的Ticker
+
+    LOOP FOREVER:
+        等待定时器触发
+        连接状态 = 连接.获取当前状态()
+        
+        // 如果连接已关闭或出现故障
+        IF 连接状态 IS "Shutdown" OR "TransientFailure":
+            日志("连接 %s 状态异常，从池中移除", 地址)
+            获取写锁()
+            ConnectionPool.Delete(地址)
+            释放写锁()
+            BREAK // 结束监控
+END FUNCTION
+
+
+// 5. Close - 过滤器关闭时的清理逻辑
+FUNCTION Close():
+    日志("开始关闭所有后端连接...")
+    
+    // 遍历连接池中的所有连接
+    FOREACH 连接 IN ConnectionPool:
+        // 安全地关闭每一个连接
+        连接.关闭()
+
+    日志("所有连接已关闭")
+END FUNCTION
 ```
 
-#### 3.4. 优劣分析
+#### 3.3.2 grpc_listener.go 新建一个监听器来监听请求
 
-- **优点**:
-    
-    - **利用成熟 gRPC 库**: 网关与客户端之间的 gRPC 通信完全由 `grpc-go` 库处理，包括协议握手、帧处理、流控、头部/尾部元数据、错误状态等，非常健壮和标准。
-        
-    - **流处理接口清晰**: `grpc.ServerStream` 提供了标准的 `RecvMsg` 和 `SendMsg` 方法，与 `grpcdynamic` 的流接口可以非常自然地对接。
-        
-    - **实现相对简单**: 相比在 `http.Handler` 层面直接处理 gRPC 帧，此方案开发者不需要关心 HTTP/2 底层细节和 gRPC 协议的低级实现，专注于业务代理逻辑。
-        
-- **缺点**:
-    
-    - **Pixiu 过滤器链的集成挑战**: 一旦请求被 `grpc.Server` 接管，Pixiu 的标准 `NetworkFilterChain`（例如，包含 `HttpConnectionManager` 及其下的 `HttpFilter`）可能会被旁路。如果需要在 gRPC 调用级别应用 Pixiu 的通用过滤器（如认证、授权、限流、日志等），这些过滤器逻辑需要被适配并集成到 `myDynamicGrpcProxyHandler` 中，或者通过 `grpc.Server` 的拦截器 (Interceptor) 机制来实现。这可能需要对 Pixiu 的过滤模型进行调整或扩展。
-        
-    - **路由配置的适配**: Pixiu 的路由配置（`route_config`）通常是基于 HTTP Path、Header 等设计的。当处理原生 gRPC 请求时，需要将 gRPC 的服务名/方法名映射到这些路由规则上，或者 `myDynamicGrpcProxyHandler` 需要能直接访问和解释这些路由配置。
-        
+```pseudocode
+// -----------------------------------------------------------------
+// grpc_listener.go 的伪代码表示
+// -----------------------------------------------------------------
 
-#### 3.1.5. 与 Pixiu 核心能力集成 (针对方案一：嵌入式标准 gRPC 服务器)
+// 定义 GrpcListenerService 结构体，它包含一个gRPC服务器实例和监听器
+LISTENER GrpcListenerService {
+    Server: gRPC 服务器实例
+    Listener: 网络监听器 (例如 net.Listener)
+    FilterChain: 网络过滤器链
+    ShutdownConfig: 优雅关闭的配置和状态
+    CloseOnce: 保证清理逻辑只执行一次的工具
+}
 
-为了解决原生 gRPC 请求被 `grpc.Server` 接管后，Pixiu 传统过滤器链和路由机制可能被旁路的问题，可以考虑以下修改和集成策略：
+// 1. newGrpcListenerService - 创建和初始化监听器
+FUNCTION newGrpcListenerService(监听器配置):
+    // 根据配置创建网络过滤器链 (NetworkFilterChain)
+    过滤器链 = 创建过滤器链(配置.过滤器)
 
-- **路由集成**:
-    
-    - **在 `myDynamicGrpcProxyHandler` 中调用 Pixiu 路由逻辑**:
-        
-        - `myDynamicGrpcProxyHandler` 在解析出 gRPC 的 `fullMethod` (如 `/package.Service/Method`) 后，可以构造一个模拟的 HTTP 请求上下文（或者一个适配层），将此 `fullMethod` 映射为一个 Pixiu 能够理解的路径（例如，直接使用它或根据预定义规则转换）。
-            
-        - 调用 `server.GetRouterManager().RouteByPathAndName(adaptedPath, "GRPC")` (或类似方法，第二个参数表示请求类型) 来获取 Pixiu 的 `RouteAction`。
-            
-        - 这样，现有的基于路径匹配的路由规则（`route_config` 中的 `routes`）就可以被复用或适配。
-            
-        - `RouteAction` 中定义的 `cluster` 字段将用于确定后端的 gRPC 集群。
-            
-    - **扩展路由匹配条件**: 或者，可以考虑扩展 Pixiu 的 `RouterMatch` 结构，使其能够直接支持基于 gRPC 服务名和方法名的匹配，而不仅仅是 HTTP 路径前缀/精确匹配。
-        
-- **过滤器链集成**:
-    
-    - **手动执行过滤器链**:
-        
-        - 在 `myDynamicGrpcProxyHandler` 中，获取到目标 `RouteAction` 后，可以从关联的 Listener 配置或全局配置中查找应该应用于此 gRPC 调用的 Pixiu 过滤器链（例如，通过 `HttpConnectionManager` 配置的 `http_filters`，但需要适配）。
-            
-        - 创建一个适配的上下文对象 (类似于 `pch.HttpContext`，但针对 gRPC)，并手动遍历并执行这些过滤器。
-            
-        - 这要求 Pixiu 的 HTTP 过滤器能够处理这种适配的上下文，或者需要为 gRPC 调用设计一套并行的过滤器接口和实现。
-            
-        - 伪代码片段：
-            
-            ```
-            // In myDynamicGrpcProxyHandler, after getting routeAction
-            pixiuContext := createAdaptedGrpcContext(serverStream, routeAction) // 创建一个适配的上下文
-            filterChain := getFilterChainForGrpcRoute(routeAction) // 获取适用于此 gRPC 路由的过滤器链
-            
-            // 执行 Decode 阶段的过滤器
-            for _, filterFactory := range filterChain.HttpFilterFactories { // 假设过滤器工厂
-                filter := filterFactory.PrepareFilterChain(pixiuContext) // 过滤器需要能处理适配的上下文
-                status := filter.Decode(pixiuContext) // 执行 Decode
-                if status == filter.Stop {
-                    // 如果过滤器中止了请求，则直接返回错误给客户端
-                    return sendErrorToClientStream(serverStream, pixiuContext.GetError())
-                }
-            }
-            
-            // ... 执行 grpcdynamic 调用 ...
-            
-            // 执行 Encode 阶段的过滤器 (如果需要对响应进行处理)
-            // ...
-            ```
-            
-    - **gRPC Interceptors**:
-        
-        - 在创建嵌入式 `grpc.Server` 时，可以注册 gRPC 服务器拦截器（Unary 和 Stream Interceptors）。
-            
-        - 这些拦截器可以被设计为 Pixiu 过滤器的包装器。当 gRPC 调用到达时，拦截器会触发相应的 Pixiu 过滤器逻辑。
-            
-        - 这需要将 Pixiu 过滤器的核心逻辑从其 HTTP 上下文依赖中解耦，使其更通用。
-            
-        - 例如，一个认证过滤器，其核心逻辑是验证 token，这个逻辑可以被 gRPC 拦截器调用，token 可以从 gRPC metadata 中获取。
-            
-        - 伪代码片段：
-            
-            ```
-            // 创建 gRPC 服务器时
-            opts := []grpc.ServerOption{
-                grpc.UnaryInterceptor(pixiuUnaryServerInterceptor()),
-                grpc.StreamInterceptor(pixiuStreamServerInterceptor()),
-                grpc.UnknownServiceHandler(myDynamicGrpcProxyHandler),
-            }
-            grpcGatewayServer := grpc.NewServer(opts...)
-            
-            // 拦截器实现
-            func pixiuUnaryServerInterceptor() grpc.UnaryServerInterceptor {
-                return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-                    // 1. 从 info.FullMethod 获取服务和方法
-                    // 2. 构造 Pixiu 上下文适配对象
-                    // 3. 查找并执行 Pixiu 过滤器链的 Decode 部分
-                    // 4. 如果过滤器允许，则调用 handler(ctx, req) -> 这会进入 myDynamicGrpcProxyHandler
-                    // 5. 可能会有 Encode 阶段的过滤器处理响应 (gRPC 拦截器处理响应较复杂)
-                    // ...
-                }
-            }
-            ```
-            
-    - **混合模式**: 某些全局策略（如限流、基础日志）可以通过 gRPC 拦截器实现，而更复杂的、与路由相关的过滤器（如请求转换）则在 `myDynamicGrpcProxyHandler` 中，在路由决策之后、`grpcdynamic` 调用之前手动执行。
-        
-- **元数据和错误处理的集成**:
-    
-    - `myDynamicGrpcProxyHandler` 负责在 `grpc.ServerStream` 和 `grpcdynamic` 流之间正确传递元数据。Pixiu 过滤器可能需要读取或修改这些元数据（通过适配的上下文对象）。
-        
-    - 过滤器产生的错误或 `grpcdynamic` 调用产生的错误，都需要被 `myDynamicGrpcProxyHandler` 捕获，并转换为标准的 gRPC 错误状态返回给客户端。
-        
+    // 创建 GrpcListenerService 实例
+    ls = NEW GrpcListenerService(过滤器链)
 
-### 方案二：基于 `TripleListenerService` 的扩展 (简述)
+    // *** 关键配置 ***
+    // 构建 gRPC 服务器的选项
+    // 1. 强制使用 "passthrough" 编解码器，让服务器不解析消息体，只传递字节
+    // 2. 将所有未注册服务（即所有服务）的处理器指向 proxyStreamHandler
+    服务器选项 = [
+        强制编解码器(PassthroughCodec),
+        未知服务处理器(ls.proxyStreamHandler)
+    ]
 
-- **核心思想**: `TripleListenerService` (位于 `pkg/listener/triple/triple_listener.go`) 本身就是一个 gRPC/Triple 服务器。可以对其进行扩展，使其不仅能调用预定义的 Dubbo 服务，也能动态代理到任意 gRPC 后端。
-    
-- **工作流程**:
-    
-    1. 配置 `protocol_type: TRIPLE` 的 Listener。
-        
-    2. `TripleListenerService` 通过其内部的 `ProxyService` (或类似的机制) 处理 RPC 调用。
-        
-    3. **关键修改点**:
-        
-        - 在 `ProxyService.InvokeWithArgs` (用于一元和可能的客户端流起点) 或 Triple 库提供的服务器流处理回调中，增加逻辑来识别请求是否需要被动态代理到通用 gRPC 后端。
-            
-        - 如果是，则执行与方案一类似的步骤：获取方法描述符，连接后端，使用 `grpcdynamic` 建立流，并在 Triple 的服务器流抽象与 `grpcdynamic` 的客户端流抽象之间泵送数据。
-            
-- **优劣分析**:
-    
-    - **优点**:
-        
-        - 复用 `Triple` 协议栈，该协议栈设计上考虑了与 gRPC 的兼容性。
-            
-        - 可能与 Dubbo Triple 生态结合更紧密。
-            
-    - **缺点**:
-        
-        - 需要对 `dubbo-go/triple` 库有深入理解。
-            
-        - 将其扩展为通用 gRPC 代理可能偏离其主要设计目标，需要较多适配。
-            
-        - Pixiu 通用过滤器链与 `Triple` 库的拦截器机制的协调。
-            
+    // 创建 gRPC 服务器实例
+    ls.Server = 新建gRPC服务器(服务器选项)
 
-## 4. 通用考虑因素
+    // (注册 reflection 服务，用于调试)
+    注册Reflection服务(ls.Server)
 
-对于以上所有方案，都需要考虑以下通用问题：
+    RETURN ls
+END FUNCTION
 
-- **元数据 (Metadata) 处理**:
-    
-    - 入站 gRPC 请求的元数据需要被提取，并根据需要（例如路由、认证）进行处理。
-        
-    - 部分元数据可能需要透传或转换后传递给后端 `grpcdynamic` 调用。
-        
-    - 后端 `grpcdynamic` 调用返回的头部和尾部元数据也需要传递回原始客户端。
-        
-- **错误传播**:
-    
-    - 后端 `grpcdynamic` 调用产生的 gRPC 错误（`status.Status`）需要被捕获，并转换为对原始客户端的 gRPC 错误响应。
-        
-    - 网关自身产生的错误（如路由失败、连接后端失败）也需要以标准的 gRPC 错误形式返回。
-        
-- **路由与服务发现**:
-    
-    - 需要将 gRPC 的服务名和方法名有效地集成到 Pixiu 现有的路由匹配逻辑中。
-        
-    - `ClusterManager` 和服务发现机制需要能够为动态 gRPC 代理提供后端端点。
-        
-- **Pixiu 过滤器链集成**:
-    
-    - 理想情况下，Pixiu 的通用能力（如认证、授权、限流、日志、指标收集等过滤器）应该能够应用于这些动态代理的 gRPC 请求。这可能需要在选定的方案中找到合适的切入点来执行这些过滤器逻辑。
-        
 
-## 5. 结论与建议
+// 2. Start - 启动监听器
+FUNCTION Start():
+    // 根据配置的地址，开始在网络上监听
+    ls.Listener = 监听TCP(地址)
+    IF 监听失败:
+        RETURN 错误
 
-- **方案一 (嵌入式 gRPC 服务器)** 在技术实现上，利用 `grpc-go` 库处理客户端连接，并与 `grpcdynamic` 对接后端，可能是最直接和健壮的方式来处理原生 gRPC 流。其主要挑战在于如何将 Pixiu 的路由和过滤器能力无缝集成到 `UnknownServiceHandler` 的流程中。这可能需要设计一种方式，让 `UnknownServiceHandler` 能够访问和执行 Pixiu 的路由决策和过滤器链。
+    // 启动一个 goroutine 来运行 gRPC 服务器，使其不阻塞主线程
+    START GOROUTINE ls.serveGrpc(ls.Listener)
+
+    日志("gRPC 监听器在 %s 启动成功", 地址)
+    RETURN NIL
+END FUNCTION
+
+
+// 3. proxyStreamHandler - 所有 gRPC 请求的统一入口
+FUNCTION proxyStreamHandler(任何服务, gRPC流):
+    // 记录请求开始时间，用于计算耗时
+    开始时间 = 当前时间
+
+    // 从流中获取完整的 gRPC 方法名 (例如 /package.Service/Method)
+    方法名 = gRPC.获取方法名(gRPC流)
+
+    // 优雅关闭检查：如果正在关闭，则拒绝新请求
+    IF ls.正在关闭():
+        RETURN "服务器正在关闭" 的错误
+
+    // 增加活跃请求计数
+    ls.ShutdownConfig.活跃数++
+    DEFER ls.ShutdownConfig.活跃数-- // 确保函数结束时减少计数
+
+    // 将原生的 gRPC 流包装成我们自己的 RPCStream 接口类型
+    自定义流 = NEW RPCStreamImpl(原始gRPC流)
+
+    // 创建一个包含方法名等信息的流信息对象
+    流信息 = NEW RPCStreamInfo(方法名)
+
+    // *** 关键调用 ***
+    // 将包装后的流和信息交给过滤器链处理
+    错误 = ls.FilterChain.OnStreamRPC(自定义流, 流信息)
+
+    // 记录请求耗时和结果
+    日志("请求 %s 完成，耗时 %v", 方法名, 耗时)
+
+    RETURN 错误
+END FUNCTION
+
+
+// 4. ShutDown / Close - 关闭和清理
+FUNCTION ShutDown(等待组):
+    日志("开始优雅关闭...")
     
-- **方案二 (基于 TripleListenerService)** 对于主要服务于 Dubbo Triple 协议并希望扩展到通用 gRPC 代理的场景可能更合适，但通用性可能不如方案一。
+    // 1. 标记为拒绝新请求
+    ls.ShutdownConfig.拒绝请求 = TRUE
+
+    // 2. 在超时时间内，等待所有活跃请求处理完毕
+    等待活跃请求归零(超时时间)
+
+    // 3. 优雅地停止 gRPC 服务器（会等待已有 stream 完成）
+    ls.Server.GracefulStop()
+
+    // 4. 调用通用的清理函数，确保资源被释放
+    ls.cleanup()
+
+    日志("优雅关闭完成")
+END FUNCTION
+
+FUNCTION Close():
+    日志("强制关闭...")
     
+    // 立即停止 gRPC 服务器，中断所有连接
+    ls.Server.Stop()
 
-**建议**: 优先考虑**方案一**，因为它能最大程度地复用现有的、经过充分测试的 `grpc-go` 库来处理复杂的 gRPC 协议细节。然后，重点解决如何在该方案中优雅地集成 Pixiu 的路由、服务发现和过滤器链能力。例如，`UnknownServiceHandler` 在做出路由决策后，可以构造一个内部的请求上下文，并手动执行匹配的 Pixiu 过滤器链，然后再通过 `grpcdynamic` 调用后端。
+    // 调用通用的清理函数
+    ls.cleanup()
+END FUNCTION
 
-##### HTTP/HTTPS 与 HTTP2 核心差异对比
+FUNCTION cleanup():
+    // 使用 CloseOnce 确保以下逻辑只执行一次
+    ls.CloseOnce.Do(FUNCTION:
+        // 关闭过滤器链（这会触发 GrpcProxyFilter 的 Close，从而关闭所有后端连接）
+        ls.FilterChain.Close()
+    )
+END FUNCTION
+```
 
 | **特性**     | **HTTP/HTTPS 监听服务**          | **HTTP/2 监听服务**                        | **设计原因分析**                        |
 | ---------- | ---------------------------- | -------------------------------------- | --------------------------------- |
@@ -350,38 +307,56 @@ if methodDesc.IsClientStreaming() && methodDesc.IsServerStreaming() {
 | **活跃请求跟踪** | 无                            | **精确计数** (AddActiveCount)              | 实现请求级优雅关闭的必要条件                    |
 | **错误处理**   | 标准HTTP错误                     | **专用拒绝响应** (503错误)                     | 明确区分正常关闭和拒绝状态                     |
 
-# 目前流式设计的设计方案
-## 1. 整体架构
+## 4.  代码结构
 
-### 1.1 核心组件
-
-- GrpcContext: gRPC 请求上下文管理
-
-- GrpcFilter: gRPC 过滤器接口
-
-- GrpcConnectionManager: gRPC 连接管理器
-
-- StreamConfig: 流式配置管理
-### 1.2 目录结构
-
-```
-pkg/
-├── context/
-│   └── grpc/
-│       └── context.go      # gRPC 上下文定义
-├── common/
-│   └── grpc/
-│       ├── manager.go      # 连接管理器
-│       └── RoundTripper.go # HTTP/2 转发器
-├── model/
-│   └── http.go            # 配置模型定义
-└── common/extension/filter/
-│   └── filter.go          # 过滤器接口定义
-└──
+```txt
+pkg
+├── common
+│   └── codec
+│       └── grpc
+│           └── passthrough
+│               └── codec.go                (透传编解码器，代理核心技术)
+├── context
+│   └── grpc
+│       └── context.go                    (gRPC 请求上下文定义)
+├── filter
+│   └── network
+│       └── grpcproxy
+│           ├── filter
+│           │   └── proxy
+│           │       └── grpc_proxy_filter.go  (代理核心逻辑实现)
+│           ├── grpc_filter_manager.go      (gRPC 过滤器管理器)
+│           ├── grpc_manager.go             (gRPC 连接管理器和过滤器链调用)
+│           └── plugin.go                   (gRPC 代理网络过滤器的插件化入口)
+├── listener
+│   └── grpc
+│       └── grpc_listener.go              (gRPC 监听器和请求入口)
+└── model
+    └── stream.go                       (RPC 流的核心接口定义)
 ```
 
-```text
-   客户端请求 -> gRPC Server -> UnknownServiceHandler -> dynamicGrpcProxyHandler
-   -> FilterChain.OnGrpcStream -> 后端服务
-```
+本次修改主要增加了 grpc_listener 和 grpc_filter，并且将networkfilterchain 中多添加了两个方法，OnUnaryRPC 和 OnStreamRPC ，这两个方法用于实现 rpc 框架下面的流式调用和一元调用（目前grpc 的处理方式是一元调用为特殊的流式调用，所以并未采用OnUnaryRPC）
 
+## 5. 主要工作
+
+当前的 gRPC 代理实现是一个占位符，不具备实际的代理能力，特别是对于流式 RPC。它无法处理未知的 Protobuf 消息类型，也缺少健壮的连接管理和优雅的生命周期控制。
+
+此 PR 旨在将 Pixiu 实现为一个功能完整、健壮且高效的 gRPC 透明代理，能够处理所有类型的 gRPC 调用（一元、流式），并为未来的功能扩展打下坚实基础。
+
+### 5.1 核心代理功能实现
+
+- 实现 Passthrough 编解码器: 为了解决代理不认识消息体的问题，我们实现了一个自定义的 grpc.Codec，它将所有消息都作为原始字节 ([]byte) 对待，从而跳过 Protobuf 的编解码过程，实现了真正的“透传”代理。
+
+- 统一流处理器: 通过 grpc.UnknownServiceHandler 将所有 gRPC 请求（无论类型）都导向一个统一的流处理器。该处理器会建立一个到后端的全双工流，并在客户端和后端之间透明地转发数据。请求处理链路如下：
+
+> 客户端 -> GrpcListener -> GrpcProxyConnectionManager -> GrpcProxyFilter -> 后端服务
+
+### 5.2 健壮性与生命周期管理
+
+- 后端连接池与健康检查: 为后端连接实现了带锁的连接池 (sync.Map) 和复用机制，并增加了后台 goroutine 来监控连接健康状况，自动移除失效连接。
+
+- 实现优雅关闭: 对框架进行了扩展，为 GrpcFilter 接口添加了 Close() 方法，并在网关关闭时（Close/ShutDown）安全地关闭所有后端连接和资源，防止泄露。通过 sync.Once 确保清理操作的幂等性。
+
+### 5.3 代码质量与可维护性提升
+
+- 全面重构: 对 grpc_listener, grpc_manager, grpc_proxy_filter 等核心文件进行了重构，将庞大的函数拆分为职责单一的小函数，大幅提升了代码可读性。
