@@ -1,0 +1,118 @@
+/*
+This is your new custom stylesheet, overriding the theme's default blank.css.
+All your style customizations are preserved here.
+*/
+
+/* # Anuppuccin/Rosé Pine Light 主题风格 - 颜色与字体大小 */
+
+/* 1. 定义颜色变量 */
+:root {
+    /* 基于 Rosé Pine Light (ctp-rosepine-light) 的颜色参考 */
+    --accent-lavender: #907AA9;
+    --accent-blue: #6F72C0;
+    --accent-sapphire: #5980BF;
+    --accent-sky: #76ABC5;
+    --accent-teal: #68B4B1;
+    --accent-green: #64BE82;
+    --accent-yellow: #EBC475;
+    --accent-peach: #E8A687;
+    --accent-maroon: #C76777;
+    --accent-red: #B25A89;
+    --accent-mauve: #B4799B;
+
+    --bg-base: #FAF6F0;    /* 主背景色 (更暖的色调) */
+    --bg-mantle: #F1EAE4;  /* 代码块、表格等背景色 */
+    --bg-crust: #EAE2DC;   /* 最深的背景色 */
+
+    /* 为了兼容 PaperMod 主题的暗色模式，我们保留这个变量，并用新颜色覆盖 */
+    --code-bg: var(--bg-mantle);
+}
+
+.dark {
+    /* 暗色模式下的颜色变量 (可以根据你的暗色主题参考进行填充) */
+    --code-bg: rgba(175, 184, 193, 0.2); 
+}
+
+/* 2. 应用样式 */
+
+/* 应用更暖的背景色 */
+body {
+    background-color: var(--bg-base);
+}
+
+/* 链接 */
+.post-content a {
+    color: var(--accent-sapphire);
+}
+
+/* 加粗和斜体 */
+.post-content strong,
+.post-content b,
+.post-content em,
+.post-content i {
+    color: var(--accent-red);
+}
+
+/* 引用块 */
+.post-content blockquote {
+    color: var(--accent-lavender);
+    border-left-color: var(--accent-lavender);
+}
+
+/* 分割线 */
+.post-content hr {
+    border-color: var(--bg-crust);
+}
+
+/* 列表标记 */
+.post-content ::marker {
+    color: var(--accent-lavender);
+}
+
+/* 标题 H1-H6 */
+.post-content h1 {
+    color: var(--accent-lavender);
+    font-size: 2rem;
+}
+
+.post-content h2 {
+    color: var(--accent-peach);
+    font-size: 1.8rem;
+}
+
+.post-content h3 {
+    color: var(--accent-yellow);
+    font-size: 1.6rem;
+}
+
+.post-content h4 {
+    color: var(--accent-green);
+    font-size: 1.5rem;
+}
+
+.post-content h5 {
+    color: var(--accent-teal);
+    font-size: 1.25rem;
+}
+
+.post-content h6 {
+    color: var(--accent-lavender);
+    font-size: 1.1rem;
+}
+
+/* 行内代码 */
+.post-content code {
+    background-color: var(--code-bg) !important;
+}
+
+/* 表格 */
+.post-content table tr,
+.post-content table th,
+.post-content table td {
+    border-color: var(--accent-lavender) !important;
+}
+
+.post-content table tr:nth-child(2n),
+.post-content thead {
+    background-color: var(--code-bg);
+} 

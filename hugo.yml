@@ -7,7 +7,8 @@ description: "Hello, I'm Simi"
 
 
 # 一页显示5篇文章
-paginate: 5
+pagination:
+  pagerSize: 5
 # 要表情！
 enableEmoji: true
 
@@ -58,8 +59,8 @@ params:
     iconHeight: 40
 
   assets:
-    favicon: "img/duck.gif"
-    favicon16x16: "img/duck.gif"
+    favicon: "duck.gif"
+    favicon16x16: "duck.gif"
     favicon32x32: "img/NAVI-SiberianRailway.gif"
     apple_touch_icon: "img/NAVI-SiberianRailway.gif"
     safari_pinned_tab: "img/NAVI-SiberianRailway.gif"
@@ -138,7 +139,7 @@ privacy:
         disabled: false
         simple: true
 
-    twitter:
+    x:
         disabled: false
         enableDNT: true
         simple: true
@@ -154,5 +155,5 @@ privacy:
 services:
     instagram:
         disableInlineCSS: true
-    twitter:
+    x:
         disableInlineCSS: true
