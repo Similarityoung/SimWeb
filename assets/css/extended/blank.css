@@ -144,5 +144,5 @@ body {
 
 /* 深色模式下，让文章卡片使用一个比主背景稍浅的深色 */
 .dark .post-entry {
-    background: #2B2B2B;
+    background: #2E2E33;
 } 
