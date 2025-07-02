@@ -3,7 +3,7 @@ baseURL: "https://simi.host" # 网址这个地方可以先放空
 title: SimiYoung # 这个网站叫什么名字
 theme: PaperMod # 主要是增加这个配对主题
 languageCode: zh-cn
-description: "feedId:65727811169872896+userId:59911112743813120"
+description: "Hello, I'm Simi"
 
 
 # 一页显示5篇文章
@@ -30,20 +30,12 @@ params:
   ShowCodeCopyButtons: true
   ShowRssButtonInSectionTermList: true
   ShowShareButtons: true # 分享按钮
-  ShowPostNavLinks: true # 文章前后页按钮
   ShowToc: true # 显示目录
   TocOpen: false # 自动展开目录
   ShowLastMod: true #显示文章更新时间
   hideFooter: false # 隐藏页脚
   ShowWordCount: true
   VisitCount: true
-  showbreadcrumbs: true #顶部显示当前路径
-
-  # profileMode:
-  #   enabled: true
-  #   title: 独立之精神，自由之思想
-  #   subtitle: "👏🏼欢迎光临寒舍</br>👇联系方式"
-  #   imageUrl: "img/NAVI-SiberianRailway.gif"
 
   homeInfoParams:
     Title: '我来到，我看见，我记录。' # 主题
@@ -102,7 +94,7 @@ menu:
     - name: Home
       # 回到主页
       url: /
-      # 指定“首页”作为第一个出现的
+      # 指定"首页"作为第一个出现的
       weight: 1
     - name: Tags
       url: tags/
@@ -128,9 +120,10 @@ markup:
         codeFences: true  
         guessSyntax: true
         lineNumbers: true
-        # noClasses: false
+        lineNos: true
+        noClasses: false
         # style: monokai
-        style: darcula
+        style: onedark
 
         # codeFences：代码围栏功能，这个功能一般都要设为 true 的，不然很难看，就是干巴巴的-代码文字，没有颜色。
         # guessSyntax：猜测语法，这个功能建议设置为 true, 如果你没有设置要显示的语言则会自动匹配。
