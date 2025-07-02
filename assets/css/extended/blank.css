@@ -131,4 +131,18 @@ body {
 .post-content table tr:nth-child(2n),
 .post-content thead {
     background-color: var(--code-bg);
+}
+
+/*
+ * 主页文章卡片样式
+ */
+
+/* 浅色模式下，文章卡片的背景色 */
+.post-entry {
+    background: #FAF6F0;
+}
+
+/* 深色模式下，让文章卡片使用一个比主背景稍浅的深色 */
+.dark .post-entry {
+    background: #2B2B2B;
 } 
