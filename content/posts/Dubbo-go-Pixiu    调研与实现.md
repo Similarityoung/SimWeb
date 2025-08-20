@@ -7,7 +7,7 @@ categories:
   - Dubbo
   - Go
 date: 2025-07-26T21:56:41+08:00
-draft: true
+draft: false
 ---
 ## Authorization Flow  授权流程
 
@@ -233,3 +233,42 @@ pkg/filter/auth/
 7.  [ ] 在 Pixiu 的插件注册表中，注册新的 `mcp_auth` 过滤器。
 8.  [ ] 编写单元测试和集成测试，覆盖所有新功能，特别是声明验证、scope 检查和 `/.well-known` 端点。
 9.  ~~[延后] 重构 `pkg/filter/auth/jwt/` 过滤器。~~
+
+## Authorization 实现
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant RS as Resource Server (RS)
+    participant AS as Authorization Server (AS)
+
+    C->>RS: "Request protected resource (no token)"
+    RS-->>C: "401 Unauthorized\n+ WWW-Authenticate (resource_metadata URL)"
+
+    C->>RS: "GET /.well-known/oauth-protected-resource"
+    RS-->>C: "Resource Metadata (resource, authorization_servers)"
+
+    C->>AS: "GET /.well-known/oauth-authorization-server (discover)"
+    AS-->>C: "AS Metadata (authorization_endpoint, token_endpoint, jwks_uri, registration_endpoint?)"
+
+    C->>AS: "POST /register (client metadata)"
+    AS-->>C: "Client Registration Response (client_id, client_secret, ...)"
+
+    C->>AS: "Authorization Request (authorization_endpoint)<br>(client_id, redirect_uri, scope, state, PKCE)"
+    AS-->>C: "Authorization Code (after user auth/consent)"
+
+    C->>AS: "Token Request (token_endpoint)\n(code + client auth / PKCE)"
+    AS-->>C: "Access Token (+ optional refresh token)"
+
+    C->>RS: "GET /api... with Authorization: Bearer <access_token>"
+    RS->>AS: "(optional) Fetch JWKS from jwks_uri or use cached keys"
+    AS-->>RS: "JWKS"
+    RS->>RS: "Validate token: signature, iss, aud, exp/nbf, scope"
+
+    alt token valid sufficient
+        RS-->>C: "200 OK + resource"
+    else token invalid/missing
+        RS-->>C: "401 Unauthorized + WWW-Authenticate (resource metadata)"
+    end
+```
+
