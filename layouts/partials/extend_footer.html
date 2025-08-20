@@ -1,0 +1,32 @@
+<script type="module">
+(() => {
+  if (window.__mermaidInit) return;
+  window.__mermaidInit = true;
+
+  const loadMermaid = async () => {
+    if (window.__mermaid) return window.__mermaid;
+    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs');
+    window.__mermaid = mermaid;
+    return mermaid;
+  };
+
+  const doInit = async () => {
+    const mermaid = await loadMermaid();
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = document.body.classList.contains('dark') || (!localStorage.getItem('pref-theme') && prefersDark);
+    mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' });
+    mermaid.run({ querySelector: '.mermaid' });
+  };
+
+  // Initial render
+  doInit();
+
+  // Re-render on theme toggle button click
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.addEventListener('click', () => setTimeout(doInit, 0));
+
+  // Also observe body class changes (covers programmatic theme changes)
+  const observer = new MutationObserver(() => doInit());
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
