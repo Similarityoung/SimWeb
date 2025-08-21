@@ -111,6 +111,8 @@ menu:
       name: Search
       url: /search/
       weight: 5
+    - name: 404
+      url: /404/
 
 markup:
     goldmark:
