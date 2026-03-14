@@ -1,7 +1,12 @@
 ---
 title: go 学习笔记
+aliases:
+  - Golang 学习笔记
+  - Go Notes
 tags:
-  - learn
+  - go
+  - 学习笔记
+  - 编程语言
 categories:
   - Go
 date: 2024-08-29T14:09:53+08:00
@@ -40,21 +45,21 @@ b bool
 )
   
 func main() {  
-    //声明变量 默认为 0    var a int  
-    fmt.Println("a = ", a)  
+    //声明变量 默认为 0    var count int  
+    fmt.Println("count = ", count)  
   
     // 方法二 声明变量，并初始化  
-    var b int = 100  
-    fmt.Println("b = ", b)  
+    var score int = 100  
+    fmt.Println("score = ", score)  
   
     //方法三 （不推荐） 初始化省去数据类型，通过值来自动匹配数据类型  
-    var c = 100  
-    fmt.Println("c = ", c)  
+    var value = 100  
+    fmt.Println("value = ", value)  
   
     // 方法四：（最常用的方法）,只能用在函数体内  
-    e := 100  
-    fmt.Println("e = ", e)  
-    fmt.Printf("type of e = %T", e)  
+    temperature := 100  
+    fmt.Println("temperature = ", temperature)  
+    fmt.Printf("type of temperature = %T", temperature)  
 }
 ```
 
@@ -92,51 +97,51 @@ package main
   
 import "fmt"  
   
-func foo1(a string, b int) int {  
-    fmt.Println("a:", a, "b:", b)  
+func printMessageWithValue(message string, value int) int {  
+    fmt.Println("message:", message, "value:", value)  
   
-    c := 1024  
+    result := 1024  
   
-    return c  
+    return result  
 }  
   
 // 可以返回多个返回值，匿名  
-func foo2(a string, b int) (int, int) {  
-    fmt.Println("a:", a, "b:", b)  
+func calculateDoubleValues(message string, value int) (int, int) {  
+    fmt.Println("message:", message, "value:", value)  
   
-    c := 1024  
+    baseValue := 1024  
   
-    return c, c  
+    return baseValue, baseValue  
 }  
   
 // 可以返回多个返回值，有形参名称  
-func foo3(a string, b int) (r1 int, r2 int) {  
-    fmt.Println("a:", a, "b:", b)  
+func calculateSingleAndDouble(message string, value int) (singleValue int, doubleValue int) {  
+    fmt.Println("message:", message, "value:", value)  
   
-    c := 1024  
+    baseResult := 1024  
   
-    r1 = c  
-    r2 = c * 2  
+    singleValue = baseResult  
+    doubleValue = baseResult * 2  
   
     return  
 }  
   
-// 形参名称可以一起定义，都有默认值 0func foo4() (r1, r2 int) {  
-    r1 = 1  
-    r2 = 2  
+// 形参名称可以一起定义，都有默认值 0func getDefaultValues() (firstValue, secondValue int) {  
+    firstValue = 1  
+    secondValue = 2  
     return  
 }  
   
 func main() {  
   
-    c := foo1("hello", 100)  
-    fmt.Println(c)  
+    result := printMessageWithValue("hello", 100)  
+    fmt.Println(result)  
   
-    ret1, ret2 := foo2("hello", 100)  
-    fmt.Println("ret1:", ret1, "ret2:", ret2)  
+    returnValue1, returnValue2 := calculateDoubleValues("hello", 100)  
+    fmt.Println("returnValue1:", returnValue1, "returnValue2:", returnValue2)  
   
-    ret1, ret2 = foo3("hello", 100)  
-    fmt.Println("ret1:", ret1, "ret2:", ret2)  
+    returnValue1, returnValue2 = calculateSingleAndDouble("hello", 100)  
+    fmt.Println("returnValue1:", returnValue1, "returnValue2:", returnValue2)  
 }
 ```
 
@@ -659,12 +664,12 @@ goroutine是Go语言并行设计的核心，有人称之为go程。 Goroutine从
 具体用法如下：
 
 ```go
-func newTask() {
+func backgroundCounterTask() {
 
-	i := 0
+	counter := 0
 	for {
-	i++
-	fmt.Printf("new goroutine: i = %d\n", i)
+	counter++
+	fmt.Printf("new goroutine: counter = %d\n", counter)
 	time.Sleep(1*time.Second) //延时1s
 	}
 }
@@ -673,12 +678,12 @@ func main() {
 
 //创建一个 goroutine，启动另外一个任务
 
-	go newTask()
-	i := 0
+	go backgroundCounterTask()
+	mainCounter := 0
 	//main goroutine 循环打印
 	for {
-		i++
-		fmt.Printf("main goroutine: i = %d\n", i)
+		mainCounter++
+		fmt.Printf("main goroutine: mainCounter = %d\n", mainCounter)
 		time.Sleep(1 * time.Second) //延时1s
 	}
 }
@@ -744,7 +749,7 @@ x, ok := <-channel //功能同上，同时检查通道是否已关闭或者是�
 
 ```go
 for {
-	if data, ok := <-c; ok {
+	if data, ok := <-dataChannel; ok {
 		fmt.PrintLn(data)
 	} else {
 		break
@@ -752,7 +757,7 @@ for {
 }
 
 // 也可以使用 range 直接来实现
-for data := range c {
+for data := range dataChannel {
 	fmt.Println(data)
 }
 fmt.Println("Main finished..")
@@ -778,8 +783,8 @@ emmm ，我觉得我说的有些问题。因为互斥锁是限制 `P` 的，而�
 借助函数 `len(ch)` 求取缓冲区中剩余元素个数， `cap(ch)` 求取缓冲区元素容量大小。
 
 ```go
-c := make(chan int, 3) //带缓冲的通道
-fmt.Printf("子go程正在运行[%d]: len(c)=%d, cap(c)=%d\n", i, len(c), cap(c))
+bufferedChannel := make(chan int, 3) //带缓冲的通道
+fmt.Printf("子go程正在运行[%d]: len(bufferedChannel)=%d, cap(bufferedChannel)=%d\n", i, len(bufferedChannel), cap(bufferedChannel))
 ```
 
 ##### 关闭 channel
@@ -787,8 +792,8 @@ fmt.Printf("子go程正在运行[%d]: len(c)=%d, cap(c)=%d\n", i, len(c), cap(c)
 如果发送者知道，没有更多的值需要发送到 `channel` 的话，那么让接收者也能及时知道没有多余的值可接收将是有用的，因为接收者可以停止不必要的接收等待。这可以通过内置的 `close` 函数来关闭 `channel` 实现。
 
 ```go
-c := make(chan int) // 创建 channel
-close(c) // 关闭 channel
+intChannel := make(chan int) // 创建 channel
+close(intChannel) // 关闭 channel
 ```
 
 ##### 单向 channel
@@ -796,50 +801,50 @@ close(c) // 关闭 channel
 单向channel变量的声明非常简单，如下：
 
 ```go
-var ch1 chan int // ch1是一个正常的channel，是双向的
-var ch2 chan<- float64 // ch2是单向channel，只用于写float64数据
-var ch3 <-chan int // ch3是单向channel，只用于读int数据
+var bidirectionalChannel chan int // bidirectionalChannel是一个正常的channel，是双向的
+var writeOnlyChannel chan<- float64 // writeOnlyChannel是单向channel，只用于写float64数据
+var readOnlyChannel <-chan int // readOnlyChannel是单向channel，只用于读int数据
 ```
 
 这么看我觉得挺抽象的，我感觉得看下面这个，具体语法就是 进去的是输入 `chan<- ` ，出来的是输出 `<-chan` 
 
 ```go
-c := make(chan int, 3)
-var send chan<- int = c // send-only
-var recv <-chan int = c // receive-only
+baseChannel := make(chan int, 3)
+var sendOnlyChannel chan<- int = baseChannel // send-only
+var receiveOnlyChannel <-chan int = baseChannel // receive-only
 
-send <- 1
-//<-send //invalid operation: <-send (receive from send-only type chan<- int)
+sendOnlyChannel <- 1
+//<-sendOnlyChannel //invalid operation: <-sendOnlyChannel (receive from send-only type chan<- int)
 
-<-recv
-//recv <- 2 //invalid operation: recv <- 2 (send to receive-only type <-chan int)
+<-receiveOnlyChannel
+//receiveOnlyChannel <- 2 //invalid operation: receiveOnlyChannel <- 2 (send to receive-only type <-chan int)
 
 //不能将单向 channel 转换为普通 channel
-d1 := (chan int)(send) //cannot convert send (type chan<- int) to type chan int
-d2 := (chan int)(recv) //cannot convert recv (type <-chan int) to type chan int
+convertedChannel1 := (chan int)(sendOnlyChannel) //cannot convert sendOnlyChannel (type chan<- int) to type chan int
+convertedChannel2 := (chan int)(receiveOnlyChannel) //cannot convert receiveOnlyChannel (type <-chan int) to type chan int
 ```
 
 ```go
 // chan<- //只写
-func counter(out chan<- int) {
-	defer close(out)
+func produceNumbers(outputChannel chan<- int) {
+	defer close(outputChannel)
 	for i := 0; i < 5; i++ {
-		out <- i //如果对方不读 会阻塞
+		outputChannel <- i //如果对方不读 会阻塞
 	}
 }
 
 // <-chan //只读
 
-func printer(in <-chan int) {
-	for num := range in {
+func printNumbers(inputChannel <-chan int) {
+	for num := range inputChannel {
 		fmt.Println(num)
 	}
 }
 
 func main() {
-	c := make(chan int) // chan //读写
-	go counter(c) //生产者
-	printer(c) //消费者
+	numberChannel := make(chan int) // chan //读写
+	go produceNumbers(numberChannel) //生产者
+	printNumbers(numberChannel) //消费者
 	fmt.Println("done")
 }
 ```
@@ -858,10 +863,10 @@ select的用法与switch语言非常类似，由select开始一个新的选择�
 
 ```go
 select {
-	case <- chan1:
-	// 如果chan1成功读到数据，则进行该case处理语句
-	case chan2 <- 1:
-	// 如果成功向chan2写入数据，则进行该case处理语句
+	case <- inputChannel:
+	// 如果inputChannel成功读到数据，则进行该case处理语句
+	case outputChannel <- 1:
+	// 如果成功向outputChannel写入数据，则进行该case处理语句
 	default:
 	// 如果上面都没有成功，则进入default处理流程
 }
@@ -941,3 +946,6 @@ func init() 是 Go 语言中的特殊函数，它会**自动执行**。具体来
 2. **多个文件中的** init() **函数**按照包的依赖顺序执行。
 
 3. **在同一个文件中**，init() 函数的执行顺序是从上到下执行，在全局变量初始化之后、main() 函数之前执行。
+
+
+[Go语言高性能编程手册（万字长文）](https://mp.weixin.qq.com/s?__biz=Mzg5Mjc3MjIyMA==&mid=2247544709&idx=1&sn=83390ee723b35dc4e5dda3cec91ffdab&source=41&poc_token=HILQrmijXGKaG7ax3rHBtemn9qIHm3Mo6jcwzdGB)
