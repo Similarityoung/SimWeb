@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.local/
+content/
+themes/
+src/features/bot/vendor/
+package-lock.json

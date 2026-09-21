@@ -1,0 +1,54 @@
+{
+  "name": "simweb",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests scripts *.ts *.mjs *.json",
+    "format:check": "prettier --check src tests scripts *.ts *.mjs *.json"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource/geist-mono": "^5.3.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^1.47.0",
+    "motion": "^13.4.0",
+    "next": "^16.3.5",
+    "radix-ui": "^1.6.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/typography": "^0.5.20",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
+    "prettier": "^3.9.8",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  }
+}
