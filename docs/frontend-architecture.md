@@ -43,7 +43,7 @@ src/
       answer-question.ts      统一回答函数，首版查询预写内容
       presets.ts              预写问答与主题匹配规则
       types.ts                问题、回答、消息与内容引用
-      components/             介绍区、主题入口、会话记录、输入框
+      components/             介绍区、主题入口、会话记录、回答分块展示、输入框
       answer-question.test.ts 问答模块的行为验证
 
     projects/
@@ -68,7 +68,7 @@ src/
 
   components/
     ui/                       shadcn 基础组件
-    site/                     全站导航等跨页面外壳
+    site/                     全站导航、主题 Provider 与明暗切换等跨页面外壳
   config/
     site.ts                   站点身份、公开个人资料与导航定义
   lib/
@@ -125,6 +125,8 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 会话由 `home` 内的 React Context Provider 管理，在所有站内页面共享的根布局中挂载。通过 Next Link 在同一标签页切换目录和正文后返回首页，会话仍在；完整刷新、关闭标签页或主动清空会重置会话。不使用 localStorage、sessionStorage 或服务端存储。请求处理中离开首页仍由共享宿主持有请求；清空或宿主卸载时取消当前请求，迟到的结果不得恢复已清空消息。
 
+预写回答的分块输出是首页的展示行为：`AnswerContent` 负责文本块追加、完成后展示内容卡片以及定时器清理；`answer-chunks.ts` 仅生成本地模拟片段和节奏，不是模型 tokenizer 或网络协议实现。完整 Answer 仍由回答函数一次返回，useConversation 不管理输出光标、分块进度或展示等待。HomeExperience 记录本次挂载前已有的消息 ID，使导航返回时历史回答不重播；快速追问时旧回答补全，最新回答分块显示。减少动态效果不跳过文本分块，只停用装饰过渡。
+
 ### Bot 接口：业务只传状态
 
 首页将交互状态映射为 idle / listening / thinking 等表现状态。Bot 模块内部处理八个文件的加载顺序、浏览器全局对象、SVG、pointer、动画帧、减少动态效果、页面可见性和销毁。其他模块不访问引擎实例或 `window.GROK_*`。
@@ -139,6 +141,8 @@ app ──> home ──> projects 的卡片 / 公开类型
 - `article-card.tsx` 只依赖公开数据类型、基础组件和链接组件，可供首页交互与服务端目录共同使用。
 - 不用一个混合导出的 `index.ts` 同时暴露内容查询、正文解析与客户端卡片。服务端查询入口与浏览器可用入口保持明确分离。
 - `globals.css` 仅保留主题定义、基础样式和必要关键帧。业务布局使用 Tailwind，shadcn 提供基础组件，不承担问答或内容规则。
+
+主题使用 next-themes，由根布局组装 `components/site/theme-provider.tsx`，默认跟随系统，页头 `theme-toggle.tsx` 切换明暗。只有手动主题偏好以 `simweb-theme` 写入 localStorage，会话仍不持久化。首屏脚本在绘制前设置 html 的主题 class，按钮的图标和可访问名称用 CSS 明暗变体切换，避免服务端与客户端根据不同主题渲染不同 DOM。Bot 通过现有 inkFlat / eyeColor 参数引用局部 CSS 变量，不依赖主题 Context，也不因换色重建引擎。文章正文通过 Typography 暗色变体和语义颜色适配。
 
 ## 修改与验证如何集中
 
@@ -155,10 +159,14 @@ ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-
 
 ## 当前工作区状态
 
-Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot 引擎隔离在 bot/vendor，只在浏览器加载。原文没有修改，开发版只读取 4 篇明确非草稿的选稿。`npm run check` 包含 lint、类型检查、10 项模块及架构测试和生产构建；`npm run test:e2e` 包含桌面与手机共 14 项用例，包括草稿清空、长连续字符换行、Bot 连续移动及返回、追问不重播、途中清空和减少动态效果的验证。
+Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot 引擎隔离在 bot/vendor，只在浏览器加载。原文没有修改，开发版只读取 4 篇明确非草稿的选稿。`npm run check` 包含 lint、类型检查、11 项模块及架构测试和生产构建；`npm run test:e2e` 包含桌面与手机共 28 项用例，包括草稿清空、长连续字符换行、Bot 连续移动及返回、回答分块追加、卡片显示时机、追问和清空中断、导航返回不重播、减少动态效果，以及主题切换、系统跟随、偏好保留、Bot 连续性和 320px 导航的验证。
 
 原型审查后的视觉取舍见 [specification](frontend-refactor-spec.md#原型审查后的取舍2026-09-21)。输入草稿在首页视图统一管理，Composer 接收 value / onChange；useConversation 继续只管理消息与请求。介绍区自己测量文字高度来控制 Bot 比例，共享高亮采用 Tailwind 选择器，均未增加全局状态或业务模块依赖。
 
 2026-09-21 验证：上述检查全部通过，格式检查通过；浏览器实际检查首页、累积回答、目录与正文，长回答保留最新问题在可视区。加入 Bot 布局动画后，本地生产构建的 Lighthouse 移动端两次测量 Performance 为 86 / 98，LCP 为 4.3 / 2.3 秒；第二次在结束其他浏览器检查后单独执行。两次 Accessibility / Best Practices / SEO 均为 100，CLS 均为 0。此前未加布局动画的测量 Performance 为 100、LCP 1.9 秒；新依赖使总传输量由约 291 KiB 增至 331 KiB。本地测量有波动，不代表线上部署后的性能保证。截图与报告位于被忽略的 `.local/qa/`。
 
 原 Hugo 的 `public/` 是被忽略且含本地生成页面的构建产物，已移至 `/tmp/simweb-hugo-generated.YW3g0q/public` 保留，以免 Next.js 把它作为公开静态文件提供。旧 Hugo 模板和配置不参与新构建，已有 PaperMod 子模块状态保持原样。已配置 Vercel 构建入口，尚未执行线上部署；正式发布内容范围留待确认。
+
+回答分块展示完成后，11 项模块测试、22 项端到端测试、lint、类型检查、格式检查及生产构建全部通过；桌面和手机浏览器检查了输出中与完成后的状态。此次本地 Lighthouse 移动端测量 Performance 99，其余 Accessibility / Best Practices / SEO 均为 100，LCP 2.1 秒、CLS 0，报告为 `.local/qa/lighthouse-answer-stream.json`。
+
+暗色主题完成后，原有 22 项交互用例与新增 6 项主题用例均已验证通过，模块测试、lint、类型检查、格式检查及构建通过。实际检查了桌面/手机暗色首页、回答卡片、文章和代码块；暗色文字与背景/卡片的最低配色对比度约 6.67:1。此次本地 Lighthouse 移动端测量 Performance 97，Accessibility / Best Practices / SEO 均为 100，LCP 2.5 秒、CLS 0，报告为 `.local/qa/lighthouse-dark-theme.json`。

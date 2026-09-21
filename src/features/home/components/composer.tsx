@@ -38,7 +38,7 @@ export function Composer({
         maxLength={300}
         autoComplete="off"
         placeholder="What would you like to know?"
-        className="h-9 min-w-0 border-0 bg-transparent px-0 text-base shadow-none ring-0 placeholder:font-mono placeholder:text-[13px] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none sm:text-[15px]"
+        className="h-9 min-w-0 border-0 bg-transparent px-0 text-base shadow-none ring-0 placeholder:font-mono placeholder:text-[13px] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none sm:text-[15px] dark:bg-transparent"
         onKeyDown={(event) => {
           if (event.key === "Enter" && event.nativeEvent.isComposing)
             event.preventDefault();

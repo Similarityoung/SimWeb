@@ -4,37 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { GitHubIcon } from "./github-icon";
+import { ThemeToggle } from "./theme-toggle";
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
   return (
-    <header className="mx-auto flex h-[76px] w-full max-w-4xl shrink-0 items-center justify-between gap-3 px-[18px] sm:px-7">
-      {pathname === "/" ? (
-        <a
-          href={site.github}
-          aria-label="GitHub profile"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-[7px] font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <GitHubIcon className="size-[17px]" />
-          <span className="hidden sm:inline">GitHub</span>
-          <ArrowUpRight className="hidden size-[13px] sm:block" aria-hidden />
-        </a>
-      ) : (
-        <Link
-          href="/"
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden />
-          Home
-        </Link>
-      )}
+    <header className="mx-auto flex h-[76px] w-full max-w-4xl shrink-0 items-center justify-between gap-1.5 px-[18px] sm:gap-3 sm:px-7">
       <nav
         aria-label="Main navigation"
-        className="-mr-[7px] flex items-center sm:-mr-[9px] sm:gap-0.5"
+        className="-ml-1 flex items-center min-[360px]:-ml-[7px] sm:-ml-[9px] sm:gap-0.5"
       >
         {site.navigation.map((item) => {
           const active =
@@ -54,6 +34,31 @@ export function SiteHeader() {
           );
         })}
       </nav>
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+        {pathname === "/" ? (
+          <a
+            href={site.github}
+            aria-label="GitHub profile"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 min-w-8 shrink-0 items-center gap-[7px] font-mono text-xs text-muted-foreground transition-colors hover:text-foreground sm:min-w-11"
+          >
+            <GitHubIcon className="size-[17px]" />
+            <span className="hidden sm:inline">GitHub</span>
+            <ArrowUpRight className="hidden size-[13px] sm:block" aria-hidden />
+          </a>
+        ) : (
+          <Link
+            href="/"
+            aria-label="Home"
+            className="inline-flex min-h-11 min-w-8 shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:min-w-11 sm:text-xs"
+          >
+            <ArrowLeft className="size-3.5" aria-hidden />
+            <span className="hidden min-[360px]:inline">Home</span>
+          </Link>
+        )}
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

@@ -15,6 +15,9 @@ export function HomeExperience() {
   const { messages, pending, submit, clear, catalog } = useHomeConversation();
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState("");
+  const [initialMessageIds] = useState(
+    () => new Set(messages.map((message) => message.id)),
+  );
   const active = messages.length > 0;
   const latest = messages.at(-1);
 
@@ -64,14 +67,22 @@ export function HomeExperience() {
             size="icon"
             onClick={reset}
             aria-label="Clear conversation"
-            className="h-11 w-auto shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="h-11 w-auto shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
           >
             <RotateCcw className="size-4" strokeWidth={1.5} />
             Clear
           </Button>
         )}
       </div>
-      {active && <Transcript messages={messages} catalog={catalog} />}
+      {active && (
+        <Transcript
+          messages={messages}
+          catalog={catalog}
+          streamingMessageId={
+            latest && !initialMessageIds.has(latest.id) ? latest.id : undefined
+          }
+        />
+      )}
       <div className="shrink-0 pt-3">
         <TopicShortcuts compact={active} disabled={pending} onAsk={ask} />
         <Composer

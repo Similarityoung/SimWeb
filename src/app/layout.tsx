@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site/site-header";
+import { ThemeProvider } from "@/components/site/theme-provider";
 import { site } from "@/config/site";
 import { projects } from "@/features/projects/data";
 import { getArticleSummaries } from "@/features/writing/content.server";
@@ -36,7 +37,11 @@ export default function RootLayout({
   const catalog = { projects, articles: getArticleSummaries() };
   validateCatalog(catalog);
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${sans.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <body>
         <a
           href="#main-content"
@@ -44,10 +49,12 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <ConversationProvider catalog={catalog}>
-          <SiteHeader />
-          {children}
-        </ConversationProvider>
+        <ThemeProvider>
+          <ConversationProvider catalog={catalog}>
+            <SiteHeader />
+            {children}
+          </ConversationProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

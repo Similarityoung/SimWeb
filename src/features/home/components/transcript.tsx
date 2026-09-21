@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ProjectCard } from "@/features/projects/project-card";
-import { ArticleCard } from "@/features/writing/article-card";
-import { resolveReference } from "../answer-question";
+import { AnswerContent } from "./answer-content";
 import type { Message, PublicCatalog } from "../types";
 
 export function Transcript({
   messages,
   catalog,
+  streamingMessageId,
 }: {
   messages: readonly Message[];
   catalog: PublicCatalog;
+  streamingMessageId?: string;
 }) {
   const scrollArea = useRef<HTMLDivElement>(null);
   const latestExchange = useRef<HTMLElement>(null);
@@ -38,44 +38,24 @@ export function Transcript({
             <p className="mb-6 ml-auto w-fit max-w-[85%] rounded-[16px] rounded-br-[4px] bg-muted px-[18px] py-3 text-sm leading-6">
               {message.question}
             </p>
-            <div aria-busy={!message.answer && !message.error}>
-              {message.answer ? (
-                <>
-                  <p className="max-w-2xl text-sm leading-7 text-foreground/80 sm:text-[15px]">
-                    {message.answer.text}
-                  </p>
-                  {!!message.answer.references.length && (
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      {message.answer.references.map((reference) => {
-                        const content = resolveReference(reference, catalog);
-                        return content.type === "project" ? (
-                          <ProjectCard
-                            key={`project:${content.item.id}`}
-                            project={content.item}
-                          />
-                        ) : (
-                          <ArticleCard
-                            key={`article:${content.item.id}`}
-                            article={content.item}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              ) : message.error ? (
-                <p role="alert" className="text-sm text-accent">
-                  {message.error}
-                </p>
-              ) : (
-                <p
-                  role="status"
-                  className="font-mono text-xs text-muted-foreground"
-                >
-                  One moment…
-                </p>
-              )}
-            </div>
+            {message.answer ? (
+              <AnswerContent
+                answer={message.answer}
+                catalog={catalog}
+                stream={message.id === streamingMessageId}
+              />
+            ) : message.error ? (
+              <p role="alert" className="text-sm text-accent">
+                {message.error}
+              </p>
+            ) : (
+              <p
+                role="status"
+                className="font-mono text-xs text-muted-foreground"
+              >
+                One moment…
+              </p>
+            )}
           </article>
         ))}
       </div>

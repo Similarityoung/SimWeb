@@ -43,6 +43,19 @@
   --accent: #c2431f;
 }
 
+.dark {
+  color-scheme: dark;
+  --background: #181716;
+  --foreground: #eeeae4;
+  --foreground-soft: #d0c8bd;
+  --card: #1e1c19;
+  --muted: #24211e;
+  --muted-foreground: #aaa195;
+  --border: #36322e;
+  --border-strong: #575047;
+  --accent: #ed9478;
+}
+
 @layer base {
   * {
     @apply border-border;

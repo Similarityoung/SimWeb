@@ -38,7 +38,8 @@ export function Bot({
           scheme: "light",
           loginWrap: true,
           followPointer: !motion.matches,
-          eyeColor: "#ffffff",
+          inkFlat: "var(--bot-body)",
+          eyeColor: "var(--bot-eyes)",
           reduceMotion: motion.matches,
         });
         runtime.current = character;
@@ -71,7 +72,10 @@ export function Bot({
     <div
       role="img"
       aria-label="Interactive character"
-      className={cn("relative size-24 shrink-0", className)}
+      className={cn(
+        "relative size-24 shrink-0 [--bot-body:#000000] [--bot-eyes:#ffffff] dark:[--bot-body:var(--foreground)] dark:[--bot-eyes:var(--background)]",
+        className,
+      )}
     >
       {failed ? (
         <span className="text-xs text-muted-foreground">
