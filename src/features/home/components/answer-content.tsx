@@ -1,56 +1,39 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
 import { ProjectCard } from "@/features/projects/project-card";
 import { ArticleCard } from "@/features/writing/article-card";
 import { resolveReference } from "../answer-question";
 import type { Answer, PublicCatalog } from "../types";
-import { createAnswerChunks } from "./answer-chunks";
+import type { AnswerPresentation } from "../answer-presentation";
 
 export function AnswerContent({
   answer,
   catalog,
-  stream,
+  presentation,
 }: {
   answer: Answer;
   catalog: PublicCatalog;
-  stream: boolean;
+  presentation?: AnswerPresentation;
 }) {
-  const text = useRef<HTMLSpanElement>(null);
-  const [finished, setFinished] = useState(false);
-  const streaming = stream && !finished;
-
-  useLayoutEffect(() => {
-    const element = text.current;
-    if (!streaming || !element) return;
-    const chunks = createAnswerChunks(answer.text);
-    const output = document.createTextNode("");
-    element.replaceChildren(output);
-    let index = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const appendChunk = () => {
-      const chunk = chunks[index++];
-      if (chunk) output.appendData(chunk.content);
-      if (index >= chunks.length) {
-        setFinished(true);
-      } else {
-        timer = setTimeout(appendChunk, chunks[index].delayMs);
-      }
-    };
-    timer = setTimeout(appendChunk, chunks[0]?.delayMs ?? 0);
-    return () => clearTimeout(timer);
-  }, [answer.text, streaming]);
+  const phase = presentation?.phase ?? "complete";
+  const streaming =
+    phase === "sending" || phase === "waiting" || phase === "streaming";
+  const complete = phase === "complete";
+  const visibleCards = presentation?.visibleCards ?? answer.references.length;
 
   return (
     <div
-      aria-busy={streaming}
+      aria-busy={!complete}
       data-testid="answer"
-      data-state={streaming ? "streaming" : "complete"}
+      data-state={complete ? "complete" : phase}
+      data-phase={phase}
     >
       <p className="max-w-2xl text-sm leading-7 text-foreground/80 sm:text-[15px]">
         {streaming ? (
           <>
-            <span ref={text} aria-hidden data-testid="streaming-text" />
+            <span aria-hidden data-testid="streaming-text">
+              {answer.text.slice(0, presentation?.textLength ?? 0)}
+            </span>
             <span
               aria-hidden
               className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
@@ -61,20 +44,21 @@ export function AnswerContent({
           answer.text
         )}
       </p>
-      {!streaming && !!answer.references.length && (
-        <div className="mt-5 grid animate-enter gap-3 sm:grid-cols-2">
-          {answer.references.map((reference) => {
+      {visibleCards > 0 && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {answer.references.slice(0, visibleCards).map((reference) => {
             const content = resolveReference(reference, catalog);
-            return content.type === "project" ? (
-              <ProjectCard
-                key={`project:${content.item.id}`}
-                project={content.item}
-              />
-            ) : (
-              <ArticleCard
-                key={`article:${content.item.id}`}
-                article={content.item}
-              />
+            return (
+              <div
+                key={`${reference.type}:${reference.id}`}
+                className="min-w-0 animate-enter"
+              >
+                {content.type === "project" ? (
+                  <ProjectCard project={content.item} />
+                ) : (
+                  <ArticleCard article={content.item} />
+                )}
+              </div>
             );
           })}
         </div>

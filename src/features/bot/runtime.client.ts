@@ -1,7 +1,6 @@
 export type BotRuntime = {
   reduceMotion: boolean;
   setState: (state: string) => void;
-  setFollowPointer: (follow: boolean) => void;
   setPaused: (paused: boolean) => void;
   destroy: () => void;
 };

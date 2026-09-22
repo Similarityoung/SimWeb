@@ -83,6 +83,7 @@ export const topics: readonly {
 
 export const preparedAnswers: Record<TopicId, Answer> = {
   projects: {
+    kind: "answer",
     text: "Much of my work lives in open source. Here are the projects I contribute to and the ideas I’m exploring.",
     references: [
       { type: "project", id: "dubbo-go-pixiu" },
@@ -90,6 +91,7 @@ export const preparedAnswers: Record<TopicId, Answer> = {
     ],
   },
   notes: {
+    kind: "answer",
     text: "I write things down as I learn. These notes follow the questions I run into while building with Go, RPC, and AI tools.",
     references: [
       { type: "article", id: "pixiu-grpc-streaming" },
@@ -98,10 +100,12 @@ export const preparedAnswers: Record<TopicId, Answer> = {
     ],
   },
   thoughts: {
+    kind: "answer",
     text: "Some questions need a little distance from the code. Here’s a note on how I approach problems before jumping into a solution.",
     references: [{ type: "article", id: "thinking-through-problems" }],
   },
   about: {
+    kind: "answer",
     text: "I’m Zerui Yang, a backend developer and Apache Dubbo Committer. I work mainly in Go, around RPC and distributed systems, and I’m exploring agent workflows. You can find more in About Me above.",
     references: [],
   },

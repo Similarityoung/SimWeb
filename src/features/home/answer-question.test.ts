@@ -106,3 +106,18 @@ test("an aborted answer cannot generate a late response", async () => {
     { name: "AbortError" },
   );
 });
+
+test("answer classification is explicit and independent of display text", async () => {
+  assert.equal(
+    (await answerQuestion({ text: "notes" }, catalog)).kind,
+    "answer",
+  );
+  assert.equal(
+    (await answerQuestion({ text: "你好" }, catalog)).kind,
+    "answer",
+  );
+  assert.equal(
+    (await answerQuestion({ text: "unknown question" }, catalog)).kind,
+    "unmatched",
+  );
+});

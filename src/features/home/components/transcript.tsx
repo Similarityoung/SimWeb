@@ -3,15 +3,16 @@
 import { useEffect, useRef } from "react";
 import { AnswerContent } from "./answer-content";
 import type { Message, PublicCatalog } from "../types";
+import type { AnswerPresentation } from "../answer-presentation";
 
 export function Transcript({
   messages,
   catalog,
-  streamingMessageId,
+  presentation,
 }: {
   messages: readonly Message[];
   catalog: PublicCatalog;
-  streamingMessageId?: string;
+  presentation: { messageId?: string; frame?: AnswerPresentation };
 }) {
   const scrollArea = useRef<HTMLDivElement>(null);
   const latestExchange = useRef<HTMLElement>(null);
@@ -42,7 +43,11 @@ export function Transcript({
               <AnswerContent
                 answer={message.answer}
                 catalog={catalog}
-                stream={message.id === streamingMessageId}
+                presentation={
+                  message.id === presentation.messageId
+                    ? presentation.frame
+                    : undefined
+                }
               />
             ) : message.error ? (
               <p role="alert" className="text-sm text-accent">

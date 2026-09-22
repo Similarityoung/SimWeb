@@ -33,12 +33,12 @@
   }
 
   function evalTrick(trick, now) {
-    const empty = { turn: null, Kr: 0, yi: 0, ki: 0, Yr: 0, Zr: 0, wi: 0, lidMul: null, eyeBoost: null, hop: 0, done: !trick, wantHop: false };
+    const empty = { turn: null, Kr: 0, yi: 0, ki: 0, Yr: 0, Zr: 0, wi: 0, lidMul: null, eyeBoost: null, hop: 0, done: !trick, wantHop: false, wantBurst: false };
     if (!trick) return empty;
     const Et = (now - trick.t0) / 1000;
     const { kind, dir, turns } = trick;
     let turn = null, Kr = 0, yi = 0, ki = 0, Yr = 0, Zr = 0, wi = 0, lidMul = null, eyeBoost = null;
-    let done = false, wantHop = false;
+    let done = false, wantHop = false, wantBurst = false, hop = 0;
 
     if (kind === "spinDizzy") {
       const on = 0.55 + turns * 0.16, bn = 1.5;
@@ -88,6 +88,17 @@
         lidMul = 1.14 - 0.44 * pl + 0.1 * Math.sin(Yl * 16) * pl;
         eyeBoost = 1.12 - 0.09 * pl;
       } else done = true;
+    } else if (kind === "spinHop") {
+      // Site completion: one full turn, one hop, then a burst at landing.
+      if (Et < 0.7) turn = Math.PI * 2 * dir * K2(Et / 0.7);
+      else if (Et < 1.2) {
+        turn = Math.PI * 2 * dir;
+        const progress = (Et - 0.7) / 0.5;
+        hop = -4 * 36 * progress * (1 - progress);
+      } else {
+        wantBurst = true;
+        done = true;
+      }
     } else if (kind === "spinBounce") {
       if (Et < 0.7) turn = turns * Math.PI * 2 * dir * K2(Et / 0.7);
       else {
@@ -96,7 +107,7 @@
       }
     }
 
-    return { turn, Kr, yi, ki, Yr, Zr, wi, lidMul, eyeBoost, hop: 0, done, wantHop };
+    return { turn, Kr, yi, ki, Yr, Zr, wi, lidMul, eyeBoost, hop, done, wantHop, wantBurst };
   }
 
   function makeSpinTurn(turns = 1, dir = sign()) {

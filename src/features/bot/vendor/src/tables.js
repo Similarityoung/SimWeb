@@ -7,8 +7,11 @@
     { label: "Product lifecycle", states: ["spawning", "humming", "loading", "dictating", "writing", "sending", "receiving", "uploading", "notifying", "alerting", "dragging", "bouncing", "powering-down"] },
   ];
 
-  const EYE_PLAYLIST = {
-    sleeping: [13, 22, 4], waking: [13], idle: [0, 8], listening: [10, 1, 19],
+  // Site curation: the three rejected reference images identify presets 7 and 8.
+  // Keep every other eye preset, and keep all original character states.
+  const EXCLUDED_EYES = new Set([7, 8]);
+  const EYE_PLAYLIST = Object.fromEntries(Object.entries({
+    sleeping: [13, 22, 4], waking: [13], idle: [0, 1, 2, 6, 10, 12, 15, 19, 24], listening: [10, 1, 19],
     thinking: [8, 16, 14, 17, 5], searching: [15, 9, 3, 20, 12, 18],
     working: [7, 16, 11, 10], excited: [2, 17, 21, 3, 11], surprised: [3, 21],
     suspicious: [14, 5, 23], angry: [7, 16], drowsy: [4, 22, 13],
@@ -20,10 +23,10 @@
     sending: [0, 8], receiving: [19, 0, 8], uploading: [15, 9, 8], writing: [15, 9],
     notifying: [3, 21, 0], alerting: [3, 21], bouncing: [2, 17],
     dragging: [3, 15, 0], "powering-down": [13, 22],
-  };
+  }).map(([state, eyes]) => [state, eyes.filter((eye) => !EXCLUDED_EYES.has(eye))]));
 
   const EYE_HOLD_MS = {
-    sleeping: [6000, 10000], waking: [800, 800], idle: [9000, 16000],
+    sleeping: [6000, 10000], waking: [800, 800], idle: [5000, 9000],
     listening: [2800, 5000], thinking: [2000, 3600], searching: [1000, 1800],
     working: [1800, 3200], excited: [1100, 2000], surprised: [2500, 4000],
     suspicious: [2600, 4500], angry: [2200, 3800], drowsy: [4000, 8000],

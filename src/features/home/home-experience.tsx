@@ -5,31 +5,48 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useHomeConversation } from "./conversation-provider";
+import { useAnswerPresentation } from "./use-answer-presentation";
+import type { BotMood } from "@/features/bot/bot";
+import type { PresentationPhase } from "./answer-presentation";
 import { Introduction } from "./components/introduction";
 import { TopicShortcuts } from "./components/topic-shortcuts";
 import { Transcript } from "./components/transcript";
 import { Composer } from "./components/composer";
 import type { Question } from "./types";
 
+const phaseMood: Partial<Record<PresentationPhase, BotMood>> = {
+  sending: "responding",
+  waiting: "responding",
+  streaming: "responding",
+  cards: "responding",
+};
+
 export function HomeExperience() {
-  const { messages, pending, submit, clear, catalog } = useHomeConversation();
+  const { messages, pending, submit, clear, catalog, arrival } =
+    useHomeConversation();
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState("");
-  const [initialMessageIds] = useState(
-    () => new Set(messages.map((message) => message.id)),
-  );
+  const [exploreKey, setExploreKey] = useState<string>();
+  const presentation = useAnswerPresentation(messages);
   const active = messages.length > 0;
   const latest = messages.at(-1);
+  const answerMood = presentation.frame && phaseMood[presentation.frame.phase];
+  const mood =
+    (answerMood === "responding" && latest?.answer?.kind === "unmatched"
+      ? "unmatched"
+      : answerMood) ?? (focused ? "listening" : "idle");
 
   function ask(question: Question) {
     if (pending) return;
     setDraft("");
+    setExploreKey(undefined);
     void submit(question);
   }
 
   function reset() {
     clear();
     setDraft("");
+    setExploreKey(undefined);
   }
 
   return (
@@ -51,15 +68,15 @@ export function HomeExperience() {
       >
         <Introduction
           compact={active}
-          mood={
-            pending
-              ? "thinking"
-              : focused
-                ? "listening"
-                : active
-                  ? "happy"
-                  : "idle"
+          mood={mood}
+          activityKey={presentation.messageId}
+          completed={
+            presentation.frame?.phase === "complete" &&
+            latest?.answer?.kind === "answer"
           }
+          failed={presentation.frame?.phase === "error"}
+          arrival={arrival}
+          exploreKey={exploreKey}
         />
         {active && (
           <Button
@@ -78,13 +95,18 @@ export function HomeExperience() {
         <Transcript
           messages={messages}
           catalog={catalog}
-          streamingMessageId={
-            latest && !initialMessageIds.has(latest.id) ? latest.id : undefined
-          }
+          presentation={presentation}
         />
       )}
       <div className="shrink-0 pt-3">
-        <TopicShortcuts compact={active} disabled={pending} onAsk={ask} />
+        <TopicShortcuts
+          compact={active}
+          disabled={pending}
+          onAsk={ask}
+          onExplore={(topic) => {
+            if (answerMood !== "responding") setExploreKey(topic);
+          }}
+        />
         <Composer
           pending={pending}
           value={draft}

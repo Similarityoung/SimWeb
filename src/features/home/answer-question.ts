@@ -58,14 +58,16 @@ export async function answerQuestion(
         matches(text, keyword),
       ),
     )?.id;
-  const answer = topic
+  const answer: Answer = topic
     ? preparedAnswers[topic]
     : /^(hello|hi|hey|你好|您好)[!！。\s]*$/i.test(text)
       ? {
+          kind: "answer",
           text: "Hello! Make yourself at home. Ask me about my projects, notes, or what I’ve been thinking about.",
           references: [],
         }
       : {
+          kind: "unmatched",
           text: "I don’t have a prepared answer for that yet. Try one of the topics below, or browse the complete collections in the menu.",
           references: [],
         };

@@ -8,7 +8,11 @@ export type PublicCatalog = {
   projects: readonly Project[];
   articles: readonly ArticleSummary[];
 };
-export type Answer = { text: string; references: readonly ContentReference[] };
+export type Answer = {
+  kind: "answer" | "unmatched";
+  text: string;
+  references: readonly ContentReference[];
+};
 export type Question = { text: string; topic?: TopicId };
 export type Message = {
   id: string;

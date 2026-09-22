@@ -20,10 +20,12 @@ export function TopicShortcuts({
   compact,
   disabled,
   onAsk,
+  onExplore,
 }: {
   compact: boolean;
   disabled: boolean;
   onAsk: (question: Question) => void;
+  onExplore: (topic?: string) => void;
 }) {
   return (
     <div
@@ -52,6 +54,12 @@ export function TopicShortcuts({
             type="button"
             disabled={disabled}
             onClick={() => onAsk({ text: topic.question, topic: topic.id })}
+            onPointerEnter={(event) => {
+              if (event.pointerType !== "touch") onExplore(topic.id);
+            }}
+            onPointerLeave={() => onExplore()}
+            onFocus={() => onExplore(topic.id)}
+            onBlur={() => onExplore()}
             className={cn(
               "group relative rounded-xl border text-left transition-colors hover:border-border-strong hover:bg-muted active:bg-muted disabled:pointer-events-none disabled:opacity-50",
               compact

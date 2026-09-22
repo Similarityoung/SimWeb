@@ -420,6 +420,7 @@
         const ae = Math.max(j.r * (1 - le * 0.4), 0.5);
         if (!j.el) {
           const ce = el(j.star ? "path" : j.round ? "circle" : "rect");
+          ce.setAttribute("data-particle", "");
           if (j.star) ce.setAttribute("d", STAR);
           ce.setAttribute("fill", j.color);
           back.appendChild(ce); j.el = ce;
@@ -449,6 +450,7 @@
       clear() {
         for (const W of parts) { W.el?.remove(); W.trailEl?.remove(); W.trailFrontEl?.remove(); W.gradEl?.remove(); }
         parts = []; spawnQ = []; seeding = false; cooling = false;
+        prevSpin = 0; spinVel = 0; last = -1;
       },
       update(now, dt, G) {
         const Y = last < 0 ? dt : Math.max((now - last) / 1000, 0);

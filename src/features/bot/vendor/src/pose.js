@@ -296,7 +296,7 @@
       case "celebrate":
         spin = pt;
         tx = 0;
-        ty = -Math.abs(Math.sin(mt * 1.6)) * 2.5;
+        ty = 0;
         squash = 1;
         eyeBoost = 1.1;
         lid = 1.1;

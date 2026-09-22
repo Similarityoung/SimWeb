@@ -9,9 +9,19 @@ import { cn } from "@/lib/utils";
 export function Introduction({
   compact,
   mood,
+  activityKey,
+  completed,
+  failed,
+  arrival,
+  exploreKey,
 }: {
   compact: boolean;
   mood: BotMood;
+  activityKey?: string;
+  completed?: boolean;
+  failed?: boolean;
+  arrival?: { id: number; kind: "arrival" | "return" };
+  exploreKey?: string;
 }) {
   const section = useRef<HTMLElement>(null);
   const copy = useRef<HTMLDivElement>(null);
@@ -58,6 +68,11 @@ export function Introduction({
       >
         <Bot
           mood={mood}
+          activityKey={activityKey}
+          completed={completed}
+          failed={failed}
+          arrival={arrival}
+          exploreKey={exploreKey}
           className={
             compact
               ? "size-[43px] sm:size-[54px]"

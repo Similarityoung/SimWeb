@@ -34,13 +34,18 @@ src/
     thoughts/page.tsx          随笔目录
     thoughts/[slug]/page.tsx   随笔正文
     about/page.tsx             静态个人介绍
+    dev/bot/page.tsx           仅开发环境的 Bot 试播入口，生产环境返回 404
 
   features/
     home/
       home-experience.tsx      组装首页交互区
       use-conversation.ts     提问、累积会话、等待、清空与请求生命周期
-      conversation-provider.tsx 共享布局中的会话宿主，生命周期与当前标签页一致
+      conversation-provider.tsx 共享布局中的会话宿主及首页导航经历
+      home-visit.ts           首次进入与阅读返回的纯状态转换
       answer-question.ts      统一回答函数，首版查询预写内容
+      answer-chunks.ts        保留字词与 Unicode 的展示分块
+      answer-presentation.ts  阶段、分块与逐张卡片的时间线，纯函数
+      use-answer-presentation.ts 最新回答的唯一展示调度与取消
       presets.ts              预写问答与主题匹配规则
       types.ts                问题、回答、消息与内容引用
       components/             介绍区、主题入口、会话记录、回答分块展示、输入框
@@ -63,7 +68,12 @@ src/
 
     bot/
       bot.tsx                 对外 React 入口，仅接收表现状态等必要参数
-      runtime.client.ts       浏览器引擎加载与类型；生命周期在 bot.tsx
+      behavior.ts             每个场景的 1～2 个候选、时长、优先级与冷却
+      scene-controller.ts     动作裁决纯函数，无队列
+      use-bot-scenes.ts       场景信号、计时器、主题和可见性订阅
+      character.tsx           内部 SVG 宿主、引擎生命周期与场景切换
+      runtime.client.ts       浏览器引擎加载与类型
+      bot-preview.tsx         开发用候选动作与尺寸试播
       vendor/                 八个原引擎文件及来源说明，仅由本模块访问
 
   components/
@@ -117,7 +127,7 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 ### 回答接口：页面只消费回答结果
 
-外部形状为 `answerQuestion(question, catalog, signal?): Promise<Answer>`。请求包含问题和可选的明确主题，catalog 是共享的公开摘要，signal 用于取消请求；回答包含简短文本和内容引用。首版只实现本地预写问答。
+外部形状为 `answerQuestion(question, catalog, signal?): Promise<Answer>`。请求包含问题和可选的明确主题，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类，视图不通过提示文案猜测是否匹配。首版只实现本地预写问答。
 
 用户已明确要求未来 AI 扩展，因此保留这一个稳定入口；未来若接模型，增加服务端调用并在此处接入。当前不建设 provider 插件体系、模型基类、依赖注入容器、后台配额系统或流式协议。若未来流式交互改变产品契约，再单独设计该扩展。
 
@@ -125,11 +135,25 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 会话由 `home` 内的 React Context Provider 管理，在所有站内页面共享的根布局中挂载。通过 Next Link 在同一标签页切换目录和正文后返回首页，会话仍在；完整刷新、关闭标签页或主动清空会重置会话。不使用 localStorage、sessionStorage 或服务端存储。请求处理中离开首页仍由共享宿主持有请求；清空或宿主卸载时取消当前请求，迟到的结果不得恢复已清空消息。
 
-预写回答的分块输出是首页的展示行为：`AnswerContent` 负责文本块追加、完成后展示内容卡片以及定时器清理；`answer-chunks.ts` 仅生成本地模拟片段和节奏，不是模型 tokenizer 或网络协议实现。完整 Answer 仍由回答函数一次返回，useConversation 不管理输出光标、分块进度或展示等待。HomeExperience 记录本次挂载前已有的消息 ID，使导航返回时历史回答不重播；快速追问时旧回答补全，最新回答分块显示。减少动态效果不跳过文本分块，只停用装饰过渡。
+预写回答的分块输出是首页的展示行为：`answer-presentation.ts` 从完整 Answer 生成提交、输出、逐张卡片和完成的时间线；`use-answer-presentation.ts` 是最新回答唯一的计时与取消宿主，记录挂载时已有的消息 ID，并向视图提供阶段、文字长度和卡片数量。`AnswerContent` 只渲染该进度，HomeExperience 将尚未完成的正常回答映射为 responding，未匹配回答为 unmatched，不逐阶段更换动作。`answer-chunks.ts` 生成本地模拟片段，不是模型 tokenizer 或网络协议实现。
+
+完整 Answer 仍由回答函数一次返回，useConversation 不管理展示进度或动画计时。快速追问补全旧回答与卡片，清空或离开首页取消旧调度，导航返回直接显示历史内容。迟到的真实回答在数据就绪后开始输出，不将提交反馈重复播放。典型短回答及卡片约 4～6 秒完成，卡片出现即可点击；正常完成后向 Bot 传完成标记，在内容已可用的同时播放一轮转身、单次跳跃与落地粒子，再恢复待机／倾听。减少动态效果保留文本与卡片节奏，只停用装饰运动。
 
 ### Bot 接口：业务只传状态
 
-首页将交互状态映射为 idle / listening / thinking 等表现状态。Bot 模块内部处理八个文件的加载顺序、浏览器全局对象、SVG、pointer、动画帧、减少动态效果、页面可见性和销毁。其他模块不访问引擎实例或 `window.GROK_*`。
+首页传入 mood、activityKey、completed（本轮正常展示完成）、failed（本轮回答失败）、arrival（首次进入／阅读返回）和 exploreKey（当前探索的主题），不传正文或卡片进度。正常回答固定书写，未匹配回答困惑。`home-visit.ts` 在共享 Provider 中记录导航经历：仅首次首页出现播放生成，访问笔记／随笔正文后返回播放欢迎；目录往返不重播，刷新重置。该记录与会话消息分开，不进入 useConversation。
+
+Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情，其他交互场景最多两个候选。`scene-controller.ts` 集中处理优先级、冷却、完成去重与过期事件。`use-bot-scenes.ts` 连接语义信号、主题、可见性和定时器，动作仅在接受事件时抽取，不维护待播队列。回答抢占并丢弃低优先级反馈；只有明确的 completed 信号按 activityKey 消费一次，才播放约 2.4 秒 celebrate：转一圈、轻跳一次，落地后释放少量粒子。清空、错误及未匹配不触发，隐藏时消费并丢弃，不补播。动画计时只在 Bot 内，卡片可用时间不受其影响。输入时拒绝闲置与探索动作。failed 作为一次结果信号按 activityKey 去重，基础 mood 仍由输入焦点决定；警报结束后恢复待机／倾听，错误文案继续显示，焦点变化不重播警报。
+
+待机完整表情由同一场景系统调度：平静 6～10 秒后从 happy／curious／shy／proud／playful 中选一次，保持 5 秒再恢复平静。idle-expression 优先级最低，控制器拒绝非 idle 或已有动作时的迟到事件；Hook 在探索、输入、隐藏或卸载时清理待机定时器，并监听原生 MediaQueryList change，在减少动态效果时停止轮换。恢复后重新等待，不补播。不新增 home 状态或对外参数。生命周期依据 [React useEffect](https://react.dev/reference/react/useEffect) 与 [MDN change 事件](https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList/change_event)。
+
+自动睡眠仍归同一个场景系统：sleep 的 duration 为 null，表示持续至显式活动或业务状态改变；wake 只接受睡眠中的唤醒，播放 3 秒，后续活动不会重新开始。睡眠拒绝随机表情、探索和系统主题等背景事件，回答及明确业务状态变化可打断。`use-bot-scenes.ts` 统一管理 30 秒嗡鸣和 60 秒睡眠的闲置计时，指针、键盘、触摸与滚轮活动重置时间，回答中暂停，后台和卸载清理。Effect Event 读取最新睡眠状态，避免表情轮换重置计时，也避免鼠标每次移动都派发动画事件。减少动态效果时保留静态闭眼，活动直接恢复。home 和 Bot 公共接口不增加状态或参数；不恢复鼠标位置跟随。依据 [React useEffectEvent](https://react.dev/reference/react/useEffectEvent) 与 [MDN Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。
+
+`bot.tsx` 使用原生 button 的 onClick 触发弹跳，兼容鼠标、触摸、Enter / Space；不维护多击、长按、拖动或手动休眠手势，也不拦截滚动。短动作有冷却，点击可打断完成动作，新回答始终抢占。依据 [MDN click 事件](https://developer.mozilla.org/en-US/docs/Web/API/Element/click_event)。
+
+`character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态内保留 9 种眼型细节，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。Character 初始化时固定关闭 followPointer，动态效果偏好切换只调整 reduceMotion，不重新启用跟随；主题卡片探索与输入框倾听由原有场景信号触发，互相独立。其他模块不访问引擎实例或 window.GROK_*。
+
+开发路由保留 24 种素材动作（含平静、五种待机表情、睡着／醒来、完成动画）与 192 / 54 / 43px 尺寸试播；实际场景通过真实首页验证。进度环已移除；口述仅留在素材预览，正常回答只用书写。该路由生产返回 404。
 
 首页介绍区与会话顶部之间的位置、尺寸过渡归 `home/components/introduction.tsx` 管理：Motion 测量布局，只在 compact 状态变化时移动同一个 Bot，保持 SVG 和引擎实例连续。清空时反向返回，追问不重播，减少动态效果时立即切换。角色内部动作仍归 bot，不向会话 Hook 添加动画状态。
 
@@ -142,7 +166,7 @@ app ──> home ──> projects 的卡片 / 公开类型
 - 不用一个混合导出的 `index.ts` 同时暴露内容查询、正文解析与客户端卡片。服务端查询入口与浏览器可用入口保持明确分离。
 - `globals.css` 仅保留主题定义、基础样式和必要关键帧。业务布局使用 Tailwind，shadcn 提供基础组件，不承担问答或内容规则。
 
-主题使用 next-themes，由根布局组装 `components/site/theme-provider.tsx`，默认跟随系统，页头 `theme-toggle.tsx` 切换明暗。只有手动主题偏好以 `simweb-theme` 写入 localStorage，会话仍不持久化。首屏脚本在绘制前设置 html 的主题 class，按钮的图标和可访问名称用 CSS 明暗变体切换，避免服务端与客户端根据不同主题渲染不同 DOM。Bot 通过现有 inkFlat / eyeColor 参数引用局部 CSS 变量，不依赖主题 Context，也不因换色重建引擎。文章正文通过 Typography 暗色变体和语义颜色适配。
+主题使用 next-themes，由根布局组装 `components/site/theme-provider.tsx`，默认跟随系统，页头 `theme-toggle.tsx` 切换明暗。只有手动主题偏好以 `simweb-theme` 写入 localStorage，会话仍不持久化。首屏脚本在绘制前设置 html 的主题 class，按钮的图标和可访问名称用 CSS 明暗变体切换，避免服务端与客户端根据不同主题渲染不同 DOM。Bot 的渲染层通过现有 inkFlat / eyeColor 参数引用局部 CSS 变量；场景层监听主题变化，换色不重建引擎。文章正文通过 Typography 暗色变体和语义颜色适配。
 
 ## 修改与验证如何集中
 
@@ -159,7 +183,13 @@ ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-
 
 ## 当前工作区状态
 
-Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot 引擎隔离在 bot/vendor，只在浏览器加载。原文没有修改，开发版只读取 4 篇明确非草稿的选稿。`npm run check` 包含 lint、类型检查、11 项模块及架构测试和生产构建；`npm run test:e2e` 包含桌面与手机共 28 项用例，包括草稿清空、长连续字符换行、Bot 连续移动及返回、回答分块追加、卡片显示时机、追问和清空中断、导航返回不重播、减少动态效果，以及主题切换、系统跟随、偏好保留、Bot 连续性和 320px 导航的验证。
+综合审查见 [2026-09-22 审查记录](reviews/frontend-review-2026-09-22.md)。本轮修复失败后基础心情未恢复的问题：failed 仅触发一次短警报，结束后恢复待机／倾听。37 项模块／架构测试、88 项桌面／手机回归及 lint、类型、格式、构建检查通过；新增眼睛裁剪检查，无职责越界或复制业务实现的确认问题。无效文章的 Next 内部日志已记录，HTTP 404 与页面行为正常。
+
+Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot 引擎隔离在 bot/vendor，只在浏览器加载。原文没有修改，开发版只读取 4 篇明确非草稿的选稿。`npm run check` 包含 lint、类型检查、37 项模块及架构测试和生产构建；`npm run test:e2e` 包含桌面与手机共 88 项用例，覆盖原有阅读与会话路径、Bot 移动、多场景与点击、正常回答固定书写及完成转身、跳跃与粒子、五种完整待机表情轮换与抢占、自动睡眠／单次唤醒、逐张卡片和无进度环、焦点优先级、取消旧调度、减少动态效果下静止 SVG 与持续文字输出、主题切换，以及开发预览的生产隔离。
+
+完成动作本轮验证：`check`（36 项模块／架构测试、lint、类型检查和生产构建）及格式检查通过。30 项相关桌面／手机端到端用例首轮通过 29 项；短暂粒子的取消检查改为逐帧等待，桌面和手机复跑均通过。已验证先转一圈、再跳一次、落地后才产生粒子，追问／清空立即清理，减少动态效果下角色静止。实际检查 1440px 与 390px 首页，无横向溢出；截图为 `.local/qa/bot-complete-particles-{preview,desktop,mobile}.png`。改动限于 Bot 配置、内部引擎和预览及相关验证，home 与公共接口不变。
+
+自动睡眠本轮验证：`check`（34 项模块／架构测试及生产构建）与格式检查通过；56 项 Bot 桌面／手机用例首轮 55 项通过，旧回答用例增加“首次出现结束”的等待条件后，4 项对应两端用例复跑通过。新增 12 项端到端测试覆盖 60 秒阈值、活动重置、持续睡眠、单次唤醒、输入／回答接管、后台与导航清理及减少动态效果。实际检查 1440px 睡眠和 390px 睡眠／触摸唤醒，无横向溢出；截图为 `.local/qa/bot-auto-sleep-desktop.png`、`bot-auto-{sleep,wake}-mobile.png`。桌面实测使用真实 60 秒等待；手机视觉检查仅缩短独立测试标签页的等待，完整计时由生产端到端测试验证。本轮实现集中在 bot 配置、控制器、Hook 与预览，没有修改 home、公共接口或引擎。
 
 原型审查后的视觉取舍见 [specification](frontend-refactor-spec.md#原型审查后的取舍2026-09-21)。输入草稿在首页视图统一管理，Composer 接收 value / onChange；useConversation 继续只管理消息与请求。介绍区自己测量文字高度来控制 Bot 比例，共享高亮采用 Tailwind 选择器，均未增加全局状态或业务模块依赖。
 
@@ -170,3 +200,15 @@ Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot �
 回答分块展示完成后，11 项模块测试、22 项端到端测试、lint、类型检查、格式检查及生产构建全部通过；桌面和手机浏览器检查了输出中与完成后的状态。此次本地 Lighthouse 移动端测量 Performance 99，其余 Accessibility / Best Practices / SEO 均为 100，LCP 2.1 秒、CLS 0，报告为 `.local/qa/lighthouse-answer-stream.json`。
 
 暗色主题完成后，原有 22 项交互用例与新增 6 项主题用例均已验证通过，模块测试、lint、类型检查、格式检查及构建通过。实际检查了桌面/手机暗色首页、回答卡片、文章和代码块；暗色文字与背景/卡片的最低配色对比度约 6.67:1。此次本地 Lighthouse 移动端测量 Performance 97，Accessibility / Best Practices / SEO 均为 100，LCP 2.5 秒、CLS 0，报告为 `.local/qa/lighthouse-dark-theme.json`。
+
+2026-09-22 场景编排验证：16 项模块测试、38 项桌面／手机端到端测试、lint、类型检查、格式检查及生产构建通过。浏览器逐一试播 16 种候选，确认基本外形保持 blob、无无效 SVG 数据；对照 25 种眼型定位并排除 7、8。Notes 三张卡片约 4.5 秒显示完成，截图位于 `.local/qa/bot-scene-*` 与 `bot-preview-*`。本轮未重新测量 Lighthouse，历史性能报告不代表此次变更的测量结果。
+
+同日动作收敛后验证：模块测试、lint、类型检查、格式检查及构建通过；端到端首轮 36 项通过，2 项因测试轮询错过 300ms 单卡窗口失败，改为逐帧观察后两项均通过。桌面 1440px 与手机 390px 实测每轮只有一个输出动作，结束后回到 idle；无进度环、无横向溢出，开发预览剩余 15 种候选。
+
+2026-09-22 多场景实现：26 项模块测试通过；端到端首轮 52 项通过，闲置用例因模拟时钟晚于页面计时器安装而失败，修正后桌面／手机均通过；新增故障注入覆盖警报与后续提问，修正测试中与 Next 路由播报器冲突的 alert 选择范围后两项通过，合计 56 项覆盖。浏览器实际验证桌面 1440px、手机 390px、明暗主题及角色手势。截图为 `.local/qa/bot-many-scenes-*`。
+
+生产构建首页初始 JS 的逐文件 gzip 合计从 241,226 增至 243,659 字节（约 +2.4 KiB，不含异步引擎、CSS 与字体），没有新增依赖。构建仍将首页、目录与收录文章预生成；Bot 与预写问答在客户端执行，点击不调用模型或 Vercel Function。Vercel 通过 [CDN 缓存静态资源](https://vercel.com/docs/caching/cdn-cache)，真实线上首屏与设备绘制性能需部署后测量，本轮未部署或重测 Lighthouse。
+
+2026-09-22 点击与完成彩带收敛：28 项模块／架构测试、58 项桌面／手机端到端测试、lint、类型检查、格式检查和生产构建全部通过。浏览器检查了 1440px 与 390px、明暗主题、庆祝彩带和待机眼型轮换；未出现横向溢出。新增完成信号不改变卡片可用时间，删除多手势 Hook，未增加依赖。截图位于 `.local/qa/bot-ribbons-*` 与 `bot-idle-expressions.png`。
+
+随后按用户试播反馈，将完成彩带改为约 2 秒 humming，主体保持正面轻晃；仅调整 Bot 场景配置及相关说明／验证。28 项模块测试、lint、类型检查、格式检查和构建通过。30 项 Bot 桌面／手机用例首轮 29 项通过；点击用例因操作后才安装模拟时钟影响冷却时间，改为导航前安装后两端复跑通过。实际检查截图为 `.local/qa/bot-complete-humming-*`。

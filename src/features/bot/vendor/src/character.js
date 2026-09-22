@@ -34,6 +34,7 @@
       this.uniformEyes = opts.uniformEyes ?? (this.loginWrap ? UNIFORM_EYES : false);
       this.eyeScaleProp = opts.eyeScale ?? (this.loginWrap ? shapeEyeScale(this.shapeName) : 1);
       this.emphasis = !!opts.emphasis;
+      this.autoTricks = opts.autoTricks !== false;
       this.followPointer = !!opts.followPointer;
       this.gazeTarget = opts.gazeTarget || null;
       this.paused = !!opts.paused;
@@ -228,6 +229,7 @@
 
     setState(name, { resetEyes = false } = {}) {
       if (!EYE_PLAYLIST[name]) return;
+      if (this.state !== name) this.particles?.clear();
       this.state = name;
       this.stateAt = performance.now();
       const list = EYE_PLAYLIST[name];
@@ -440,7 +442,7 @@
         this.ovRestAt = 0;
       }
       let on = want != null;
-      if (want && FX.CYCLE.has(this.state)) {
+      if (want && FX.CYCLE.has(this.state) && !this.reduceMotion) {
         if (!this.ovRest && now - this.fx.overlayAt > (FX.CYCLE_ON[this.state] || 2500)) {
           this.ovRest = true;
           this.ovRestAt = now;
@@ -568,11 +570,11 @@
       this._stepOverlay(now);
 
       if (this.celebrateAt > 0 && now >= this.celebrateAt && !this.trick && !this.spinTurn) {
-        this.trick = TR.startTrick("spinWild", this.reduceMotion);
-        this.celebrateAt = now + 6200;
+        this.trick = TR.startTrick("spinHop", this.reduceMotion);
+        this.celebrateAt = -1;
       }
 
-      if (now >= this.trickAt) {
+      if (this.autoTricks && !this.reduceMotion && now >= this.trickAt) {
         if ((V_T.has(this.state) || B_T.has(this.state)) && !this.spinTurn && this.hopAt < 0 && !this.trick) {
           const z = Math.random();
           if (V_T.has(this.state)) {
@@ -588,6 +590,7 @@
 
       const tf = TR.evalTrick(this.trick, now);
       if (tf.wantHop) this._hop(now);
+      if (tf.wantBurst && !this.reduceMotion) this.particles.burst(14, 0.65, 0.15);
       if (tf.done) this.trick = null;
       let hop = TR.hopY(this.hopAt, now);
       if (hop == null) {
@@ -599,7 +602,7 @@
         turn = (turn ?? 0) + this.spinTurn.x;
         if (TR.spinTurnSettled(this.spinTurn)) this.spinTurn = null;
       }
-      this.extras = { ...tf, turn, hop };
+      this.extras = { ...tf, turn, hop: hop + tf.hop };
 
       if (this.extras.eyeBoost != null) this.eyeScale.t = this.extras.eyeBoost;
 
@@ -676,8 +679,20 @@
       }
       if (this.reduceMotion) {
         this.overlayMix.x = 1;
-        this.overlayTurn.x = this.overlayTurn.t;
+        this.overlayTurn.x = this.overlayTurn.t = 0;
         this.overlay.x = this.overlay.t;
+        this.eyeMorph.x = 1;
+        this.spinTurn = this.trick = null;
+        this.hopAt = -1;
+        this.extras = TR.evalTrick(null, now);
+        this.winkAt = -1e9;
+        for (const item of [this.spin, this.tx, this.ty, this.squash, this.blink, this.eyeScale]) {
+          item.x = item.t;
+          item.v = 0;
+        }
+        this.gazeX.x = this.gazeY.x = 0;
+        this.notify.x = this.state === "notifying" ? 1 : 0;
+        this.humDots.x = this.state === "humming" ? 1 : 0;
       }
       this.notify.t = this.state === "notifying" ? 1 : 0;
       this.humDots.t = this.state === "humming" ? 1 : 0;
@@ -694,15 +709,17 @@
         }
         this.pxAt = now;
       }
-      this.particles.update(now, dt, {
-        spinAngle,
+      if (this.reduceMotion) this.particles.clear();
+      else this.particles.update(now, dt, {
+        // Completion particles appear after landing, never during the turn.
+        spinAngle: this.state === "celebrate" ? 0 : spinAngle,
         sizeScale: this.partScale,
         wideStyle: this.trick?.kind === "spinWild" || this.wildWide || humming,
         sustainBelts: humming || loading,
       });
 
       this._updatePointer(now);
-      this._paint(now);
+      this._paint(this.reduceMotion ? this.stateAt : now);
       this._raf = requestAnimationFrame((t) => this._tick(t));
     }
 

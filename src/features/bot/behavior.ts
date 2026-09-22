@@ -1,0 +1,86 @@
+export const behaviors = {
+  idle: ["idle"],
+  listening: ["listening"],
+  responding: ["writing"],
+  unmatched: ["confused"],
+} as const;
+export type BotMood = keyof typeof behaviors;
+
+export const IDLE_PAUSE_MS = [6_000, 10_000] as const;
+export const SLEEP_AFTER_MS = 60_000;
+
+// A scene owns its candidates, lifetime and cooldown. There is no action queue.
+export const scenes = {
+  "idle-expression": {
+    choices: ["happy", "curious", "shy", "proud", "playful"],
+    duration: 5_000,
+    cooldown: 0,
+    priority: 0,
+  },
+  sleep: { choices: ["sleeping"], duration: null, cooldown: 0, priority: 1 },
+  wake: { choices: ["waking"], duration: 3_000, cooldown: 0, priority: 2 },
+  arrival: { choices: ["spawning"], duration: 1_600, cooldown: 0, priority: 1 },
+  return: {
+    choices: ["happy", "notifying"],
+    duration: 1_200,
+    cooldown: 0,
+    priority: 1,
+  },
+  explore: {
+    choices: ["curious", "radar"],
+    duration: 1_400,
+    cooldown: 5_000,
+    priority: 1,
+  },
+  hum: { choices: ["humming"], duration: 2_400, cooldown: 30_000, priority: 1 },
+  theme: {
+    choices: ["surprised"],
+    duration: 900,
+    cooldown: 3_000,
+    priority: 2,
+  },
+  tap: { choices: ["bouncing"], duration: 1_000, cooldown: 1_500, priority: 3 },
+  complete: {
+    choices: ["celebrate"],
+    duration: 2_400,
+    cooldown: 0,
+    priority: 2,
+  },
+  error: { choices: ["alerting"], duration: 1_400, cooldown: 0, priority: 5 },
+} as const;
+export type BotScene = keyof typeof scenes;
+
+export const previewActions = [
+  ["idle", "平静"],
+  ["happy", "开心"],
+  ["curious", "好奇"],
+  ["shy", "害羞"],
+  ["proud", "得意"],
+  ["playful", "俏皮"],
+  ["sleeping", "睡着"],
+  ["waking", "醒来"],
+  ["celebrate", "完成 · 转身跳跃粒子"],
+  ["orbit", "环绕"],
+  ["radar", "雷达"],
+  ["spawning", "生成"],
+  ["humming", "嗡鸣"],
+  ["loading", "加载"],
+  ["dictating", "口述"],
+  ["writing", "书写"],
+  ["sending", "发送"],
+  ["receiving", "接收"],
+  ["uploading", "上传"],
+  ["notifying", "通知"],
+  ["alerting", "警报"],
+  ["dragging", "拖拽"],
+  ["bouncing", "弹跳"],
+  ["powering-down", "关机"],
+] as const;
+export type CharacterState =
+  | (typeof behaviors)[BotMood][number]
+  | (typeof scenes)[BotScene]["choices"][number]
+  | (typeof previewActions)[number][0];
+
+export function selectBehavior(mood: BotMood) {
+  return behaviors[mood][0];
+}
