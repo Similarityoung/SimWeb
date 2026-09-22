@@ -13,7 +13,6 @@ export function Introduction({
   completed,
   failed,
   arrival,
-  exploreKey,
 }: {
   compact: boolean;
   mood: BotMood;
@@ -21,7 +20,6 @@ export function Introduction({
   completed?: boolean;
   failed?: boolean;
   arrival?: { id: number; kind: "arrival" | "return" };
-  exploreKey?: string;
 }) {
   const section = useRef<HTMLElement>(null);
   const copy = useRef<HTMLDivElement>(null);
@@ -72,7 +70,6 @@ export function Introduction({
           completed={completed}
           failed={failed}
           arrival={arrival}
-          exploreKey={exploreKey}
           className={
             compact
               ? "size-[43px] sm:size-[54px]"

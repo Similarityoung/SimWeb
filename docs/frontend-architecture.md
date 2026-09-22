@@ -141,19 +141,21 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 ### Bot 接口：业务只传状态
 
-首页传入 mood、activityKey、completed（本轮正常展示完成）、failed（本轮回答失败）、arrival（首次进入／阅读返回）和 exploreKey（当前探索的主题），不传正文或卡片进度。正常回答固定书写，未匹配回答困惑。`home-visit.ts` 在共享 Provider 中记录导航经历：仅首次首页出现播放生成，访问笔记／随笔正文后返回播放欢迎；目录往返不重播，刷新重置。该记录与会话消息分开，不进入 useConversation。
+首页传入 mood、activityKey、completed（本轮正常展示完成）、failed（本轮回答失败）、arrival（首次进入／阅读返回），不传正文或卡片进度。正常回答固定书写，未匹配回答困惑。`home-visit.ts` 在共享 Provider 中记录导航经历：仅首次首页出现播放生成，访问笔记／随笔正文后返回播放欢迎；目录往返不重播，刷新重置。该记录与会话消息分开，不进入 useConversation。
 
-Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情，其他交互场景最多两个候选。`scene-controller.ts` 集中处理优先级、冷却、完成去重与过期事件。`use-bot-scenes.ts` 连接语义信号、主题、可见性和定时器，动作仅在接受事件时抽取，不维护待播队列。回答抢占并丢弃低优先级反馈；只有明确的 completed 信号按 activityKey 消费一次，才播放约 2.4 秒 celebrate：带着彩带转一圈、轻跳一次，落地后释放少量粒子。清空、错误及未匹配不触发，隐藏时消费并丢弃，不补播。动画计时只在 Bot 内，卡片可用时间不受其影响。输入时拒绝闲置与探索动作。failed 作为一次结果信号按 activityKey 去重，基础 mood 仍由输入焦点决定；警报结束后恢复待机／倾听，错误文案继续显示，焦点变化不重播警报。
+Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情，其他交互场景最多两个候选。`scene-controller.ts` 集中处理优先级、冷却、完成去重与过期事件。`use-bot-scenes.ts` 连接语义信号、主题、可见性和定时器，动作仅在接受事件时抽取，不维护待播队列。回答抢占并丢弃低优先级反馈；只有明确的 completed 信号按 activityKey 消费一次，才播放约 2.4 秒 celebrate：带着彩带转一圈、轻跳一次，落地后释放少量粒子。清空、错误及未匹配不触发，隐藏时消费并丢弃，不补播。动画计时只在 Bot 内，卡片可用时间不受其影响。倾听时拒绝待机表情与低优先级装饰动作。failed 作为一次结果信号按 activityKey 去重，基础 mood 由输入焦点和卡片关注共同决定；警报结束后恢复待机／倾听，错误文案继续显示，焦点变化不重播警报。
 
 待机完整表情由同一场景系统调度：平静 20～30 秒后从 happy／curious／shy／proud／playful 中选一次，保持 2.5 秒再恢复平静。idle-expression 优先级最低，控制器拒绝非 idle 或已有动作时的迟到事件；Hook 在探索、输入、隐藏或卸载时清理待机定时器，并监听原生 MediaQueryList change，在减少动态效果时停止轮换。恢复后重新等待，不补播。不新增 home 状态或对外参数。生命周期依据 [React useEffect](https://react.dev/reference/react/useEffect) 与 [MDN change 事件](https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList/change_event)。
 
-自动睡眠仍归同一个场景系统：sleep 的 duration 为 null，表示持续至显式活动或业务状态改变；wake 只接受睡眠中的唤醒，播放 3 秒，后续活动不会重新开始。睡眠拒绝随机表情、探索和系统主题等背景事件，回答及明确业务状态变化可打断。`use-bot-scenes.ts` 管理 60 秒睡眠的闲置计时，指针、键盘、触摸与滚轮活动重置时间，回答中暂停，后台和卸载清理。Effect Event 读取最新睡眠状态，避免表情轮换重置计时，也避免鼠标每次移动都派发动画事件。减少动态效果时保留静态闭眼，活动直接恢复。home 和 Bot 公共接口不增加状态或参数；不恢复鼠标位置跟随。依据 [React useEffectEvent](https://react.dev/reference/react/useEffectEvent) 与 [MDN Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。
+自动睡眠仍归同一个场景系统：sleep 的 duration 为 null，表示持续至显式活动或业务状态改变；wake 只接受睡眠中的唤醒，播放 3 秒，后续活动不会重新开始。睡眠拒绝随机表情和系统主题等背景事件，回答及明确业务状态变化可打断。`use-bot-scenes.ts` 管理 60 秒睡眠的闲置计时，指针、键盘、触摸与滚轮活动重置时间，回答中暂停，后台和卸载清理。Effect Event 读取最新睡眠状态，避免表情轮换重置计时，也避免鼠标每次移动都派发动画事件。减少动态效果时保留静态闭眼，活动直接恢复。home 和 Bot 公共接口不增加状态或参数；不恢复鼠标位置跟随。依据 [React useEffectEvent](https://react.dev/reference/react/useEffectEvent) 与 [MDN Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。
 
 `bot.tsx` 使用原生 button 的 onClick 触发弹跳，兼容鼠标、触摸、Enter / Space；不维护多击、长按、拖动或手动休眠手势，也不拦截滚动。短动作有冷却，点击可打断完成动作，新回答始终抢占。依据 [MDN click 事件](https://developer.mozilla.org/en-US/docs/Web/API/Element/click_event)。
 
-`character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态固定基础眼型，仅保留呼吸与眨眼，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。Character 初始化时固定关闭 followPointer，动态效果偏好切换只调整 reduceMotion，不重新启用跟随；主题卡片探索与输入框倾听由原有场景信号触发，互相独立。其他模块不访问引擎实例或 window.GROK_*。
+`character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态固定基础眼型，仅保留呼吸与眨眼，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。Character 初始化时固定关闭 followPointer，动态效果偏好切换只调整 reduceMotion，不重新启用跟随；主题卡片与输入框的关注由 home 合并，统一驱动倾听。其他模块不访问引擎实例或 window.GROK_*。
 
-开发路由保留 24 种素材动作（含平静、五种待机表情、睡着／醒来、完成动画）与 192 / 54 / 43px 尺寸试播；实际场景通过真实首页验证。进度环已移除；口述和嗡鸣仅留在素材预览，自动嗡鸣的场景、计时器及避让冷却已删除，正常回答只用书写。该路由生产返回 404。
+开发路由保留 24 种素材动作（含平静、五种待机表情、睡着／醒来、完成动画）与 192 / 54 / 43px 尺寸试播；实际场景通过真实首页验证。进度环已移除；雷达、口述和嗡鸣仅留在素材预览，自动嗡鸣的场景、计时器及避让冷却已删除，正常回答只用书写。该路由生产返回 404。
+
+卡片悬停／聚焦与输入框聚焦由 home 合并为同一个 listening mood，直接复用 Bot 的基础状态；移除 explore 场景、等待计时器、冷却以及跨模块的 exploreKey 参数。TopicShortcuts 只报告鼠标悬停，卡片与 Composer 的键盘焦点在 home 的共享输入区域统一处理，用 relatedTarget 区分内部切换与真正离开，悬停与焦点不会互相清空；卡片之间和卡片到输入框的连续切换不重新启动角色状态。点击卡片时消费其关注信号，回答期间不积压装饰反馈，输入框继续允许起草下一条问题。依据 [React 焦点事件文档](https://react.dev/reference/react-dom/components/common#focusevent-handler)。
 
 倾听姿态在引擎内使用 dtState 驱动一次约 550ms 的点头，随后只保留轻微呼吸与眨眼，眼型及视线固定。持续聚焦和输入不会重新进入状态或循环点头；重新进入倾听时可再次回应。沿用已有状态切换与帧时钟，不增加 home 信号、React 状态或计时器，减少动态效果仍由统一渲染层处理。依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)按经过时间推进动作，避免不同刷新率改变动作时长。
 

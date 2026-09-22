@@ -26,7 +26,7 @@ export function HomeExperience() {
     useHomeConversation();
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState("");
-  const [exploreKey, setExploreKey] = useState<string>();
+  const [hoveredTopic, setHoveredTopic] = useState<string>();
   const presentation = useAnswerPresentation(messages);
   const active = messages.length > 0;
   const latest = messages.at(-1);
@@ -34,19 +34,20 @@ export function HomeExperience() {
   const mood =
     (answerMood === "responding" && latest?.answer?.kind === "unmatched"
       ? "unmatched"
-      : answerMood) ?? (focused ? "listening" : "idle");
+      : answerMood) ?? (focused || hoveredTopic ? "listening" : "idle");
 
   function ask(question: Question) {
     if (pending) return;
     setDraft("");
-    setExploreKey(undefined);
+    setHoveredTopic(undefined);
+    if (question.topic) setFocused(false);
     void submit(question);
   }
 
   function reset() {
     clear();
     setDraft("");
-    setExploreKey(undefined);
+    setHoveredTopic(undefined);
   }
 
   return (
@@ -76,7 +77,6 @@ export function HomeExperience() {
           }
           failed={presentation.frame?.phase === "error"}
           arrival={arrival}
-          exploreKey={exploreKey}
         />
         {active && (
           <Button
@@ -98,13 +98,25 @@ export function HomeExperience() {
           presentation={presentation}
         />
       )}
-      <div className="shrink-0 pt-3">
+      <div
+        className="shrink-0 pt-3"
+        onFocus={(event) => {
+          // Card activation is consumed by ask; drafting may continue during an answer.
+          setFocused(
+            event.target.tagName === "INPUT" || answerMood !== "responding",
+          );
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget))
+            setFocused(false);
+        }}
+      >
         <TopicShortcuts
           compact={active}
           disabled={pending}
           onAsk={ask}
-          onExplore={(topic) => {
-            if (answerMood !== "responding") setExploreKey(topic);
+          onHover={(topic) => {
+            if (answerMood !== "responding") setHoveredTopic(topic);
           }}
         />
         <Composer
@@ -112,7 +124,6 @@ export function HomeExperience() {
           value={draft}
           onChange={setDraft}
           onSubmit={(text) => ask({ text })}
-          onFocusChange={setFocused}
         />
       </div>
       <p className="sr-only" role="status" aria-live="polite">

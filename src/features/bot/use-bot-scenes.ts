@@ -29,14 +29,12 @@ export function useBotScenes({
   completed,
   failed,
   arrival,
-  exploreKey,
 }: {
   mood: BotMood;
   activityKey?: string;
   completed?: boolean;
   failed?: boolean;
   arrival?: Arrival;
-  exploreKey?: string;
 }) {
   const [model, dispatch] = useReducer(sceneReducer, undefined, () =>
     createSceneModel(mood, activityKey),
@@ -93,7 +91,7 @@ export function useBotScenes({
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => {
       clearTimeout(timer);
-      if (motion.matches || exploreKey) {
+      if (motion.matches) {
         end("idle-expression");
         return;
       }
@@ -110,15 +108,7 @@ export function useBotScenes({
       clearTimeout(timer);
       motion.removeEventListener("change", schedule);
     };
-  }, [ready, mood, model.move, model.hidden, exploreKey, cue, end]);
-  useEffect(() => {
-    if (!ready || !exploreKey) return;
-    const timer = setTimeout(() => cue("explore"), 500);
-    return () => {
-      clearTimeout(timer);
-      end("explore");
-    };
-  }, [ready, exploreKey, cue, end]);
+  }, [ready, mood, model.move, model.hidden, cue, end]);
   useEffect(() => {
     if (
       ready &&

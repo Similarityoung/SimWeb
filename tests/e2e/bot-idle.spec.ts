@@ -29,12 +29,12 @@ async function waitForExpression(page: Page) {
   await expect(botOf(page)).toHaveAttribute("data-scene", "idle-expression");
 }
 
-for (const [random, expression, exploring] of [
-  [0, "happy", "curious"],
-  [0.25, "curious", "curious"],
-  [0.45, "shy", "curious"],
-  [0.65, "proud", "radar"],
-  [0.99, "playful", "radar"],
+for (const [random, expression] of [
+  [0, "happy"],
+  [0.25, "curious"],
+  [0.45, "shy"],
+  [0.65, "proud"],
+  [0.99, "playful"],
 ] as const) {
   test(`idle cycles through full ${expression} and yields to exploration, input and writing`, async ({
     page,
@@ -54,11 +54,8 @@ for (const [random, expression, exploring] of [
     const topic = page.getByRole("button", { name: /^Notes/ });
     if (isMobile) await topic.focus();
     else await topic.hover();
-    // Cancel the idle expression before the hover dwell has elapsed.
-    await expect(bot).toHaveAttribute("data-scene", "idle");
-    await page.clock.fastForward(600);
-    await expect(bot).toHaveAttribute("data-scene", "explore");
-    await expect(svg).toHaveAttribute("data-state", exploring);
+    await expect(bot).toHaveAttribute("data-scene", "listening");
+    await expect(svg).toHaveAttribute("data-state", "listening");
     await page.getByRole("textbox").focus();
     await expect(svg).toHaveAttribute("data-state", "listening");
     await page.clock.fastForward(11_000);

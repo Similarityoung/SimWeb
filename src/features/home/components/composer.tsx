@@ -9,13 +9,11 @@ export function Composer({
   value,
   onChange,
   onSubmit,
-  onFocusChange,
 }: {
   pending: boolean;
   value: string;
   onChange: (value: string) => void;
   onSubmit: (text: string) => void;
-  onFocusChange: (focused: boolean) => void;
 }) {
   return (
     <form
@@ -33,8 +31,6 @@ export function Composer({
         id="question"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        onFocus={() => onFocusChange(true)}
-        onBlur={() => onFocusChange(false)}
         maxLength={300}
         autoComplete="off"
         placeholder="What would you like to know?"

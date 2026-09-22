@@ -9,6 +9,7 @@ test("normal answers only use writing; unmatched answers use confused", () => {
   assert.equal(selectBehavior("unmatched"), "confused");
   assert.equal(selectBehavior("listening"), "listening");
   assert.ok(!("hum" in scenes));
+  assert.ok(!("explore" in scenes));
   assert.ok(previewActions.some(([state]) => state === "humming"));
 });
 

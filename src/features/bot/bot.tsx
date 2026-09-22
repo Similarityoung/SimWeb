@@ -12,7 +12,6 @@ export function Bot({
   completed,
   failed,
   arrival,
-  exploreKey,
   className,
 }: {
   mood?: BotMood;
@@ -20,7 +19,6 @@ export function Bot({
   completed?: boolean;
   failed?: boolean;
   arrival?: Arrival;
-  exploreKey?: string;
   className?: string;
 }) {
   const scene = useBotScenes({
@@ -29,7 +27,6 @@ export function Bot({
     completed,
     failed,
     arrival,
-    exploreKey,
   });
   return (
     <button

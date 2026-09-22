@@ -56,10 +56,12 @@ test("stale idle cues cannot interrupt other moods, scenes or a hidden page", ()
 test("interaction scenes keep at most two candidates, picked once per accepted event", () => {
   for (const [scene, definition] of Object.entries(scenes))
     if (scene !== "idle-expression") assert.ok(definition.choices.length <= 2);
-  const first = cue(createSceneModel("idle"), "explore");
-  assert.equal(currentMove(first).state, "curious");
-  assert.equal(cue(first, "explore", 100, 0.99), first);
-  assert.equal(currentMove(cue(first, "explore", 5_000, 0.99)).state, "radar");
+  const first = cue(createSceneModel("idle"), "return");
+  assert.equal(currentMove(first).state, "happy");
+  assert.equal(currentMove(cue(first, "return", 100, 0.99)).state, "notifying");
+  const tap = cue(first, "tap");
+  assert.equal(cue(tap, "tap", 100), tap);
+  assert.notEqual(cue(tap, "tap", 1_500), tap);
 });
 
 test("an answer cancels lower-priority feedback, discards new cues and never queues them", () => {
@@ -82,14 +84,14 @@ test("an answer cancels lower-priority feedback, discards new cues and never que
 });
 
 test("expired and cancelled callbacks cannot replace a newer move", () => {
-  const first = cue(createSceneModel("idle"), "explore");
+  const first = cue(createSceneModel("idle"), "return");
   const next = cue(first, "tap");
   assert.equal(
     sceneReducer(next, { type: "expire", id: first.move!.id }),
     next,
   );
-  assert.equal(sceneReducer(next, { type: "end", scene: "explore" }), next);
-  assert.equal(cue(next, "explore"), next);
+  assert.equal(sceneReducer(next, { type: "end", scene: "return" }), next);
+  assert.equal(cue(next, "return"), next);
   const done = sceneReducer(next, { type: "expire", id: next.move!.id });
   assert.equal(currentMove(done).state, "idle");
 });

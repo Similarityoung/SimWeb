@@ -24,11 +24,11 @@ test("arrival plays once, inactivity allows quiet expressions without humming, t
   await expect(svgOf(page)).toHaveAttribute("data-state", "sleeping");
 });
 
-for (const [random, exploring, returning] of [
-  [0, "curious", "happy"],
-  [0.99, "radar", "notifying"],
+for (const [random, returning] of [
+  [0, "happy"],
+  [0.99, "notifying"],
 ] as const) {
-  test(`topic exploration uses ${exploring}, reading return uses ${returning}`, async ({
+  test(`cards and input share listening, reading return uses ${returning}`, async ({
     page,
   }) => {
     await page.addInitScript((value) => {
@@ -37,7 +37,7 @@ for (const [random, exploring, returning] of [
     await openIdle(page);
     const topic = page.getByRole("button", { name: /^Notes/ });
     await topic.focus();
-    await expect(svgOf(page)).toHaveAttribute("data-state", exploring);
+    await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
     await page.getByRole("textbox").focus();
     await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
     await topic.click();

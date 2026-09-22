@@ -20,12 +20,12 @@ export function TopicShortcuts({
   compact,
   disabled,
   onAsk,
-  onExplore,
+  onHover,
 }: {
   compact: boolean;
   disabled: boolean;
   onAsk: (question: Question) => void;
-  onExplore: (topic?: string) => void;
+  onHover: (topic?: string) => void;
 }) {
   return (
     <div
@@ -45,6 +45,7 @@ export function TopicShortcuts({
             ],
       )}
       aria-label="Conversation topics"
+      onPointerLeave={() => onHover()}
     >
       {topics.map((topic) => {
         const Icon = icons[topic.id];
@@ -55,11 +56,8 @@ export function TopicShortcuts({
             disabled={disabled}
             onClick={() => onAsk({ text: topic.question, topic: topic.id })}
             onPointerEnter={(event) => {
-              if (event.pointerType !== "touch") onExplore(topic.id);
+              if (event.pointerType !== "touch") onHover(topic.id);
             }}
-            onPointerLeave={() => onExplore()}
-            onFocus={() => onExplore(topic.id)}
-            onBlur={() => onExplore()}
             className={cn(
               "group relative rounded-xl border text-left transition-colors hover:border-border-strong hover:bg-muted active:bg-muted disabled:pointer-events-none disabled:opacity-50",
               compact

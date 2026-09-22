@@ -26,12 +26,6 @@ export const scenes = {
     cooldown: 0,
     priority: 1,
   },
-  explore: {
-    choices: ["curious", "radar"],
-    duration: 1_400,
-    cooldown: 5_000,
-    priority: 1,
-  },
   theme: {
     choices: ["surprised"],
     duration: 900,
