@@ -72,4 +72,4 @@ npm run format:check
 
 仓库已提供 Next.js 的 `vercel.json`，安装命令为 `npm ci`，构建命令为 `npm run build`。当前没有必需环境变量。正式发布前确定选稿清单，并核对 `src/config/site.ts` 的站点地址和资料；本次未执行线上部署。
 
-旧 Hugo 模板和配置仍保留在仓库，但不参与 Next.js 构建。不要将旧 Hugo 生成物放入 Next.js 的 `public/`。原型 Bot 的来源声明保留在 [vendor/README.md](src/features/bot/vendor/README.md)。
+旧 Hugo 与 PaperMod 构建文件已移除；`content/posts/` 继续作为 Next.js 的文章来源。不要将旧 Hugo 生成物放入 Next.js 的 `public/`。原型 Bot 的来源声明保留在 [vendor/README.md](src/features/bot/vendor/README.md)。
