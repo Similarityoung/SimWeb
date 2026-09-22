@@ -19,7 +19,7 @@ function readArticles(): Article[] {
       routes.add(href);
       const { data, content } = matter(
         readFileSync(
-          path.join(process.cwd(), "content/posts", entry.file),
+          path.join(process.cwd(), "content/writing", entry.file),
           "utf8",
         ),
       );

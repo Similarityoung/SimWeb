@@ -21,7 +21,7 @@
 
 ```text
 content/
-  posts/                       原始 Markdown，继续保留
+  writing/                     Markdown 文章源文件
 
 src/
   app/
@@ -119,7 +119,7 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 ### 内容接口：同一条内容，只维护一次
 
-文章源文继续位于 `content/posts`。标题、日期、标签、draft 和正文只从原文读取；样本清单只记录稳定 ID、文件名、所属 Notes / Thoughts、slug 和用于卡片的摘要。服务端查询模块负责校验收录项和 `draft: false`，只给目录和首页返回公开摘要；完整正文只用于正文页。收录清单不重复维护标题和日期。
+文章源文位于 `content/writing`。标题、日期、标签、draft 和正文只从原文读取；样本清单只记录稳定 ID、文件名、所属 Notes / Thoughts、slug 和用于卡片的摘要。服务端查询模块负责校验收录项和 `draft: false`，只给目录和首页返回公开摘要；完整正文只用于正文页。收录清单不重复维护标题和日期。
 
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
@@ -202,8 +202,6 @@ Next.js 页面、四个业务模块与共享组件已完成首版实现，Bot �
 原型审查后的视觉取舍见 [specification](frontend-refactor-spec.md#原型审查后的取舍2026-09-21)。输入草稿在首页视图统一管理，Composer 接收 value / onChange；useConversation 继续只管理消息与请求。介绍区自己测量文字高度来控制 Bot 比例，共享高亮采用 Tailwind 选择器，均未增加全局状态或业务模块依赖。
 
 2026-09-21 验证：上述检查全部通过，格式检查通过；浏览器实际检查首页、累积回答、目录与正文，长回答保留最新问题在可视区。加入 Bot 布局动画后，本地生产构建的 Lighthouse 移动端两次测量 Performance 为 86 / 98，LCP 为 4.3 / 2.3 秒；第二次在结束其他浏览器检查后单独执行。两次 Accessibility / Best Practices / SEO 均为 100，CLS 均为 0。此前未加布局动画的测量 Performance 为 100、LCP 1.9 秒；新依赖使总传输量由约 291 KiB 增至 331 KiB。本地测量有波动，不代表线上部署后的性能保证。截图与报告位于被忽略的 `.local/qa/`。
-
-原 Hugo 的 `public/` 是被忽略且含本地生成页面的构建产物，已移至 `/tmp/simweb-hugo-generated.YW3g0q/public` 保留，以免 Next.js 把它作为公开静态文件提供。旧 Hugo 模板和配置不参与新构建，已有 PaperMod 子模块状态保持原样。已配置 Vercel 构建入口，尚未执行线上部署；正式发布内容范围留待确认。
 
 回答分块展示完成后，11 项模块测试、22 项端到端测试、lint、类型检查、格式检查及生产构建全部通过；桌面和手机浏览器检查了输出中与完成后的状态。此次本地 Lighthouse 移动端测量 Performance 99，其余 Accessibility / Best Practices / SEO 均为 100，LCP 2.1 秒、CLS 0，报告为 `.local/qa/lighthouse-answer-stream.json`。
 

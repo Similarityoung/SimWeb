@@ -23,6 +23,7 @@ npm run dev
 | 首页、会话、预写回答 | `src/features/home` |
 | 项目清单、项目卡片与目录 | `src/features/projects` |
 | 文章选稿、Markdown 读取、卡片与正文 | `src/features/writing` |
+| Markdown 文章源文件 | `content/writing` |
 | Bot 组件、浏览器引擎与生命周期 | `src/features/bot` |
 | shadcn 基础组件、全站导航 | `src/components` |
 | 个人资料与菜单 | `src/config/site.ts` |
@@ -32,7 +33,7 @@ npm run dev
 ## 修改内容
 
 - 项目编辑 `src/features/projects/data.ts`，卡片直达配置的 GitHub 或官网。
-- 原文章保留在 `content/posts`。标题、日期、标签和正文由 Markdown 提供；`src/features/writing/entries.ts` 只维护选稿、ID、分类、slug 和摘要。仅接受明确 `draft: false` 的选稿。
+- 文章源文件位于 `content/writing`。标题、日期、标签和正文由 Markdown 提供；`src/features/writing/entries.ts` 只维护选稿、ID、分类、slug 和摘要。仅接受明确 `draft: false` 的选稿。
 - 当前选入 4 篇开发样本，尚不是正式发布清单。未收录文章没有公开页面。
 - 预写问答在 `src/features/home/presets.ts`，只用带类型的 ID 引用内容；失效引用会使构建失败。回答接口为 `answerQuestion(question, catalog, signal?)`。
 
@@ -72,4 +73,4 @@ npm run format:check
 
 仓库已提供 Next.js 的 `vercel.json`，安装命令为 `npm ci`，构建命令为 `npm run build`。当前没有必需环境变量。正式发布前确定选稿清单，并核对 `src/config/site.ts` 的站点地址和资料；本次未执行线上部署。
 
-旧 Hugo 与 PaperMod 构建文件已移除；`content/posts/` 继续作为 Next.js 的文章来源。不要将旧 Hugo 生成物放入 Next.js 的 `public/`。原型 Bot 的来源声明保留在 [vendor/README.md](src/features/bot/vendor/README.md)。
+原型 Bot 的来源声明见 [vendor/README.md](src/features/bot/vendor/README.md)。

@@ -132,11 +132,10 @@
 ## 仓库基线
 
 - 起始提交：`f70803a`。
-- 当前站点使用 Hugo / PaperMod，包含文章列表与详情、标签、分类、归档、搜索和 RSS；内容输入为 Markdown。
-- `content/posts` 中有 47 篇具名文章、一个空目录索引和一个无标题草稿；具名文章中 24 篇明确发布、19 篇明确草稿、4 篇未声明 `draft`。正文还包含 Mermaid、Obsidian callout 和 wikilink。
+- 重构前站点使用 Hugo / PaperMod，包含文章列表与详情、标签、分类、归档、搜索和 RSS；内容输入为 Markdown。
+- 原文章集合有 47 篇具名文章；具名文章中 24 篇明确发布、19 篇明确草稿、4 篇未声明 `draft`。正文还包含 Mermaid、Obsidian callout 和 wikilink。
 - 当前文章路径为 `/posts/.../`。配置的域名为 `https://simi.host`；仓库内没有可核实的同步脚本或完整部署配置，实际发布流程仍待确认。
 - `public/` 是被 Git 忽略的本地生成物，包含 localhost 地址和草稿，不能作为线上发布清单。
-- 开始任务时已有 `themes/PaperMod` 子模块指针变更，当前未修改，不纳入本次已完成改动；实施重建时按已确认范围处理旧主题。
 
 ## 第一轮已确认
 

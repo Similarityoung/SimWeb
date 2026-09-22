@@ -14,7 +14,7 @@ test("only selected non-draft articles enter the public catalog", () => {
   for (const entry of entries) {
     const source = matter(
       readFileSync(
-        path.join(process.cwd(), "content/posts", entry.file),
+        path.join(process.cwd(), "content/writing", entry.file),
         "utf8",
       ),
     );
