@@ -99,20 +99,15 @@ export function Introduction({
             {site.name}
           </h1>
         )}
-        <p
-          className={cn(
-            "font-mono text-foreground-soft",
-            compact
-              ? "mt-1 text-[10px] sm:text-[11px]"
-              : "mt-2 text-[11px] leading-[1.6] sm:text-[12.5px]",
-          )}
-        >
-          {site.role}
-        </p>
         {!compact && (
-          <p className="mt-2.5 max-w-[46ch] text-[13px] leading-[1.6] text-muted-foreground sm:text-sm">
-            {site.bio}
-          </p>
+          <>
+            <p className="mt-2 font-mono text-[11px] leading-[1.6] text-foreground-soft sm:text-[12.5px]">
+              {site.role}
+            </p>
+            <p className="mt-2.5 max-w-[46ch] text-[13px] leading-[1.6] text-muted-foreground sm:text-sm">
+              {site.bio}
+            </p>
+          </>
         )}
       </div>
     </section>
