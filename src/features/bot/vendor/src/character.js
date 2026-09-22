@@ -112,7 +112,7 @@
       this._build();
       this.setColor(this.colorId, this.scheme);
       this._applyPoseScale();
-      this.setState(this.state, { resetEyes: true });
+      this.setState(this.state);
       this._bindPointer();
       this._paint(this.t0);
       this._raf = requestAnimationFrame((t) => this._tick(t));
@@ -152,7 +152,7 @@
       if (mode === "onboarding") {
         this.moodN = 0;
         this.stateAt = performance.now();
-        this.setState("idle", { resetEyes: true });
+        this.setState("idle");
       }
     }
 
@@ -227,23 +227,22 @@
       this.svg.style.setProperty("--bg", this.eyeColor || EYE_BG);
     }
 
-    setState(name, { resetEyes = false } = {}) {
+    setState(name) {
       if (!EYE_PLAYLIST[name]) return;
       if (this.state !== name) this.particles?.clear();
       this.state = name;
       this.stateAt = performance.now();
       const list = EYE_PLAYLIST[name];
       this.eyeIdx = 0;
-      if (resetEyes) {
-        this.eyeFrom = list[0];
-        this.eyeTo = list[0];
-        this._fromPolys = null;
-        this.eyeMorph.x = 1;
-        this.eyeMorph.t = 1;
-        this.eyeMorph.v = 0;
-      } else if (name !== "sleeping" && name !== "waking") {
-        this._morphEyes(list[0], name === "excited" ? 10 : 8);
-      }
+      // A state owns its expression from its first rendered frame. Keeping the
+      // previous state's eye spring creates unintended hybrid expressions;
+      // only eye changes within the same state are morphed below in _tick.
+      this.eyeFrom = list[0];
+      this.eyeTo = list[0];
+      this._fromPolys = null;
+      this.eyeMorph.x = 1;
+      this.eyeMorph.t = 1;
+      this.eyeMorph.v = 0;
       this.eyeUntil = this.stateAt + rand(...EYE_HOLD_MS[name]);
       const blink = BLINK_MS[name];
       this.blinkUntil = blink ? this.stateAt + rand(1500, 7000) : Infinity;

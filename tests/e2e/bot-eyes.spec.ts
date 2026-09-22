@@ -5,6 +5,29 @@ for (const colorScheme of ["light", "dark"] as const) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "GrokCharacter", {
+        configurable: true,
+        set(
+          Character: new (...args: unknown[]) => {
+            eyeFrom: number;
+            eyeTo: number;
+            eyeMorph: { x: number };
+          },
+        ) {
+          Object.defineProperty(window, "GrokCharacter", {
+            configurable: true,
+            writable: true,
+            value: class extends Character {
+              constructor(...args: unknown[]) {
+                super(...args);
+                Object.assign(window, { __bot: this });
+              }
+            },
+          });
+        },
+      });
+    });
     await page.goto("/");
     const svg = page
       .getByRole("img", { name: "Interactive character" })
@@ -19,6 +42,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           frames: number;
           states: string[];
           violations: string[];
+          settledEyes: { from: number; to: number; progress: number };
         }>((resolve, reject) => {
           const svg = document.querySelector<SVGSVGElement>(
             '[aria-label="Interactive character"] svg',
@@ -55,13 +79,27 @@ for (const colorScheme of ["light", "dark"] as const) {
                   violations.add("invalid eye geometry");
               }
             }
-            if (states.has("celebrate") && state === "idle")
+            if (states.has("celebrate") && state === "idle") {
+              const bot = (
+                window as unknown as {
+                  __bot: {
+                    eyeFrom: number;
+                    eyeTo: number;
+                    eyeMorph: { x: number };
+                  };
+                }
+              ).__bot;
               resolve({
                 frames,
                 states: [...states],
                 violations: [...violations],
+                settledEyes: {
+                  from: bot.eyeFrom,
+                  to: bot.eyeTo,
+                  progress: bot.eyeMorph.x,
+                },
               });
-            else if (performance.now() - start > 12_000)
+            } else if (performance.now() - start > 12_000)
               reject(new Error("Answer did not settle"));
             else requestAnimationFrame(sample);
           };
@@ -77,5 +115,6 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(result.states).toContain("writing");
     expect(result.states).toContain("celebrate");
     expect(result.violations).toEqual([]);
+    expect(result.settledEyes).toEqual({ from: 0, to: 0, progress: 1 });
   });
 }
