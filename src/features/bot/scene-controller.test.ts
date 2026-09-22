@@ -20,12 +20,12 @@ test("idle expressions hold one complete mood, then settle; real scenes take ove
   ] as const) {
     const active = cue(createSceneModel("idle"), "idle-expression", 0, random);
     assert.equal(currentMove(active).state, state);
-    assert.equal(active.move!.duration, 5_000);
+    assert.equal(active.move!.duration, 2_500);
     assert.equal(cue(active, "idle-expression", 1_000, 1 - random), active);
     const done = sceneReducer(active, { type: "expire", id: active.move!.id });
     assert.equal(currentMove(done).state, "idle");
     for (const scene of Object.keys(scenes) as BotScene[]) {
-      if (scene === "idle-expression" || scene === "wake") continue;
+      if (["idle-expression", "wake", "hum"].includes(scene)) continue;
       assert.equal(cue(active, scene).move!.scene, scene);
     }
     for (const mood of ["listening", "responding"] as const) {
@@ -34,6 +34,17 @@ test("idle expressions hold one complete mood, then settle; real scenes take ove
       assert.equal(currentMove(next).scene, mood);
     }
   }
+});
+
+test("inactivity humming leaves a quiet gap after an idle expression without delaying sleep or input", () => {
+  const active = cue(createSceneModel("idle"), "idle-expression", 20_000);
+  assert.equal(cue(active, "hum", 21_000), active);
+  const done = sceneReducer(active, { type: "expire", id: active.move!.id });
+  assert.equal(cue(done, "hum", 30_000), done);
+  assert.equal(cue(done, "hum", 42_499), done);
+  assert.equal(cue(done, "hum", 42_500).move!.scene, "hum");
+  assert.equal(cue(done, "sleep", 30_000).move!.scene, "sleep");
+  assert.equal(cue(done, "tap", 30_000).move!.scene, "tap");
 });
 
 test("stale idle cues cannot interrupt other moods, scenes or a hidden page", () => {

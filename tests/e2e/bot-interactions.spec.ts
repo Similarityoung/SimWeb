@@ -10,6 +10,10 @@ test("arrival plays once, inactivity hums once, then settles into sleep", async 
   page,
 }) => {
   await page.clock.install();
+  // Keep the first random expression later than the inactivity cue.
+  await page.addInitScript(() => {
+    Math.random = () => 0.99;
+  });
   await page.goto("/");
   await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
@@ -217,7 +221,9 @@ test("a failed answer alerts once, restores idle expressions and listening, and 
   );
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   const bot = page.getByRole("button", { name: "Play with Bot" });
-  await page.clock.fastForward(10_100);
+  await page.clock.fastForward(19_000);
+  await page.keyboard.press("Shift");
+  await page.clock.fastForward(11_100);
   await expect(bot).toHaveAttribute("data-scene", "idle-expression");
   const input = page.getByRole("textbox");
   await input.focus();

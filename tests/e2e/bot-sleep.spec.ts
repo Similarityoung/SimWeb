@@ -34,7 +34,9 @@ test("60 seconds without activity sleeps; movement resets the deadline and wakes
   await expect(svg).toHaveAttribute("data-state", "waking");
   await page.clock.fastForward(1_100);
   await expect(svg).toHaveAttribute("data-state", "idle");
-  await page.clock.fastForward(10_100);
+  await page.clock.fastForward(19_000);
+  await page.keyboard.press("Shift");
+  await page.clock.fastForward(11_100);
   await expect(botOf(page)).toHaveAttribute("data-scene", "idle-expression");
 });
 

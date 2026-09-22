@@ -6,14 +6,14 @@ export const behaviors = {
 } as const;
 export type BotMood = keyof typeof behaviors;
 
-export const IDLE_PAUSE_MS = [6_000, 10_000] as const;
+export const IDLE_PAUSE_MS = [20_000, 30_000] as const;
 export const SLEEP_AFTER_MS = 60_000;
 
 // A scene owns its candidates, lifetime and cooldown. There is no action queue.
 export const scenes = {
   "idle-expression": {
     choices: ["happy", "curious", "shy", "proud", "playful"],
-    duration: 5_000,
+    duration: 2_500,
     cooldown: 0,
     priority: 0,
   },

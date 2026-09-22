@@ -20,6 +20,15 @@ async function openIdle(page: Page, random: number) {
   );
 }
 
+async function waitForExpression(page: Page) {
+  await page.clock.fastForward(19_000);
+  await expect(botOf(page)).toHaveAttribute("data-scene", "idle");
+  // Separate expression cadence from the independent 30s inactivity feedback.
+  await page.keyboard.press("Shift");
+  await page.clock.fastForward(11_100);
+  await expect(botOf(page)).toHaveAttribute("data-scene", "idle-expression");
+}
+
 for (const [random, expression, exploring] of [
   [0, "happy", "curious"],
   [0.25, "curious", "curious"],
@@ -34,15 +43,14 @@ for (const [random, expression, exploring] of [
     await openIdle(page, random);
     const bot = botOf(page);
     const svg = bot.locator("svg");
-    await page.clock.fastForward(10_050);
-    await expect(bot).toHaveAttribute("data-scene", "idle-expression");
+    await waitForExpression(page);
     await expect(svg).toHaveAttribute("data-state", expression);
-    await page.clock.fastForward(3_000);
+    await page.clock.fastForward(1_000);
     await expect(svg).toHaveAttribute("data-state", expression);
-    await page.clock.fastForward(2_100);
+    await page.clock.fastForward(1_600);
     await expect(svg).toHaveAttribute("data-state", "idle");
-    await page.clock.fastForward(10_050);
-    await expect(bot).toHaveAttribute("data-scene", "idle-expression");
+    await page.keyboard.press("Shift");
+    await waitForExpression(page);
     const topic = page.getByRole("button", { name: /^Notes/ });
     if (isMobile) await topic.focus();
     else await topic.hover();
@@ -60,12 +68,24 @@ for (const [random, expression, exploring] of [
   });
 }
 
+test("a brief idle expression is not followed immediately by inactivity humming", async ({
+  page,
+}) => {
+  await openIdle(page, 0);
+  await page.clock.fastForward(20_100);
+  await expect(botOf(page)).toHaveAttribute("data-scene", "idle-expression");
+  await page.clock.fastForward(2_600);
+  await expect(botOf(page)).toHaveAttribute("data-scene", "idle");
+  await page.clock.fastForward(8_000);
+  await expect(botOf(page)).toHaveAttribute("data-scene", "idle");
+});
+
 test("changing reduced motion stops an active idle expression and restarts after a quiet pause", async ({
   page,
 }) => {
   await openIdle(page, 0);
   const bot = botOf(page);
-  await page.clock.fastForward(6_100);
+  await page.clock.fastForward(20_100);
   await expect(bot).toHaveAttribute("data-scene", "idle-expression");
   async function changeMotion(reducedMotion: "reduce" | "no-preference") {
     const changed = page.evaluate(
@@ -80,14 +100,16 @@ test("changing reduced motion stops an active idle expression and restarts after
     // Media query changes are delivered on a rendering update, not when CDP returns.
     await changed;
   }
+  await page.keyboard.press("Shift");
   await changeMotion("reduce");
   await expect(bot).toHaveAttribute("data-scene", "idle");
   await page.clock.fastForward(10_100);
   await expect(bot).toHaveAttribute("data-scene", "idle");
+  await page.keyboard.press("Shift");
   await changeMotion("no-preference");
   await page.clock.fastForward(1_000);
   await expect(bot).toHaveAttribute("data-scene", "idle");
-  await page.clock.fastForward(5_100);
+  await page.clock.fastForward(19_100);
   await expect(bot).toHaveAttribute("data-scene", "idle-expression");
 });
 
@@ -96,7 +118,7 @@ test("hiding cancels idle expression timers and returning does not replay them",
 }) => {
   await openIdle(page, 0);
   const bot = botOf(page);
-  await page.clock.fastForward(6_100);
+  await page.clock.fastForward(20_100);
   await expect(bot).toHaveAttribute("data-scene", "idle-expression");
   const setHidden = (hidden: boolean) =>
     page.evaluate((value) => {
@@ -110,6 +132,6 @@ test("hiding cancels idle expression timers and returning does not replay them",
   await setHidden(false);
   await page.clock.fastForward(1_000);
   await expect(bot).toHaveAttribute("data-scene", "idle");
-  await page.clock.fastForward(5_100);
+  await page.clock.fastForward(19_100);
   await expect(bot).toHaveAttribute("data-scene", "idle-expression");
 });

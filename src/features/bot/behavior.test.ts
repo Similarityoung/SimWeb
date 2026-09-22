@@ -21,9 +21,10 @@ test("all engine playlists exclude exactly the rejected eyes without dropping an
     context.window.GROK_TABLES.EYE_PLAYLIST;
   assert.equal(Object.keys(lists).length, 39);
   assert.equal(context.window.GROK_GEO.eyes.length, 25);
-  assert.ok(
-    new Set(lists.idle).size >= 8,
-    "the calm state retains varied eye shapes within its full expression",
+  assert.deepEqual(
+    Array.from(lists.idle),
+    [0],
+    "quiet gaps hold neutral eyes instead of starting a second expression cycle",
   );
   for (const list of Object.values(lists)) {
     assert.ok(list.length);
