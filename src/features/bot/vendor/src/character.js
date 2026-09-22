@@ -711,8 +711,8 @@
       }
       if (this.reduceMotion) this.particles.clear();
       else this.particles.update(now, dt, {
-        // Completion particles appear after landing, never during the turn.
-        spinAngle: this.state === "celebrate" ? 0 : spinAngle,
+        // The turn drives ribbons; the landing triggers the separate burst.
+        spinAngle,
         sizeScale: this.partScale,
         wideStyle: this.trick?.kind === "spinWild" || this.wildWide || humming,
         sustainBelts: humming || loading,

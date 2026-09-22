@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 for (const random of [0, 0.99]) {
   const responding = "writing";
-  test(`writing lasts through the answer, then spin, hop and particles play once with random ${random}`, async ({
+  test(`writing ends with a ribbon turn, one hop and landing particles with random ${random}`, async ({
     page,
   }) => {
     await page.addInitScript((value) => {
@@ -158,6 +158,7 @@ for (const random of [0, 0.99]) {
     const hopping = completion.filter((frame) => frame.hop < 0);
     const particles = completion.filter((frame) => frame.particles > 0);
     expect(rotating.length).toBeGreaterThan(2);
+    expect(rotating.some((frame) => frame.ribbons)).toBe(true);
     expect(
       rotating.every((frame) => frame.hop === 0 && frame.particles === 0),
     ).toBe(true);
@@ -170,15 +171,17 @@ for (const random of [0, 0.99]) {
     expect(particles.length).toBeGreaterThan(2);
     expect(particles[0].at).toBeGreaterThan(hopping.at(-1)!.at);
     expect(
-      particles.every((frame) => frame.hop === 0 && frame.cards === 3),
+      particles.every(
+        (frame) => frame.hop === 0 && frame.cards === 3 && !frame.ribbons,
+      ),
     ).toBe(true);
     expect(Math.max(...particles.map((frame) => frame.particles))).toBe(14);
     expect(completion.at(-1)!.particles).toBe(0);
-    expect(samples.every((frame) => !frame.ribbons)).toBe(true);
+    expect(completion.at(-1)!.ribbons).toBe(false);
     expect(
       samples
         .filter((frame) => frame.phase !== "complete")
-        .every((frame) => frame.particles === 0),
+        .every((frame) => frame.particles === 0 && !frame.ribbons),
     ).toBe(true);
     const completionStartedAt = completion[0].at;
     const settledAt = samples.find(
@@ -289,29 +292,61 @@ test("reduced motion freezes the decorative SVG while text still unfolds", async
   );
 });
 
-test("a new question and clear remove completion particles immediately", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const svg = page.getByRole("img").locator("svg");
-  await page.getByRole("button", { name: /^Projects/ }).click();
-  await expect(svg).toHaveAttribute("data-state", "celebrate", {
-    timeout: 8_000,
+for (const effect of ["ribbons", "particles"] as const) {
+  test(`a new question and clear remove completion ${effect} immediately`, async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const svg = page.getByRole("img").locator("svg");
+    const selector =
+      effect === "ribbons" ? "path[data-trail]" : "[data-particle]";
+    const effects = svg.locator("path[data-trail], [data-particle]");
+    const waitForEffect = () =>
+      page.waitForFunction(
+        (selector) =>
+          [...document.querySelectorAll(selector)].some(
+            (element) =>
+              Number(element.getAttribute("opacity")) > 0 &&
+              (!element.hasAttribute("data-trail") ||
+                !!element.getAttribute("d")),
+          ),
+        selector,
+      );
+    await page.getByRole("button", { name: /^Projects/ }).click();
+    await expect(svg).toHaveAttribute("data-state", "celebrate", {
+      timeout: 8_000,
+    });
+    await waitForEffect();
+    await page.getByRole("button", { name: /^Notes/ }).click();
+    await expect(svg).toHaveAttribute("data-state", "writing");
+    await expect(effects).toHaveCount(0);
+    await expect(svg).toHaveAttribute("data-state", "celebrate", {
+      timeout: 8_000,
+    });
+    await waitForEffect();
+    await page.getByRole("button", { name: "Clear conversation" }).click();
+    await expect(svg).toHaveAttribute("data-state", "idle");
+    await expect(effects).toHaveCount(0);
+    // Observe past the cancelled landing: it must not produce a delayed burst.
+    const reappeared = await svg.evaluate(
+      (element) =>
+        new Promise<boolean>((resolve) => {
+          let seen = false;
+          const observer = new MutationObserver(() => {
+            seen ||= !!element.querySelector(
+              "path[data-trail], [data-particle]",
+            );
+          });
+          observer.observe(element, { childList: true, subtree: true });
+          setTimeout(() => {
+            observer.disconnect();
+            resolve(seen);
+          }, 1_500);
+        }),
+    );
+    expect(reappeared).toBe(false);
   });
-  // A short burst can fall between expect.poll's backoff intervals.
-  await page.waitForFunction(() => document.querySelector("[data-particle]"));
-  await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(svg).toHaveAttribute("data-state", "writing");
-  await expect(svg.locator("[data-particle]")).toHaveCount(0);
-  await expect(svg).toHaveAttribute("data-state", "celebrate", {
-    timeout: 8_000,
-  });
-  // A short burst can fall between expect.poll's backoff intervals.
-  await page.waitForFunction(() => document.querySelector("[data-particle]"));
-  await page.getByRole("button", { name: "Clear conversation" }).click();
-  await expect(svg).toHaveAttribute("data-state", "idle");
-  await expect(svg.locator("[data-particle]")).toHaveCount(0);
-});
+}
 
 test("the development action preview is unavailable in production", async ({
   page,

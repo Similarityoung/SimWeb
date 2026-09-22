@@ -23,7 +23,7 @@ export function BotPreview() {
       <h1 className="mt-2 text-2xl font-semibold">Bot 动作预览</h1>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         固定 blob 基本外形，排除眼型
-        7、8。首页以平静为底，缓慢穿插开心、好奇、害羞、得意与俏皮五种完整表情；这里单独试播各状态。回答完成后转一圈、轻跳一次，落地后散出彩色粒子。上传、口述等仅供素材预览，首页点击
+        7、8。首页以平静为底，缓慢穿插开心、好奇、害羞、得意与俏皮五种完整表情；这里单独试播各状态。回答完成后带着彩带转一圈、轻跳一次，落地后散出彩色粒子。上传、口述等仅供素材预览，首页点击
         Bot 只会弹跳。首页连续 60 秒无操作会睡着，再次活动时醒来。
       </p>
       <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_240px]">
