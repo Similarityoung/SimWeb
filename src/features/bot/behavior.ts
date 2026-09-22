@@ -32,7 +32,6 @@ export const scenes = {
     cooldown: 5_000,
     priority: 1,
   },
-  hum: { choices: ["humming"], duration: 2_400, cooldown: 30_000, priority: 1 },
   theme: {
     choices: ["surprised"],
     duration: 900,

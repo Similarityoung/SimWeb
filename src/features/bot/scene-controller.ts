@@ -1,5 +1,4 @@
 import {
-  IDLE_PAUSE_MS,
   scenes,
   selectBehavior,
   type BotMood,
@@ -76,17 +75,10 @@ function play(
   if (model.move && scenes[model.move.scene].priority > definition.priority)
     return model;
   if (now < (model.cooldowns[scene] ?? -Infinity)) return model;
-  const cooldowns = { ...model.cooldowns, [scene]: now + definition.cooldown };
-  // An inactivity cue must not turn a short expression into a longer sequence.
-  if (scene === "idle-expression")
-    cooldowns.hum = Math.max(
-      cooldowns.hum ?? 0,
-      now + scenes["idle-expression"].duration + IDLE_PAUSE_MS[0],
-    );
   return {
     ...model,
     sequence: model.sequence + 1,
-    cooldowns,
+    cooldowns: { ...model.cooldowns, [scene]: now + definition.cooldown },
     move: {
       scene,
       id: model.sequence + 1,

@@ -11,7 +11,7 @@
   // Keep the geometry and original states; calm idle holds its neutral eyes.
   const EXCLUDED_EYES = new Set([7, 8]);
   const EYE_PLAYLIST = Object.fromEntries(Object.entries({
-    sleeping: [13, 22, 4], waking: [13], idle: [0], listening: [10, 1, 19],
+    sleeping: [13, 22, 4], waking: [13], idle: [0], listening: [10],
     thinking: [8, 16, 14, 17, 5], searching: [15, 9, 3, 20, 12, 18],
     working: [7, 16, 11, 10], excited: [2, 17, 21, 3, 11], surprised: [3, 21],
     suspicious: [14, 5, 23], angry: [7, 16], drowsy: [4, 22, 13],

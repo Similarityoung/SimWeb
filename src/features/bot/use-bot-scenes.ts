@@ -130,16 +130,10 @@ export function useBotScenes({
   }, [ready, resolvedTheme, cue]);
   useEffect(() => {
     if (!ready) return;
-    let humTimer: ReturnType<typeof setTimeout>;
     let sleepTimer: ReturnType<typeof setTimeout>;
-    const clearTimers = () => {
-      clearTimeout(humTimer);
-      clearTimeout(sleepTimer);
-    };
     const resetIdle = () => {
-      clearTimers();
+      clearTimeout(sleepTimer);
       if (document.hidden || isAnswerMood(mood)) return;
-      humTimer = setTimeout(() => cue("hum"), 30_000);
       sleepTimer = setTimeout(() => cue("sleep"), SLEEP_AFTER_MS);
     };
     const activity = () => {
@@ -165,7 +159,7 @@ export function useBotScenes({
     document.addEventListener("visibilitychange", visibility);
     resetIdle();
     return () => {
-      clearTimers();
+      clearTimeout(sleepTimer);
       for (const event of events)
         document.removeEventListener(event, activity, true);
       document.removeEventListener("visibilitychange", visibility);

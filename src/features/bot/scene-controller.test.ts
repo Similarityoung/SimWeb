@@ -25,7 +25,7 @@ test("idle expressions hold one complete mood, then settle; real scenes take ove
     const done = sceneReducer(active, { type: "expire", id: active.move!.id });
     assert.equal(currentMove(done).state, "idle");
     for (const scene of Object.keys(scenes) as BotScene[]) {
-      if (["idle-expression", "wake", "hum"].includes(scene)) continue;
+      if (["idle-expression", "wake"].includes(scene)) continue;
       assert.equal(cue(active, scene).move!.scene, scene);
     }
     for (const mood of ["listening", "responding"] as const) {
@@ -34,17 +34,6 @@ test("idle expressions hold one complete mood, then settle; real scenes take ove
       assert.equal(currentMove(next).scene, mood);
     }
   }
-});
-
-test("inactivity humming leaves a quiet gap after an idle expression without delaying sleep or input", () => {
-  const active = cue(createSceneModel("idle"), "idle-expression", 20_000);
-  assert.equal(cue(active, "hum", 21_000), active);
-  const done = sceneReducer(active, { type: "expire", id: active.move!.id });
-  assert.equal(cue(done, "hum", 30_000), done);
-  assert.equal(cue(done, "hum", 42_499), done);
-  assert.equal(cue(done, "hum", 42_500).move!.scene, "hum");
-  assert.equal(cue(done, "sleep", 30_000).move!.scene, "sleep");
-  assert.equal(cue(done, "tap", 30_000).move!.scene, "tap");
 });
 
 test("stale idle cues cannot interrupt other moods, scenes or a hidden page", () => {
@@ -74,7 +63,7 @@ test("interaction scenes keep at most two candidates, picked once per accepted e
 });
 
 test("an answer cancels lower-priority feedback, discards new cues and never queues them", () => {
-  let model = cue(createSceneModel("idle"), "hum");
+  let model = cue(createSceneModel("idle"), "idle-expression");
   model = sceneReducer(model, {
     type: "base",
     mood: "responding",
@@ -100,7 +89,7 @@ test("expired and cancelled callbacks cannot replace a newer move", () => {
     next,
   );
   assert.equal(sceneReducer(next, { type: "end", scene: "explore" }), next);
-  assert.equal(cue(next, "hum"), next);
+  assert.equal(cue(next, "explore"), next);
   const done = sceneReducer(next, { type: "expire", id: next.move!.id });
   assert.equal(currentMove(done).state, "idle");
 });

@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { selectBehavior } from "./behavior";
+import { previewActions, scenes, selectBehavior } from "./behavior";
 
 test("normal answers only use writing; unmatched answers use confused", () => {
   assert.equal(selectBehavior("responding"), "writing");
   assert.equal(selectBehavior("unmatched"), "confused");
   assert.equal(selectBehavior("listening"), "listening");
+  assert.ok(!("hum" in scenes));
+  assert.ok(previewActions.some(([state]) => state === "humming"));
 });
 
 test("all engine playlists exclude exactly the rejected eyes without dropping any state", () => {
@@ -31,6 +33,7 @@ test("all engine playlists exclude exactly the rejected eyes without dropping an
     assert.ok(list.every((eye) => eye !== 7 && eye !== 8));
   }
   assert.deepEqual(Array.from(lists.working), [16, 11, 10]);
+  assert.deepEqual(Array.from(lists.listening), [10]);
   assert.deepEqual(Array.from(lists.angry), [16]);
   const retained = new Set(Object.values(lists).flat());
   for (const eye of [

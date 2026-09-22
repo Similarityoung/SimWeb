@@ -18,13 +18,7 @@ test("sleep replaces idle expression and remains until activity; background cues
   );
   assert.equal(currentMove(sleeping).state, "sleeping");
   assert.equal(sleeping.move!.duration, null);
-  for (const scene of [
-    "sleep",
-    "idle-expression",
-    "hum",
-    "explore",
-    "theme",
-  ] as const)
+  for (const scene of ["sleep", "idle-expression", "explore", "theme"] as const)
     assert.equal(cue(sleeping, scene), sleeping);
   assert.equal(
     currentMove(cue(createSceneModel("listening"), "sleep")).state,

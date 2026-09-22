@@ -65,12 +65,9 @@
         tx = 2;
         ty = -2 + Math.sin(mt * 0.8) * 0.8;
         squash = 1.015;
-        if (now >= ctx.nodUntil) {
-          ctx.nodUntil = now + rand(1800, 3200);
-          ctx.nodEnd = now + 380;
-        }
-        if (now < ctx.nodEnd) {
-          const Et = 1 - (ctx.nodEnd - now) / 380;
+        // Acknowledge entering listening once, then hold the quiet pose.
+        if (dtState < 0.55) {
+          const Et = clamp(dtState / 0.55, 0, 1);
           ty += Math.sin(Et * Math.PI) * 4.5;
           spin += Math.sin(Et * Math.PI) * 2;
         }
@@ -359,7 +356,7 @@
       case "idle":
         return { x: 0, y: 0, hold: [2500, 5500] };
       case "listening":
-        return { x: rand(-0.3, 0.3) * 15, y: rand(-0.25, 0.25) * 9, hold: [2200, 4200] };
+        return { x: 0, y: 0, hold: [2200, 4200] };
       case "thinking":
         return { x: sign() * rand(0.5, 1) * 15, y: -rand(0.4, 1) * 9, hold: [1500, 2800] };
       case "searching":

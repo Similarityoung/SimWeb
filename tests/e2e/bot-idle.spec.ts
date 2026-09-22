@@ -23,7 +23,7 @@ async function openIdle(page: Page, random: number) {
 async function waitForExpression(page: Page) {
   await page.clock.fastForward(19_000);
   await expect(botOf(page)).toHaveAttribute("data-scene", "idle");
-  // Separate expression cadence from the independent 30s inactivity feedback.
+  // Keep the independent 60s sleep deadline out of this expression check.
   await page.keyboard.press("Shift");
   await page.clock.fastForward(11_100);
   await expect(botOf(page)).toHaveAttribute("data-scene", "idle-expression");

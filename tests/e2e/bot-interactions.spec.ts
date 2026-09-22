@@ -6,11 +6,10 @@ async function openIdle(page: Page) {
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
 }
 
-test("arrival plays once, inactivity hums once, then settles into sleep", async ({
+test("arrival plays once, inactivity allows quiet expressions without humming, then sleeps", async ({
   page,
 }) => {
   await page.clock.install();
-  // Keep the first random expression later than the inactivity cue.
   await page.addInitScript(() => {
     Math.random = () => 0.99;
   });
@@ -18,8 +17,8 @@ test("arrival plays once, inactivity hums once, then settles into sleep", async 
   await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   await page.clock.fastForward(30_100);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "humming");
-  await page.clock.fastForward(2_500);
+  await expect(svgOf(page)).toHaveAttribute("data-state", "playful");
+  await page.clock.fastForward(2_600);
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   await page.clock.fastForward(60_000);
   await expect(svgOf(page)).toHaveAttribute("data-state", "sleeping");
