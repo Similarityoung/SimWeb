@@ -61,8 +61,8 @@
       this.overlayTurn = spring(0);
       this.emphasisBlend = 0;
 
-      this.eyeFrom = 0;
-      this.eyeTo = 0;
+      this.eyeFrom = EYE_PLAYLIST[this.state][0];
+      this.eyeTo = this.eyeFrom;
       this.eyeStiffness = 7;
       this.eyeIdx = 0;
       this._fromPolys = null;
@@ -234,15 +234,12 @@
       this.stateAt = performance.now();
       const list = EYE_PLAYLIST[name];
       this.eyeIdx = 0;
-      // A state owns its expression from its first rendered frame. Keeping the
-      // previous state's eye spring creates unintended hybrid expressions;
-      // only eye changes within the same state are morphed below in _tick.
-      this.eyeFrom = list[0];
-      this.eyeTo = list[0];
-      this._fromPolys = null;
-      this.eyeMorph.x = 1;
-      this.eyeMorph.t = 1;
-      this.eyeMorph.v = 0;
+      // Retarget from the currently rendered contour, including when another
+      // state interrupts a morph. Sleep/wake coordinate their eyes with lids
+      // in applyPose, so those sequences retain control of the transition.
+      if (name !== "sleeping" && name !== "waking") {
+        this._morphEyes(list[0], name === "excited" ? 10 : 8);
+      }
       this.eyeUntil = this.stateAt + rand(...EYE_HOLD_MS[name]);
       const blink = BLINK_MS[name];
       this.blinkUntil = blink ? this.stateAt + rand(1500, 7000) : Infinity;
@@ -391,8 +388,8 @@
     _morphEyes(index, stiffness = 7) {
       if (index === this.eyeTo && this.eyeMorph.t === 1) return;
       const t = clamp(this.eyeMorph.x, 0, 1);
-      this.eyeFrom = this.eyeTo;
       this._fromPolys = this._currentPolys(t);
+      this.eyeFrom = this.eyeTo;
       this.eyeTo = index;
       this.eyeMorph.x = 0;
       this.eyeMorph.v = 0;
@@ -808,7 +805,6 @@
       EY.paintEyes({
         now,
         polys,
-        morphT,
         shape,
         face,
         faceTune: this.faceTune,

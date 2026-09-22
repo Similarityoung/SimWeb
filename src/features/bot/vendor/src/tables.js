@@ -18,7 +18,8 @@
     happy: [2, 11, 17, 19], curious: [3, 21, 0, 15], confused: [14, 5, 8],
     bored: [4, 22, 0], proud: [15, 8, 2], shy: [0, 24, 13], sad: [4, 13, 22],
     laughing: [2, 11, 17], scared: [3, 21], playful: [2, 17, 11, 8],
-    celebrate: [2, 8, 17], orbit: [0, 8], radar: [0, 8], progress: [0, 8],
+    // A short completion gesture holds its expression until it returns to rest.
+    celebrate: [2], orbit: [0, 8], radar: [0, 8], progress: [0, 8],
     spawning: [3, 0], humming: [0, 8], loading: [0, 8], dictating: [10, 1, 19],
     sending: [0, 8], receiving: [19, 0, 8], uploading: [15, 9, 8], writing: [15, 9],
     notifying: [3, 21, 0], alerting: [3, 21], bouncing: [2, 17],

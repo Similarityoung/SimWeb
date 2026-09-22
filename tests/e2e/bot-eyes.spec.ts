@@ -5,29 +5,6 @@ for (const colorScheme of ["light", "dark"] as const) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
-    await page.addInitScript(() => {
-      Object.defineProperty(window, "GrokCharacter", {
-        configurable: true,
-        set(
-          Character: new (...args: unknown[]) => {
-            eyeFrom: number;
-            eyeTo: number;
-            eyeMorph: { x: number };
-          },
-        ) {
-          Object.defineProperty(window, "GrokCharacter", {
-            configurable: true,
-            writable: true,
-            value: class extends Character {
-              constructor(...args: unknown[]) {
-                super(...args);
-                Object.assign(window, { __bot: this });
-              }
-            },
-          });
-        },
-      });
-    });
     await page.goto("/");
     const svg = page
       .getByRole("img", { name: "Interactive character" })
@@ -42,7 +19,8 @@ for (const colorScheme of ["light", "dark"] as const) {
           frames: number;
           states: string[];
           violations: string[];
-          settledEyes: { from: number; to: number; progress: number };
+          lateEyeDrift: number;
+          lateFrames: number;
         }>((resolve, reject) => {
           const svg = document.querySelector<SVGSVGElement>(
             '[aria-label="Interactive character"] svg',
@@ -50,11 +28,19 @@ for (const colorScheme of ["light", "dark"] as const) {
           const states = new Set<string>(),
             violations = new Set<string>();
           let frames = 0;
+          let completionStart = 0;
+          let lateFrames = 0;
+          let lateEyeDrift = 0;
+          let firstLateContour: number[] | undefined;
+          // Select the earliest possible playlist change, near completion end.
+          Math.random = () => 0;
           const start = performance.now();
           const sample = () => {
             const state = svg.getAttribute("data-state") ?? "";
             states.add(state);
             frames++;
+            if (state === "celebrate" && !completionStart)
+              completionStart = performance.now();
             const eyes = svg.querySelector<SVGGElement>("g[clip-path]");
             const clip = svg.querySelector("clipPath");
             const body = eyes?.previousElementSibling;
@@ -79,25 +65,32 @@ for (const colorScheme of ["light", "dark"] as const) {
                   violations.add("invalid eye geometry");
               }
             }
+            if (
+              state === "celebrate" &&
+              performance.now() - completionStart > 1800
+            ) {
+              const contour = [
+                ...eyes!.querySelectorAll<SVGPathElement>("path"),
+              ].flatMap((eye) => {
+                const box = eye.getBBox();
+                return [box.x, box.y, box.width, box.height];
+              });
+              firstLateContour ??= contour;
+              lateEyeDrift = Math.max(
+                lateEyeDrift,
+                ...contour.map((value, i) =>
+                  Math.abs(value - firstLateContour![i]),
+                ),
+              );
+              lateFrames++;
+            }
             if (states.has("celebrate") && state === "idle") {
-              const bot = (
-                window as unknown as {
-                  __bot: {
-                    eyeFrom: number;
-                    eyeTo: number;
-                    eyeMorph: { x: number };
-                  };
-                }
-              ).__bot;
               resolve({
                 frames,
                 states: [...states],
                 violations: [...violations],
-                settledEyes: {
-                  from: bot.eyeFrom,
-                  to: bot.eyeTo,
-                  progress: bot.eyeMorph.x,
-                },
+                lateEyeDrift,
+                lateFrames,
               });
             } else if (performance.now() - start > 12_000)
               reject(new Error("Answer did not settle"));
@@ -115,6 +108,9 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(result.states).toContain("writing");
     expect(result.states).toContain("celebrate");
     expect(result.violations).toEqual([]);
-    expect(result.settledEyes).toEqual({ from: 0, to: 0, progress: 1 });
+    // Breathing/blinking may move the eyes, but the one-shot gesture must not
+    // start a different eye shape immediately before returning to rest.
+    expect(result.lateFrames).toBeGreaterThan(3);
+    expect(result.lateEyeDrift).toBeLessThan(1);
   });
 }

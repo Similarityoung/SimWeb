@@ -34,11 +34,10 @@
 
   function paintEyes(opt) {
     const {
-      now, polys, morphT, shape, face, faceTune, uniformEyes, eyeScaleProp,
+      now, polys, shape, face, faceTune, uniformEyes, eyeScaleProp,
       blinkX, gazeX, gazeY, winkAt, winkEye, turn, cr, pointer, notifyX,
       overlayX, eyeEls, badgeEl, badgeColor, Re, G9e, VJt, extras, ringHint,
     } = opt;
-    const pulse = 1 + 0.07 * Math.sin(morphT * Math.PI);
     const $i = {
       x: face.x,
       y: face.y,
@@ -56,8 +55,8 @@
     const pre = uniformEyes ? 0 : VJt;
     const _ee = a1 + o1 > 0.5 ? clamp((l1 - pre) / (a1 + o1), 0.35, 4) : 4;
     const Uee = (uniformEyes ? 1 : $i.eye) * clamp(eyeScaleProp, 0.25, 4);
-    const oX = Math.min(clamp(opt.eyeBoostX, 0.2, 2) * Uee, _ee / pulse);
-    const Hee = Math.min(oX * clamp(faceTune?.eyeWidth ?? 1, 0.2, 3), _ee / pulse);
+    const oX = Math.min(clamp(opt.eyeBoostX, 0.2, 2) * Uee, _ee);
+    const Hee = Math.min(oX * clamp(faceTune?.eyeWidth ?? 1, 0.2, 3), _ee);
     const u1 = oX * clamp(faceTune?.eyeHeight ?? 1, 0.2, 3);
     const liveSpan = ringHint
       ? (y) => spanPoly(ringHint, y, Re)
@@ -150,8 +149,8 @@
       Kj -= 10 * $ee;
       Ko += 7 * $ee;
 
-      const Vee = clamp(_c * Hee * pulse, 0.02, 2.4);
-      const _2 = clamp(vre * lid * u1 * pulse, 0.02, 2.4);
+      const Vee = clamp(_c * Hee, 0.02, 2.4);
+      const _2 = clamp(vre * lid * u1, 0.02, 2.4);
       eyeEls[i].style.display = bre && overlayX < 0.5 ? "" : "none";
       const useTurnOr3d = turn != null || use3d;
       const Ume = G9e * _2 + 2;
@@ -186,8 +185,8 @@
       }
 
       if (use3d) {
-        const FrM = clamp((turn != null ? _c : 1) * Hee * pulse, 0.02, 2.4);
-        const IaM = clamp(lid * u1 * pulse, 0.02, 2.4);
+        const FrM = clamp((turn != null ? _c : 1) * Hee, 0.02, 2.4);
+        const IaM = clamp(lid * u1, 0.02, 2.4);
         const liM = km * FrM, blM = Ree * FrM, IoM = Fee * IaM, uoM = zee * IaM;
         eyeEls[i].setAttribute(
           "transform",
