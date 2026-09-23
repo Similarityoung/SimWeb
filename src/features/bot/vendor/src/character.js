@@ -103,6 +103,7 @@
       this.ovTarget = null;
       this.ovRest = false;
       this.ovRestAt = 0;
+      this.gatherHold = null;
       this.pxW = 190;
       this.pxAt = 0;
       this.partScale = 1;
@@ -111,9 +112,7 @@
 
       this._build();
       this.setColor(this.colorId, this.scheme);
-      if (this.state === "powering-up" && !this.reduceMotion) {
-        this._seedPowerUpOverlay(true);
-      }
+      if (this.state === "spawning" && !this.reduceMotion) this._seedGatherEntrance();
       this._applyPoseScale();
       this.setState(this.state);
       this._bindPointer();
@@ -232,12 +231,14 @@
 
     setState(name) {
       if (!EYE_PLAYLIST[name]) return;
-      const previousState = this.state;
+      // An interrupted shutdown gathers from its current size; completing the
+      // shutdown first would visibly shrink the Bot after the wake gesture.
+      this.gatherHold = name === "spawning" && this.state === "powering-down"
+        ? this.overlay.x : null;
+      if (this.gatherHold !== null) this.overlay.v = 0;
       if (this.state !== name) this.particles?.clear();
       this.state = name;
       this.stateAt = performance.now();
-      if (name === "powering-up" && previousState !== name && !this.reduceMotion)
-        this._seedPowerUpOverlay(previousState !== "powering-down");
       const list = EYE_PLAYLIST[name];
       this.eyeIdx = 0;
       // Retarget from the currently rendered contour, including when another
@@ -315,22 +316,22 @@
       }
     }
 
-    _seedPowerUpOverlay(fromDot) {
-      // Start from a dot on entry, or reverse the current frame if sleep was interrupted.
-      this.ovKind = "standby";
+    _seedGatherEntrance() {
+      // The first frame is already condensed; the source gathering effect can
+      // finish before the body expands instead of shrinking a full-size Bot.
+      this.ovKind = "gather";
       this.ovPrev = null;
-      this.ovTarget = "standby";
+      this.ovTarget = "gather";
       this.ovRest = false;
       this.ovRestAt = 0;
-      this.ovOn = false;
-      if (fromDot) {
-        this.overlay.x = 1;
-        this.overlay.v = 0;
-      }
-      this.overlay.t = 0;
+      this.ovOn = true;
+      this.overlay.x = 1;
+      this.overlay.v = 0;
+      this.overlay.t = 1;
       this.overlayMix.x = 1;
       this.overlayMix.v = 0;
       this.overlayMix.t = 1;
+      this.fx.overlayAt = this.t0;
     }
 
     _bindPointer() {
@@ -455,15 +456,14 @@
 
     _stepOverlay(now) {
       const want = FX.MAP[this.state] || null;
-      const poweringUp = this.state === "powering-up";
-      const lifecycle = poweringUp || this.state === "powering-down";
+      const lifecycle = this.state === "spawning" || this.state === "powering-down" || this.ovKind === "gather";
       if (want !== this.ovTarget) {
         this.ovTarget = want;
         this.fx.overlayAt = now;
         this.ovRest = false;
         this.ovRestAt = 0;
       }
-      let on = want != null && !poweringUp;
+      let on = want != null && !(this.reduceMotion && this.state === "spawning");
       if (want && FX.CYCLE.has(this.state) && !this.reduceMotion) {
         if (!this.ovRest && now - this.fx.overlayAt > (FX.CYCLE_ON[this.state] || 2500)) {
           this.ovRest = true;
@@ -474,7 +474,7 @@
         }
         on = !this.ovRest;
       }
-      this.overlay.t = on ? 1 : 0;
+      this.overlay.t = on ? (this.gatherHold ?? 1) : 0;
       if (on !== this.ovOn) {
         if (!this.reduceMotion && !lifecycle) {
           if (on) this.ovTurnDir = sign();

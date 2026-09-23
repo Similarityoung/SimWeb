@@ -185,7 +185,7 @@ test("arrival is consumed once, including when an answer preempts it", () => {
     random: 0,
   } as const;
   const first = sceneReducer(createSceneModel("idle"), event);
-  assert.equal(currentMove(first).state, "powering-up");
+  assert.equal(currentMove(first).state, "spawning");
   const done = sceneReducer(first, { type: "expire", id: first.move!.id });
   assert.equal(sceneReducer(done, event), done);
   const busy = sceneReducer(createSceneModel("responding", "one"), event);

@@ -10,11 +10,19 @@ const bodyRatio = (page: Page) =>
       ? body.getBoundingClientRect().width / svg.getBoundingClientRect().width
       : 0;
   });
+const gatherParticleCount = (page: Page) =>
+  svgOf(page).evaluate(
+    (svg) =>
+      [...svg.querySelectorAll("circle")].filter(
+        (part) =>
+          part.style.fill === "var(--fg)" && part.style.display !== "none",
+      ).length,
+  );
 
 async function openIdle(page: Page) {
   await page.clock.install();
   await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-up");
+  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   // Start from an explicit user action, independent of hydration timing.
   await page.keyboard.press("Shift");
@@ -35,11 +43,12 @@ test("60 seconds without activity sleeps; movement resets the deadline and wakes
   await page.clock.fastForward(30_000);
   await expect(svg).toHaveAttribute("data-state", "powering-down");
   await page.mouse.move(12, 4);
-  await expect(svg).toHaveAttribute("data-state", "powering-up");
-  await page.clock.fastForward(500);
+  await expect(svg).toHaveAttribute("data-state", "spawning");
+  await page.clock.runFor(650);
+  expect(await gatherParticleCount(page)).toBeGreaterThanOrEqual(3);
   await page.mouse.move(20, 4);
-  await expect(svg).toHaveAttribute("data-state", "powering-up");
-  await page.clock.fastForward(600);
+  await expect(svg).toHaveAttribute("data-state", "spawning");
+  await page.clock.fastForward(1_450);
   await expect(svg).toHaveAttribute("data-state", "idle");
   await page.clock.fastForward(19_000);
   await page.keyboard.press("Shift");
@@ -56,7 +65,7 @@ test("activity during the sleep transition reverses without snapping to the dot"
   await expect(svg).toHaveAttribute("data-state", "powering-down");
   const beforeWake = await bodyRatio(page);
   await page.mouse.move(12, 4);
-  await expect(svg).toHaveAttribute("data-state", "powering-up");
+  await expect(svg).toHaveAttribute("data-state", "spawning");
   await page.clock.runFor(48);
   expect(await bodyRatio(page)).toBeGreaterThan(beforeWake - 0.25);
 });
@@ -71,7 +80,7 @@ test("a quiet focused input can sleep; typing and submitting immediately take ov
   await page.clock.fastForward(60_100);
   await expect(svgOf(page)).toHaveAttribute("data-state", "powering-down");
   await page.keyboard.press("Shift");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-up");
+  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await input.press("Enter");
   await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
   await page.clock.fastForward(1_100);
@@ -89,7 +98,7 @@ test("touch or click wakes without adding a special Bot gesture; a topic still a
   await expect(svgOf(page)).toHaveAttribute("data-state", "powering-down");
   if (isMobile) await page.touchscreen.tap(8, 80);
   else await page.mouse.click(8, 80);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-up");
+  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await page.getByRole("button", { name: /^Notes/ }).click();
   await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
 });

@@ -12,7 +12,7 @@ async function openIdle(page: Page, random: number) {
   // Ignore the initial idle frame before the arrival effect has started.
   await expect(botOf(page).locator("svg")).toHaveAttribute(
     "data-state",
-    "powering-up",
+    "spawning",
   );
   await expect(botOf(page).locator("svg")).toHaveAttribute(
     "data-state",

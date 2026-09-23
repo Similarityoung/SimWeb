@@ -14,7 +14,7 @@ test("arrival plays once, inactivity allows quiet expressions without humming, t
     Math.random = () => 0.99;
   });
   await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-up");
+  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   await page.clock.fastForward(30_100);
   await expect(svgOf(page)).toHaveAttribute("data-state", "playful");

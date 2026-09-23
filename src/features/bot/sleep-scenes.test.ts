@@ -31,7 +31,7 @@ test("only a sleeping character wakes, and repeated activity cannot restart waki
   assert.equal(cue(idle, "wake"), idle);
   const sleeping = cue(idle, "sleep");
   const waking = cue(sleeping, "wake");
-  assert.equal(currentMove(waking).state, "powering-up");
+  assert.equal(currentMove(waking).state, "spawning");
   assert.equal(waking.move!.duration, scenes.wake.duration);
   assert.equal(cue(waking, "wake"), waking);
   assert.equal(cue(waking, "idle-expression"), waking);
@@ -96,7 +96,7 @@ test("the first home arrival starts in the wake scene and consumes its arrival o
     id: 1,
     kind: "arrival",
   });
-  assert.equal(currentMove(first).state, "powering-up");
+  assert.equal(currentMove(first).state, "spawning");
   assert.equal(first.move?.duration, scenes.arrival.duration);
   assert.equal(
     sceneReducer(first, {
