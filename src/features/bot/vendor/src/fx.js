@@ -501,6 +501,15 @@
       for (const n of this.glyphs) n.style.display = "none";
     }
 
+    placeGather(foreground) {
+      if ((this.parts[0].parentNode === this.front) === foreground) return;
+      for (const part of this.parts.slice(0, 5)) {
+        if (foreground) this.front.appendChild(part);
+        else this.glyphs[0].before(part);
+        part.style.fill = foreground ? "var(--accent)" : "var(--fg)";
+      }
+    }
+
     amount(name, cur, prev, yl, mix) {
       if (name === cur) return yl * mix;
       if (name === prev) return yl * (1 - mix);
@@ -519,14 +528,22 @@
     paint(now, stateAt, cur, prev, yl, mix, R, reduce = false) {
       this.hideAll();
       this._reduce = reduce;
+      // A shutdown interrupted before contraction leaves the body large enough
+      // to cover the original dark particles. Draw those gather dots above it.
+      const gatherForeground = cur === "gather" && yl < 0.95 && !reduce;
+      this.placeGather(gatherForeground);
       const extra = this.extras(now, stateAt, cur, prev, yl, mix);
-      const kl = (name) => this.amount(name, cur, prev, yl, mix);
+      // Gather particles describe the wake-up, even when sleep was interrupted
+      // before the body had time to contract (yl === 0).
+      const kl = (name) => this.amount(
+        name, cur, prev, name === "gather" ? (reduce ? 0 : 1) : yl, mix
+      );
       const run = (name, fn) => { const a = kl(name); if (a > 0.004) fn(a); };
       run("dots", (a) => this.paintDots(a, now, R));
       run("orbit", (a) => this.paintOrbit(a, now, R));
       run("radar", (a) => this.paintRadar(a, now, R, extra.A2));
       run("progress", (a) => this.paintProgress(a, now, R));
-      run("gather", (a) => this.paintGather(a, now, R));
+      run("gather", (a) => this.paintGather(a, now, R, gatherForeground));
       run("wave", (a) => this.paintWave(a, now, R));
       run("send", (a) => this.paintSend(a, now, stateAt, R));
       run("receive", (a) => this.paintRecv(a, now, stateAt, R));
@@ -603,7 +620,7 @@
       Et.setAttribute("opacity", mt.toFixed(3));
     }
 
-    paintGather(ze, now, R) {
+    paintGather(ze, now, R, foreground = false) {
       const mt = Rc(ze), Dt = CYCLE_ON.spawning;
       for (let Mt = 0; Mt < 5; Mt++) {
         const Lt = this.parts[Mt];
@@ -613,7 +630,7 @@
         Lt.style.display = "";
         Lt.setAttribute("cx", (R + En * Math.cos(Et)).toFixed(1));
         Lt.setAttribute("cy", (R + En * Math.sin(Et) * 0.8).toFixed(1));
-        Lt.setAttribute("r", (9 * (0.5 + 0.5 * an) * mt).toFixed(2));
+        Lt.setAttribute("r", ((foreground ? 5 : 9) * (0.5 + 0.5 * an) * mt).toFixed(2));
         Lt.setAttribute("opacity", (mt * clamp(yn * 5, 0, 1) * (1 - an * 0.25)).toFixed(3));
       }
     }

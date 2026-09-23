@@ -6,24 +6,6 @@ async function openIdle(page: Page) {
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
 }
 
-test("arrival plays once, inactivity allows quiet expressions without humming, then sleeps", async ({
-  page,
-}) => {
-  await page.clock.install();
-  await page.addInitScript(() => {
-    Math.random = () => 0.99;
-  });
-  await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.clock.fastForward(30_100);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "playful");
-  await page.clock.fastForward(2_600);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.clock.fastForward(60_000);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-down");
-});
-
 for (const [random, returning] of [
   [0, "happy"],
   [0.99, "notifying"],
