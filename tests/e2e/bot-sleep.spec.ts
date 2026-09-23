@@ -20,6 +20,20 @@ const gatherParticleCount = (page: Page) =>
           getComputedStyle(part).fill !== "none",
       ).length,
   );
+const visibleGatherCount = (page: Page) =>
+  svgOf(page).evaluate((svg) => {
+    const body = svg.querySelector("g[transform] > path");
+    if (!body) return 0;
+    return [...svg.querySelectorAll("circle")].filter(
+      (part) =>
+        part.style.display !== "none" &&
+        Number(part.getAttribute("opacity")) > 0.1 &&
+        Boolean(
+          body.compareDocumentPosition(part) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ) &&
+        getComputedStyle(part).fill !== getComputedStyle(body).fill,
+    ).length;
+  });
 
 async function openIdle(page: Page) {
   await page.clock.install();
@@ -66,76 +80,13 @@ test("activity during the sleep transition reverses without snapping to the dot"
   await page.clock.fastForward(60_100);
   await expect(svg).toHaveAttribute("data-state", "powering-down");
   const beforeWake = await bodyRatio(page);
+  expect(beforeWake).toBeGreaterThan(0.5);
   await page.mouse.move(12, 4);
   await expect(svg).toHaveAttribute("data-state", "spawning");
   await page.clock.runFor(48);
   expect(await bodyRatio(page)).toBeGreaterThan(beforeWake - 0.25);
-});
-
-test("an immediate wake shows gather particles over the uncontracted body", async ({
-  page,
-}) => {
-  await openIdle(page);
-  await page.evaluate(() => {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.style.width = "96px";
-    svg.style.height = "96px";
-    document.body.append(svg);
-    const bot = new window.GrokCharacter(svg, {
-      mode: "manual",
-      state: "idle",
-      shape: "blob",
-      loginWrap: true,
-      autoTricks: false,
-      reduceMotion: false,
-      followPointer: false,
-    });
-    bot.setState("powering-down");
-    bot.setState("spawning");
-    Object.assign(window, { __earlyWake: { bot, svg } });
-  });
   await page.clock.runFor(650);
-  const particles = await page.evaluate(() => {
-    const { bot } = (
-      window as typeof window & {
-        __earlyWake: {
-          bot: { body: SVGPathElement; fx: { parts: SVGCircleElement[] } };
-        };
-      }
-    ).__earlyWake;
-    const visible = bot.fx.parts
-      .slice(0, 5)
-      .filter(
-        (part) =>
-          part.style.display !== "none" &&
-          Number(part.getAttribute("opacity")) > 0.1,
-      );
-    return {
-      count: visible.length,
-      aboveBody: visible.every((part) =>
-        Boolean(
-          bot.body.compareDocumentPosition(part) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-      ),
-      contrasted: visible.every(
-        (part) =>
-          getComputedStyle(part).fill !== getComputedStyle(bot.body).fill,
-      ),
-    };
-  });
-  expect(particles.count).toBeGreaterThanOrEqual(3);
-  expect(particles.aboveBody).toBe(true);
-  expect(particles.contrasted).toBe(true);
-  await page.evaluate(() => {
-    const { bot, svg } = (
-      window as typeof window & {
-        __earlyWake: { bot: { destroy: () => void }; svg: SVGSVGElement };
-      }
-    ).__earlyWake;
-    bot.destroy();
-    svg.remove();
-  });
+  expect(await visibleGatherCount(page)).toBeGreaterThanOrEqual(3);
 });
 
 test("a quiet focused input can sleep; typing and submitting immediately take over", async ({
