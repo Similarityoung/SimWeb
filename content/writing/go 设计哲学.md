@@ -1,5 +1,8 @@
 ---
 title: go 设计哲学
+type: notes
+slug: go-design-philosophy
+summary: 从循环依赖出发，理解 Go 的接口与依赖注入，以及如何在消费者一侧定义真正需要的行为。
 tags:
   - learn
 categories:

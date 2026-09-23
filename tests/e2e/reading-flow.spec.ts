@@ -9,7 +9,9 @@ test("conversation survives reading and navigation, then clears on reload", asyn
   });
   await page.getByRole("button", { name: /^Notes/ }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(1);
-  await expect(page.getByTestId("exchange").getByRole("link")).toHaveCount(3);
+  await expect
+    .poll(() => page.getByTestId("exchange").getByRole("link").count())
+    .toBeGreaterThan(0);
   await expect
     .poll(async () => {
       const question = await page
@@ -26,13 +28,16 @@ test("conversation survives reading and navigation, then clears on reload", asyn
     .fill("Show me your projects");
   await page.getByRole("button", { name: "Send question" }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(2);
-  await page
-    .getByRole("link", { name: "Dubbo-go-Pixiu 实现 grpc 双向流", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/notes\/pixiu-grpc-streaming$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Dubbo-go-Pixiu 实现 grpc 双向流",
-  );
+  const firstNote = page
+    .getByTestId("exchange")
+    .first()
+    .getByRole("link")
+    .first();
+  const noteTitle = await firstNote.getAttribute("aria-label");
+  const noteHref = await firstNote.getAttribute("href");
+  await firstNote.click();
+  await expect(page).toHaveURL(new RegExp(`${noteHref}$`));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(noteTitle!);
   await page.getByRole("link", { name: "Back to conversation" }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(2);
   await expect(page.locator("html")).toHaveAttribute(
@@ -64,13 +69,18 @@ test("menus open full catalogs, cards have the expected destinations, and direct
     .getByRole("navigation")
     .getByRole("link", { name: "Thoughts" })
     .click();
-  await page.getByRole("link", { name: "解决问题的思路", exact: true }).click();
+  const firstThought = page
+    .getByRole("region", { name: "All articles" })
+    .getByRole("link")
+    .first();
+  const thoughtTitle = await firstThought.getAttribute("aria-label");
+  await firstThought.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "解决问题的思路",
+    thoughtTitle!,
   );
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "解决问题的思路",
+    thoughtTitle!,
   );
   await page.getByRole("link", { name: "Home", exact: true }).click();
   await expect(page).toHaveURL("/");

@@ -33,7 +33,7 @@ const catalog: PublicCatalog = {
   })),
 };
 
-test("English plural topic names and Chinese questions resolve to prepared content", async () => {
+test("English plural topic names and Chinese questions resolve to current content", async () => {
   assert.equal(
     (await answerQuestion({ text: "Show me your projects" }, catalog))
       .references[0]?.type,
@@ -48,6 +48,24 @@ test("English plural topic names and Chinese questions resolve to prepared conte
 test("a topic shortcut wins over incidental keywords", async () => {
   const answer = await answerQuestion({ text: "Go", topic: "notes" }, catalog);
   assert.equal(answer.references.length, 3);
+});
+
+test("article topic cards follow the public catalog instead of fixed sample IDs", async () => {
+  const changed: PublicCatalog = {
+    ...catalog,
+    articles: [
+      { ...catalog.articles[0], id: "new-note", slug: "new-note" },
+      { ...catalog.articles[3], id: "new-thought", slug: "new-thought" },
+    ],
+  };
+  assert.deepEqual(
+    (await answerQuestion({ text: "notes" }, changed)).references,
+    [{ type: "article", id: "new-note" }],
+  );
+  assert.deepEqual(
+    (await answerQuestion({ text: "thoughts" }, changed)).references,
+    [{ type: "article", id: "new-thought" }],
+  );
 });
 
 test("greetings do not get swallowed by broad Chinese or English substring matches", async () => {
@@ -83,10 +101,6 @@ test("references are resolved by both type and ID; missing content is an error",
         catalog,
       ),
     /Unknown project/,
-  );
-  assert.throws(
-    () => validateCatalog({ ...catalog, articles: [] }),
-    /Unknown article/,
   );
   assert.throws(
     () =>

@@ -1,8 +1,8 @@
 ---
 title: Dubbo-go-Pixiu 实现 grpc 双向流
-aliases:
-  - Pixiu gRPC 双向流方案
-  - Dubbo-go-Pixiu gRPC Stream 设计
+type: notes
+slug: pixiu-grpc-streaming
+summary: 在 Pixiu 网关中实现原生 gRPC 流式代理，梳理监听器、过滤器、连接池与优雅关闭的职责。
 tags:
   - dubbo-go-pixiu
   - grpc

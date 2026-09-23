@@ -5,7 +5,20 @@ import type {
   PublicCatalog,
   Question,
   ResolvedContent,
+  TopicId,
 } from "./types";
+
+function preparedAnswer(topic: TopicId, catalog: PublicCatalog): Answer {
+  const preset = preparedAnswers[topic];
+  if (topic !== "notes" && topic !== "thoughts") return preset;
+  return {
+    ...preset,
+    references: catalog.articles
+      .filter((article) => article.kind === topic)
+      .slice(0, 3)
+      .map((article) => ({ type: "article" as const, id: article.id })),
+  };
+}
 
 export function resolveReference(
   reference: ContentReference,
@@ -59,7 +72,7 @@ export async function answerQuestion(
       ),
     )?.id;
   const answer: Answer = topic
-    ? preparedAnswers[topic]
+    ? preparedAnswer(topic, catalog)
     : /^(hello|hi|hey|你好|您好)[!！。\s]*$/i.test(text)
       ? {
           kind: "answer",

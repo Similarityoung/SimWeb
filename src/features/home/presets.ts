@@ -93,16 +93,12 @@ export const preparedAnswers: Record<TopicId, Answer> = {
   notes: {
     kind: "answer",
     text: "I write things down as I learn. These notes follow the questions I run into while building with Go, RPC, and AI tools.",
-    references: [
-      { type: "article", id: "pixiu-grpc-streaming" },
-      { type: "article", id: "go-design-philosophy" },
-      { type: "article", id: "paper-reading-prompts" },
-    ],
+    references: [],
   },
   thoughts: {
     kind: "answer",
-    text: "Some questions need a little distance from the code. Here’s a note on how I approach problems before jumping into a solution.",
-    references: [{ type: "article", id: "thinking-through-problems" }],
+    text: "Some questions need a little distance from the code. Here are a few thoughts beyond the day-to-day work.",
+    references: [],
   },
   about: {
     kind: "answer",

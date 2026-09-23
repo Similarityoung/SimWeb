@@ -1,0 +1,59 @@
+name: Sync writing
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-writing
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out SimWeb main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+
+      - name: Check out article source
+        uses: actions/checkout@v4
+        with:
+          repository: Similarityoung/Obisidian-Open
+          ref: main
+          path: source
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Sync and validate published articles
+        working-directory: site
+        run: |
+          npm run sync:writing -- ../source
+          npm run check
+
+      - name: Commit changed articles
+        working-directory: site
+        run: |
+          git add -A content/writing
+          if git diff --cached --quiet; then
+            echo "No article changes"
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'content: sync published writing'
+          git push origin HEAD:main

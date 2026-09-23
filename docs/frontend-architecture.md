@@ -13,7 +13,7 @@
 
 ## 目标与输入输出
 
-本次让首页会话、内容目录、正文阅读和 Bot 能各自迭代。输入为个人资料、项目条目、已选中的现有 Markdown 文章、预写回答，以及原型 Bot 引擎；输出为首页、三个内容目录、文章正文和 About Me 页面。原始文章保留，先用少量明确非草稿的文章完成开发。
+本次让首页会话、内容目录、正文阅读和 Bot 能各自迭代。输入为个人资料、项目条目、从 `Obisidian-Open` 同步的公开 Markdown 文章、预写回答，以及原型 Bot 引擎；输出为首页、三个内容目录、文章正文和 About Me 页面。文章原稿留在源仓库，本站仅缓存已发布内容。
 
 已有原型的 `main.jsx` 同时管理输入、会话、等待状态、定时器、滚动、Bot 反馈、导航与整页视图；`content.js` 同时混合主题导航、问答模板与内容链接。2.0 按这些职责实际变化的位置组织代码。
 
@@ -21,7 +21,7 @@
 
 ```text
 content/
-  writing/                     Markdown 文章源文件
+  writing/                     已发布 Markdown 的同步缓存
 
 src/
   app/
@@ -58,13 +58,19 @@ src/
       project-directory.tsx  项目目录视图
 
     writing/
-      entries.ts              开发样本清单、slug、文章种类与摘要
-      content.server.ts       读取、校验、解析 Markdown；提供目录与正文查询
+      catalog.ts              递归读取与校验 frontmatter，形成公开文章目录
+      content.server.ts       服务端目录与正文查询
       types.ts                ArticleSummary 与文章种类等公开数据契约
       article-card.tsx        首页和目录共用的标题摘要卡片
       article-directory.tsx  Notes / Thoughts 共用的目录视图
       article-reader.tsx      服务端 Markdown 正文渲染
       content.test.ts         收录范围、草稿排除和正文查询验证
+
+scripts/
+  sync-writing.ts             校验源仓库后替换本站文章缓存
+
+.github/workflows/
+  sync-writing.yml            定时与手动内容同步、构建验证、提交
 
     bot/
       bot.tsx                 对外 React 入口，仅接收表现状态等必要参数
@@ -119,11 +125,11 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 ### 内容接口：同一条内容，只维护一次
 
-文章源文位于 `content/writing`。标题、日期、标签、draft 和正文只从原文读取；样本清单只记录稳定 ID、文件名、所属 Notes / Thoughts、slug 和用于卡片的摘要。服务端查询模块负责校验收录项和 `draft: false`，只给目录和首页返回公开摘要；完整正文只用于正文页。收录清单不重复维护标题和日期。
+文章原稿位于 `Obisidian-Open`，本站 `content/writing` 只缓存已发布 Markdown。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，正文只用于正文页。
 
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
-项目数据集中在 `projects/data.ts`。问答模板只引用项目或文章 ID，不再复制标题、摘要和链接。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
+项目数据集中在 `projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答从对应公开目录选取最新三篇，因而源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
 
 ### 回答接口：页面只消费回答结果
 
@@ -182,7 +188,7 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 | --- | --- | --- |
 | 增加项目或改仓库链接 | projects/data.ts | 目录与回答出现相同条目和目的地 |
 | 调整笔记卡片样式 | writing/article-card.tsx | 首页与两类目录同步变化 |
-| 增加开发样本 | writing/entries.ts + 原 Markdown | 非草稿校验、目录与直接正文访问 |
+| 新增或撤下文章 | 源仓库 frontmatter + 内容同步 | 元数据校验、目录与直接正文访问 |
 | 调整问答匹配或接入 AI | home/answer-question.ts 及其内部实现 | 从问题得到正确回答和有效内容引用 |
 | 改 Bot 动作或更换引擎 | bot 内部 | 状态映射、卸载、键盘/减少动态效果 |
 | 调整顶部菜单 | config/site.ts + components/site | 顶部点击进入目录而非触发问答 |
