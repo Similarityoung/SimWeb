@@ -4,7 +4,7 @@
     { label: "Lifecycle", states: ["sleeping", "waking", "idle", "listening", "thinking", "searching", "working"] },
     { label: "Reactions", states: ["excited", "surprised", "suspicious", "angry", "drowsy", "happy", "curious", "confused", "bored", "proud", "shy", "sad", "laughing", "scared", "playful", "celebrate"] },
     { label: "Agent morphs", states: ["orbit", "radar", "progress"] },
-    { label: "Product lifecycle", states: ["spawning", "humming", "loading", "dictating", "writing", "sending", "receiving", "uploading", "notifying", "alerting", "dragging", "bouncing", "powering-down"] },
+    { label: "Product lifecycle", states: ["spawning", "powering-up", "humming", "loading", "dictating", "writing", "sending", "receiving", "uploading", "notifying", "alerting", "dragging", "bouncing", "powering-down"] },
   ];
 
   // Site curation: the three rejected reference images identify presets 7 and 8.
@@ -20,7 +20,7 @@
     laughing: [2, 11, 17], scared: [3, 21], playful: [2, 17, 11, 8],
     // A short completion gesture holds its expression until it returns to rest.
     celebrate: [2], orbit: [0, 8], radar: [0, 8], progress: [0, 8],
-    spawning: [3, 0], humming: [0, 8], loading: [0, 8], dictating: [10, 1, 19],
+    spawning: [3, 0], "powering-up": [3, 0], humming: [0, 8], loading: [0, 8], dictating: [10, 1, 19],
     sending: [0, 8], receiving: [19, 0, 8], uploading: [15, 9, 8], writing: [15, 9],
     notifying: [3, 21, 0], alerting: [3, 21], bouncing: [2, 17],
     dragging: [3, 15, 0], "powering-down": [13, 22],
@@ -35,7 +35,7 @@
     bored: [3500, 6000], proud: [3500, 6000], shy: [3000, 5500],
     sad: [4000, 7000], laughing: [1200, 2400], scared: [900, 1800],
     playful: [1500, 3000], celebrate: [1400, 2600], orbit: [4000, 8000],
-    radar: [4000, 8000], progress: [4000, 8000], spawning: [1200, 1200],
+    radar: [4000, 8000], progress: [4000, 8000], spawning: [1200, 1200], "powering-up": [1000, 1000],
     humming: [5000, 9000], loading: [6000, 10000], dictating: [4000, 8000],
     sending: [4000, 8000], receiving: [4000, 8000], uploading: [4000, 8000],
     writing: [4000, 8000], notifying: [1500, 2600], alerting: [2000, 3600],
@@ -53,7 +53,7 @@
     orbit: null, radar: null, progress: null, spawning: null, humming: [4000, 8000],
     loading: null, dictating: null, sending: null, receiving: null, uploading: null,
     writing: null, notifying: [2000, 4000], alerting: null, bouncing: null,
-    dragging: [2200, 4500], "powering-down": null,
+    dragging: [2200, 4500], "powering-up": null, "powering-down": null,
   };
 
   const ONBOARDING = ["curious", "happy", "playful", "excited", "listening", "proud", "laughing", "shy"];

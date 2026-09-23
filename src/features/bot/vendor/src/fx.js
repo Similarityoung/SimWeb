@@ -27,6 +27,7 @@
     bouncing: "ball",
     loading: "whirl",
     "powering-down": "standby",
+    "powering-up": "standby",
     writing: "pencil",
     alerting: "bang",
   };

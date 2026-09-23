@@ -32,7 +32,10 @@ for (const random of [0, 0.99]) {
     await page.goto("/");
     const bot = page.getByRole("img", { name: "Interactive character" });
     // Wait for arrival to finish, not the idle frame before initialization.
-    await expect(bot.locator("svg")).toHaveAttribute("data-state", "spawning");
+    await expect(bot.locator("svg")).toHaveAttribute(
+      "data-state",
+      "powering-up",
+    );
     await expect(bot.locator("svg")).toHaveAttribute("data-state", "idle");
     const result = await page.evaluate(
       () =>

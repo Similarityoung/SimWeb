@@ -16,13 +16,13 @@ test("sleep replaces idle expression and remains until activity; background cues
     cue(createSceneModel("idle"), "idle-expression"),
     "sleep",
   );
-  assert.equal(currentMove(sleeping).state, "sleeping");
+  assert.equal(currentMove(sleeping).state, "powering-down");
   assert.equal(sleeping.move!.duration, null);
   for (const scene of ["sleep", "idle-expression", "theme"] as const)
     assert.equal(cue(sleeping, scene), sleeping);
   assert.equal(
     currentMove(cue(createSceneModel("listening"), "sleep")).state,
-    "sleeping",
+    "powering-down",
   );
 });
 
@@ -31,7 +31,7 @@ test("only a sleeping character wakes, and repeated activity cannot restart waki
   assert.equal(cue(idle, "wake"), idle);
   const sleeping = cue(idle, "sleep");
   const waking = cue(sleeping, "wake");
-  assert.equal(currentMove(waking).state, "waking");
+  assert.equal(currentMove(waking).state, "powering-up");
   assert.equal(waking.move!.duration, scenes.wake.duration);
   assert.equal(cue(waking, "wake"), waking);
   assert.equal(cue(waking, "idle-expression"), waking);
@@ -89,4 +89,22 @@ test("hidden pages cancel sleep and waking without replaying them on return", ()
       "idle",
     );
   }
+});
+
+test("the first home arrival starts in the wake scene and consumes its arrival once", () => {
+  const first = createSceneModel("idle", undefined, {
+    id: 1,
+    kind: "arrival",
+  });
+  assert.equal(currentMove(first).state, "powering-up");
+  assert.equal(first.move?.duration, scenes.arrival.duration);
+  assert.equal(
+    sceneReducer(first, {
+      type: "arrive",
+      arrival: { id: 1, kind: "arrival" },
+      now: 10,
+      random: 0,
+    }),
+    first,
+  );
 });

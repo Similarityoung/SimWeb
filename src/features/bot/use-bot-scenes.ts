@@ -37,7 +37,7 @@ export function useBotScenes({
   arrival?: Arrival;
 }) {
   const [model, dispatch] = useReducer(sceneReducer, undefined, () =>
-    createSceneModel(mood, activityKey),
+    createSceneModel(mood, activityKey, arrival),
   );
   const [ready, setReady] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -78,13 +78,13 @@ export function useBotScenes({
   }, [ready, arrival]);
   useEffect(() => {
     const move = model.move;
-    if (!move || move.duration === null) return;
+    if (!ready || !move || move.duration === null) return;
     const timer = setTimeout(
       () => dispatch({ type: "expire", id: move.id }),
       move.duration,
     );
     return () => clearTimeout(timer);
-  }, [model.move]);
+  }, [ready, model.move]);
   useEffect(() => {
     if (!ready) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");

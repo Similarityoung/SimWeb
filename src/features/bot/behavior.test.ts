@@ -22,7 +22,7 @@ test("all engine playlists exclude exactly the rejected eyes without dropping an
     );
   const lists: Record<string, number[]> =
     context.window.GROK_TABLES.EYE_PLAYLIST;
-  assert.equal(Object.keys(lists).length, 39);
+  assert.equal(Object.keys(lists).length, 40);
   assert.equal(context.window.GROK_GEO.eyes.length, 25);
   assert.deepEqual(
     Array.from(lists.idle),
@@ -35,6 +35,7 @@ test("all engine playlists exclude exactly the rejected eyes without dropping an
   }
   assert.deepEqual(Array.from(lists.working), [16, 11, 10]);
   assert.deepEqual(Array.from(lists.listening), [10]);
+  assert.deepEqual(Array.from(lists["powering-up"]), [3, 0]);
   assert.deepEqual(Array.from(lists.angry), [16]);
   const retained = new Set(Object.values(lists).flat());
   for (const eye of [

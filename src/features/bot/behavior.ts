@@ -17,9 +17,19 @@ export const scenes = {
     cooldown: 0,
     priority: 0,
   },
-  sleep: { choices: ["sleeping"], duration: null, cooldown: 0, priority: 1 },
-  wake: { choices: ["waking"], duration: 3_000, cooldown: 0, priority: 2 },
-  arrival: { choices: ["spawning"], duration: 1_600, cooldown: 0, priority: 1 },
+  sleep: {
+    choices: ["powering-down"],
+    duration: null,
+    cooldown: 0,
+    priority: 1,
+  },
+  wake: { choices: ["powering-up"], duration: 1_000, cooldown: 0, priority: 2 },
+  arrival: {
+    choices: ["powering-up"],
+    duration: 1_000,
+    cooldown: 0,
+    priority: 1,
+  },
   return: {
     choices: ["happy", "notifying"],
     duration: 1_200,
@@ -52,6 +62,7 @@ export const previewActions = [
   ["playful", "俏皮"],
   ["sleeping", "睡着"],
   ["waking", "醒来"],
+  ["powering-up", "苏醒"],
   ["celebrate", "完成 · 转身跳跃粒子"],
   ["orbit", "环绕"],
   ["radar", "雷达"],
@@ -67,7 +78,7 @@ export const previewActions = [
   ["alerting", "警报"],
   ["dragging", "拖拽"],
   ["bouncing", "弹跳"],
-  ["powering-down", "关机"],
+  ["powering-down", "休眠"],
 ] as const;
 export type CharacterState =
   | (typeof behaviors)[BotMood][number]

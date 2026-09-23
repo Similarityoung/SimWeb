@@ -111,6 +111,9 @@
 
       this._build();
       this.setColor(this.colorId, this.scheme);
+      if (this.state === "powering-up" && !this.reduceMotion) {
+        this._seedPowerUpOverlay(true);
+      }
       this._applyPoseScale();
       this.setState(this.state);
       this._bindPointer();
@@ -229,9 +232,12 @@
 
     setState(name) {
       if (!EYE_PLAYLIST[name]) return;
+      const previousState = this.state;
       if (this.state !== name) this.particles?.clear();
       this.state = name;
       this.stateAt = performance.now();
+      if (name === "powering-up" && previousState !== name && !this.reduceMotion)
+        this._seedPowerUpOverlay(previousState !== "powering-down");
       const list = EYE_PLAYLIST[name];
       this.eyeIdx = 0;
       // Retarget from the currently rendered contour, including when another
@@ -307,6 +313,24 @@
       } else {
         this.svg.style.transform = "";
       }
+    }
+
+    _seedPowerUpOverlay(fromDot) {
+      // Start from a dot on entry, or reverse the current frame if sleep was interrupted.
+      this.ovKind = "standby";
+      this.ovPrev = null;
+      this.ovTarget = "standby";
+      this.ovRest = false;
+      this.ovRestAt = 0;
+      this.ovOn = false;
+      if (fromDot) {
+        this.overlay.x = 1;
+        this.overlay.v = 0;
+      }
+      this.overlay.t = 0;
+      this.overlayMix.x = 1;
+      this.overlayMix.v = 0;
+      this.overlayMix.t = 1;
     }
 
     _bindPointer() {
@@ -431,13 +455,15 @@
 
     _stepOverlay(now) {
       const want = FX.MAP[this.state] || null;
+      const poweringUp = this.state === "powering-up";
+      const lifecycle = poweringUp || this.state === "powering-down";
       if (want !== this.ovTarget) {
         this.ovTarget = want;
         this.fx.overlayAt = now;
         this.ovRest = false;
         this.ovRestAt = 0;
       }
-      let on = want != null;
+      let on = want != null && !poweringUp;
       if (want && FX.CYCLE.has(this.state) && !this.reduceMotion) {
         if (!this.ovRest && now - this.fx.overlayAt > (FX.CYCLE_ON[this.state] || 2500)) {
           this.ovRest = true;
@@ -450,7 +476,7 @@
       }
       this.overlay.t = on ? 1 : 0;
       if (on !== this.ovOn) {
-        if (!this.reduceMotion) {
+        if (!this.reduceMotion && !lifecycle) {
           if (on) this.ovTurnDir = sign();
           this.ovTurnAcc += Math.PI * this.ovTurnDir;
           this.overlayTurn.t = this.ovTurnAcc;

@@ -84,10 +84,10 @@ export function HomeExperience() {
             size="icon"
             onClick={reset}
             aria-label="Clear conversation"
-            className="h-11 w-auto shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
+            title="Clear conversation"
+            className="size-11 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
           >
-            <RotateCcw className="size-4" strokeWidth={1.5} />
-            Clear
+            <RotateCcw className="size-4" strokeWidth={1.5} aria-hidden />
           </Button>
         )}
       </div>

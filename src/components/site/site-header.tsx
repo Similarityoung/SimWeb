@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { House } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { GitHubIcon } from "./github-icon";
 import { ThemeToggle } from "./theme-toggle";
 import { site } from "@/config/site";
@@ -36,26 +37,33 @@ export function SiteHeader() {
       </nav>
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
         {pathname === "/" ? (
-          <a
-            href={site.github}
-            aria-label="GitHub profile"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 min-w-8 shrink-0 items-center gap-[7px] font-mono text-xs text-muted-foreground transition-colors hover:text-foreground sm:min-w-11"
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-11 w-8 text-muted-foreground hover:bg-muted hover:text-foreground sm:w-9 dark:hover:bg-muted"
           >
-            <GitHubIcon className="size-[17px]" />
-            <span className="hidden sm:inline">GitHub</span>
-            <ArrowUpRight className="hidden size-[13px] sm:block" aria-hidden />
-          </a>
+            <a
+              href={site.github}
+              aria-label="GitHub profile"
+              title="GitHub profile"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <GitHubIcon className="size-[17px]" />
+            </a>
+          </Button>
         ) : (
-          <Link
-            href="/"
-            aria-label="Home"
-            className="inline-flex min-h-11 min-w-8 shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:min-w-11 sm:text-xs"
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-11 w-8 text-muted-foreground hover:bg-muted hover:text-foreground sm:w-9 dark:hover:bg-muted"
           >
-            <ArrowLeft className="size-3.5" aria-hidden />
-            <span className="hidden min-[360px]:inline">Home</span>
-          </Link>
+            <Link href="/" aria-label="Home" title="Home">
+              <House className="size-4" strokeWidth={1.5} aria-hidden />
+            </Link>
+          </Button>
         )}
         <ThemeToggle />
       </div>

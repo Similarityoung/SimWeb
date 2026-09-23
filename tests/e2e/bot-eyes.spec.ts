@@ -9,7 +9,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     const svg = page
       .getByRole("img", { name: "Interactive character" })
       .locator("svg");
-    await expect(svg).toHaveAttribute("data-state", "spawning");
+    await expect(svg).toHaveAttribute("data-state", "powering-up");
     await expect(svg).toHaveAttribute("data-state", "idle");
     // Sample the real renderer through movement and body morphs, including the
     // final turn where an eye correctly disappears behind the silhouette.

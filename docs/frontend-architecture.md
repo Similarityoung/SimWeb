@@ -147,13 +147,13 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 待机完整表情由同一场景系统调度：平静 20～30 秒后从 happy／curious／shy／proud／playful 中选一次，保持 2.5 秒再恢复平静。idle-expression 优先级最低，控制器拒绝非 idle 或已有动作时的迟到事件；Hook 在探索、输入、隐藏或卸载时清理待机定时器，并监听原生 MediaQueryList change，在减少动态效果时停止轮换。恢复后重新等待，不补播。不新增 home 状态或对外参数。生命周期依据 [React useEffect](https://react.dev/reference/react/useEffect) 与 [MDN change 事件](https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList/change_event)。
 
-自动睡眠仍归同一个场景系统：sleep 的 duration 为 null，表示持续至显式活动或业务状态改变；wake 只接受睡眠中的唤醒，播放 3 秒，后续活动不会重新开始。睡眠拒绝随机表情和系统主题等背景事件，回答及明确业务状态变化可打断。`use-bot-scenes.ts` 管理 60 秒睡眠的闲置计时，指针、键盘、触摸与滚轮活动重置时间，回答中暂停，后台和卸载清理。Effect Event 读取最新睡眠状态，避免表情轮换重置计时，也避免鼠标每次移动都派发动画事件。减少动态效果时保留静态闭眼，活动直接恢复。home 和 Bot 公共接口不增加状态或参数；不恢复鼠标位置跟随。依据 [React useEffectEvent](https://react.dev/reference/react/useEffectEvent) 与 [MDN Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。
+自动休眠仍归同一个场景系统：sleep 的 duration 为 null，表示持续至显式活动或业务状态改变；wake 只接受休眠中的苏醒，powering-up 播放 1 秒，后续活动不会重新开始。休眠拒绝随机表情和系统主题等背景事件，回答及明确业务状态变化可打断。`use-bot-scenes.ts` 管理 60 秒休眠的闲置计时，指针、键盘、触摸与滚轮活动重置时间，回答中暂停，后台和卸载清理。Effect Event 读取最新休眠状态，避免表情轮换重置计时，也避免鼠标每次移动都派发动画事件。减少动态效果时保留静态休眠形态，活动直接恢复。首次进入时由 reducer 初始状态直接启动 powering-up，Bot 首帧从 Product lifecycle 的小形态展开；powering-up 反向使用 powering-down 的 standby overlay，复用同一套绘制与弹簧，不在引擎就绪后补派发 spawning。home 和 Bot 公共接口不增加状态或参数；不恢复鼠标位置跟随。依据 [React useEffectEvent](https://react.dev/reference/react/useEffectEvent) 与 [MDN Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)。
 
 `bot.tsx` 使用原生 button 的 onClick 触发弹跳，兼容鼠标、触摸、Enter / Space；不维护多击、长按、拖动或手动休眠手势，也不拦截滚动。短动作有冷却，点击可打断完成动作，新回答始终抢占。依据 [MDN click 事件](https://developer.mozilla.org/en-US/docs/Web/API/Element/click_event)。
 
 `character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态固定基础眼型，仅保留呼吸与眨眼，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。Character 初始化时固定关闭 followPointer，动态效果偏好切换只调整 reduceMotion，不重新启用跟随；主题卡片与输入框的关注由 home 合并，统一驱动倾听。其他模块不访问引擎实例或 window.GROK_*。
 
-引擎的 `setState(name)` 保持单一接口：从当前已渲染的眼睛轮廓平滑转向目标，打断未完成的过渡时先取当前轮廓再更改目标。表情带来的大小变化沿用原有 eyeScale 弹簧，移除随变形进度重置的额外 7% 放大，避免中断时尺寸跳变。初始化直接采用初始状态的眼型；睡眠／醒来沿用 pose 中与眼睑同步的时序。celebrate 在播放清单中固定单个表情，避免短动作末尾又随机起一轮眼型变形。业务层不传眼型参数、不增加定时器；眼睛的平滑交接继续复用已有弹簧与帧时钟，依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)。
+引擎的 `setState(name)` 保持单一接口：从当前已渲染的眼睛轮廓平滑转向目标，打断未完成的过渡时先取当前轮廓再更改目标。表情带来的大小变化沿用原有 eyeScale 弹簧，移除随变形进度重置的额外 7% 放大，避免中断时尺寸跳变。初始化直接采用初始状态的眼型；旧 sleeping／waking 仍作为素材预览，但首页生命周期不再使用其闭眼时序。celebrate 在播放清单中固定单个表情，避免短动作末尾又随机起一轮眼型变形。业务层不传眼型参数、不增加定时器；眼睛的平滑交接继续复用已有弹簧与帧时钟，依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)。
 
 开发路由保留 24 种素材动作（含平静、五种待机表情、睡着／醒来、完成动画）与 192 / 54 / 43px 尺寸试播；实际场景通过真实首页验证。进度环已移除；雷达、口述和嗡鸣仅留在素材预览，自动嗡鸣的场景、计时器及避让冷却已删除，正常回答只用书写。该路由生产返回 404。
 

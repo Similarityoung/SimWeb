@@ -43,14 +43,20 @@ export const isAnswerMood = (mood: BotMood) =>
 export function createSceneModel(
   mood: BotMood,
   activityKey?: string,
+  initialArrival?: Arrival,
 ): SceneModel {
-  return {
+  const model: SceneModel = {
     mood,
     activityKey,
     move: null,
     hidden: false,
     sequence: 0,
     cooldowns: {},
+  };
+  if (initialArrival?.kind !== "arrival") return model;
+  return {
+    ...play(model, "arrival", 0, 0),
+    arrivalId: initialArrival.id,
   };
 }
 function play(

@@ -6,7 +6,7 @@ const svgOf = (page: Page) =>
 async function openIdle(page: Page) {
   await page.clock.install();
   await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
+  await expect(svgOf(page)).toHaveAttribute("data-state", "powering-up");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
 }
 
