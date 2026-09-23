@@ -1,8 +1,8 @@
 # Mac
 **/.DS_Store
 
-.hugo_build.lock
 /node_modules/
+/next-env.d.ts
 /.next/
 /out/
 /.vercel/

@@ -15,7 +15,6 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     "next-env.d.ts",
-    "themes/**",
     "src/features/bot/vendor/**",
     ".local/**",
     "test-results/**",
