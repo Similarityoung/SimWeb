@@ -24,13 +24,11 @@ for (const [random, returning] of [
     await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
     await topic.click();
     await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
-    await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(3);
-    await page
-      .getByRole("link", {
-        name: "Dubbo-go-Pixiu 实现 grpc 双向流",
-        exact: true,
-      })
-      .click();
+    await expect(page.getByTestId("answer")).toHaveAttribute(
+      "data-state",
+      "complete",
+    );
+    await page.getByTestId("answer").getByRole("link").first().click();
     await page.getByRole("link", { name: "Back to conversation" }).click();
     await expect(svgOf(page)).toHaveAttribute("data-state", returning);
     await expect(page.getByTestId("answer")).toHaveAttribute(

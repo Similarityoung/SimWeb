@@ -34,7 +34,7 @@ npm run dev
 
 - 项目编辑 `src/features/projects/data.ts`，卡片直达配置的 GitHub 或官网。
 - 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content/writing` 是已发布文章的同步缓存。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
-- 当前缓存保留 4 篇开发样本，待源仓库元数据整理完成后替换。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?)`。
+- 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?)`。
 - 手动检查源仓库：`npm run sync:writing -- /path/to/Obisidian-Open`，然后运行 `npm run check`。脚本先校验全部候选文章；任何缺失字段或重复 slug 都会阻止替换当前缓存。
 
 同一标签页内通过站内链接进入目录或正文再返回首页，会话保留；刷新或主动清空会重置。不写入浏览器存储。文章目录与会话复用相同摘要和卡片。

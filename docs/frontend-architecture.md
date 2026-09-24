@@ -65,13 +65,6 @@ src/
       article-directory.tsx  Notes / Thoughts 共用的目录视图
       article-reader.tsx      服务端 Markdown 正文渲染
       content.test.ts         收录范围、草稿排除和正文查询验证
-
-scripts/
-  sync-writing.ts             校验源仓库后替换本站文章缓存
-
-.github/workflows/
-  sync-writing.yml            定时与手动内容同步、构建验证、提交
-
     bot/
       bot.tsx                 对外 React 入口，仅接收表现状态等必要参数
       behavior.ts             每个场景的 1～2 个候选、时长、优先级与冷却
@@ -89,6 +82,12 @@ scripts/
     site.ts                   站点身份、公开个人资料与导航定义
   lib/
     utils.ts                  cn 等与具体业务无关的纯工具
+
+scripts/
+  sync-writing.ts             校验源仓库后替换本站文章缓存
+
+.github/workflows/
+  sync-writing.yml            定时与手动内容同步、构建验证、提交
 
 tests/
   e2e/                        跨页导航、问答累积和阅读路径
