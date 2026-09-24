@@ -12,3 +12,7 @@ export type ArticleSummary = {
 };
 
 export type Article = ArticleSummary & { body: string };
+
+export type ArticlePage = Article & {
+  wikiLinkTargets: Readonly<Record<string, string>>;
+};

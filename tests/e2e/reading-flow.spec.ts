@@ -91,6 +91,28 @@ test("menus open full catalogs, cards have the expected destinations, and direct
   expect(response?.status()).toBe(404);
 });
 
+test("Obsidian links open published articles without reloading the page", async ({
+  page,
+}) => {
+  await page.goto("/notes/interview-agent-architecture-tools");
+  await page.evaluate(() => {
+    document.documentElement.dataset.navigationProbe = "same-document";
+  });
+  const link = page.getByRole("link", {
+    name: "范式说明与课程中的框架示例",
+  });
+  await expect(link).toHaveAttribute(
+    "href",
+    "/notes/agent-patterns-and-frameworks",
+  );
+  await link.click();
+  await expect(page).toHaveURL(/\/notes\/agent-patterns-and-frameworks$/);
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-navigation-probe",
+    "same-document",
+  );
+});
+
 test("Bot loads, clearing works, and the interface fits the viewport", async ({
   page,
 }) => {

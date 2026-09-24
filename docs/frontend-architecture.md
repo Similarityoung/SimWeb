@@ -92,6 +92,8 @@ lib ──> 不依赖 app 和 components
 
 文章原稿位于 `Obisidian-Open`，本站 `content` 整个目录只缓存已发布 Markdown，同步时会被整体替换。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，正文只用于正文页。
 
+`content.server.ts` 从公开文章源路径生成双链目标索引，`wiki-links.ts` 在正文 Markdown 语法树中将双链转成站内链接；目标不存在时构建失败。目录卡片和首页不接收该索引，代码块保留原文。
+
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
 项目数据集中在 `lib/projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答从对应公开目录选取最新三篇，因而源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
