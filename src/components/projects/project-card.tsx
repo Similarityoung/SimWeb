@@ -1,6 +1,6 @@
 import { ArrowUpRight, GitBranch } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import type { Project } from "./types";
+import type { Project } from "@/lib/projects/types";
 
 export function ProjectCard({ project }: { project: Project }) {
   return (

@@ -1,15 +1,10 @@
 # 个人站 2.0 前端架构方案
 
-状态：四模块结构已实现；会话生命周期、字段来源、引用校验与模块导入约束已落实，完整阅读返回流程已有桌面和移动端验证。
+状态：保留 home / projects / writing / bot 的职责边界，采用常见的 Next.js `app / components / lib` 目录；会话生命周期、字段来源、引用校验与模块导入约束已落实，完整阅读返回流程已有桌面和移动端验证。
 
 ## 研究依据
 
-已核对 [Next.js 官方目录组织](https://nextjs.org/docs/app/getting-started/project-structure)及[服务端与客户端组件](https://nextjs.org/docs/app/getting-started/server-and-client-components)说明，并阅读两套实际源码：
-
-- [Bulletproof React 的 Next 路由](https://github.com/alan2207/bulletproof-react/blob/9506629ed003a561c6627735480cce4994244bb4/apps/nextjs-app/src/app/app/discussions/page.tsx)负责预取与组装，业务列表、数据查询及 hook 在对应 feature 内。参考其职责划分与导入约束；不引入本站不需要的认证、数据查询框架和缓存设施，也不照搬其禁止所有跨 feature 依赖的规则。
-- [Lee Robinson 博客模板的正文呈现](https://github.com/leerob/next-mdx-blog/blob/fd03371e3c90481a8447904e1b548e4c0327b7db/mdx-components.tsx)集中维护文章元素样式，内容页面独立。借鉴内容与呈现分离，不因此将现有 Markdown 改为 MDX。
-
-完整研究、固定提交链接和版本适用范围见 [架构研究记录](research/frontend-architecture.md)。以下四模块方案为结合本站需求形成的建议，不是这些仓库逐字采用的结构。
+[Next.js 官方目录说明](https://nextjs.org/docs/app/getting-started/project-structure)不规定唯一组织法，支持在 `app` 内共置路由私有代码；以下是结合本站规模作出的选择。官方 [Dashboard 教程](https://nextjs.org/learn/dashboard-app/getting-started)把路由、界面和数据操作分别放在 `app`、`ui`、`lib`；[Vercel Commerce](https://github.com/vercel/commerce)及 [shadcn/ui 网站](https://github.com/shadcn-ui/ui/blob/main/CONTRIBUTING.md)也使用 `app`、`components`、`lib` 等常见目录。`features` 是 [Bulletproof React](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md)等项目采用的另一种业务内聚方式，并非 Next.js 约定。详细的原始研究见[架构研究记录](research/frontend-architecture.md)；目录命名调整不改变其中关于业务边界和服务端／客户端边界的结论。
 
 ## 目标与输入输出
 
@@ -28,60 +23,34 @@ src/
     layout.tsx                 字体、全站外壳、读取公开摘要并承载会话 Provider
     globals.css                主题变量、基础样式与必要动画
     page.tsx                   组装首页
+    _home/                     首页私有代码，不生成路由
+      home-experience.tsx      首页交互区
+      conversation-provider.tsx 共享布局中的会话宿主
+      use-conversation.ts     消息、请求状态、提交与清空
+      answer-question.ts      预写回答与内容引用
+      answer-presentation.ts  文本和卡片展示时间线
+      components/             介绍区、主题入口、会话、输入框
     projects/page.tsx          项目完整目录
     notes/page.tsx             技术笔记目录
     notes/[slug]/page.tsx      技术笔记正文
     thoughts/page.tsx          随笔目录
     thoughts/[slug]/page.tsx   随笔正文
     about/page.tsx             静态个人介绍
-    dev/bot/page.tsx           仅开发环境的 Bot 试播入口，生产环境返回 404
-
-  features/
-    home/
-      home-experience.tsx      组装首页交互区
-      use-conversation.ts     提问、累积会话、等待、清空与请求生命周期
-      conversation-provider.tsx 共享布局中的会话宿主及首页导航经历
-      home-visit.ts           首次进入与阅读返回的纯状态转换
-      answer-question.ts      统一回答函数，首版查询预写内容
-      answer-chunks.ts        保留字词与 Unicode 的展示分块
-      answer-presentation.ts  阶段、分块与逐张卡片的时间线，纯函数
-      use-answer-presentation.ts 最新回答的唯一展示调度与取消
-      presets.ts              预写问答与主题匹配规则
-      types.ts                问题、回答、消息与内容引用
-      components/             介绍区、主题入口、会话记录、回答分块展示、输入框
-      answer-question.test.ts 问答模块的行为验证
-
-    projects/
-      data.ts                 项目条目、本人角色与明确跳转目的地
-      types.ts                项目数据契约
-      project-card.tsx        首页和目录共用的项目卡片
-      project-directory.tsx  项目目录视图
-
-    writing/
-      catalog.ts              递归读取与校验 frontmatter，形成公开文章目录
-      content.server.ts       服务端目录与正文查询
-      types.ts                ArticleSummary 与文章种类等公开数据契约
-      article-card.tsx        首页和目录共用的标题摘要卡片
-      article-directory.tsx  Notes / Thoughts 共用的目录视图
-      article-reader.tsx      服务端 Markdown 正文渲染
-      content.test.ts         收录范围、草稿排除和正文查询验证
-    bot/
-      bot.tsx                 对外 React 入口，仅接收表现状态等必要参数
-      behavior.ts             每个场景的 1～2 个候选、时长、优先级与冷却
-      scene-controller.ts     动作裁决纯函数，无队列
-      use-bot-scenes.ts       场景信号、计时器、主题和可见性订阅
-      character.tsx           内部 SVG 宿主、引擎生命周期与场景切换
-      runtime.client.ts       浏览器引擎加载与类型
-      bot-preview.tsx         开发用候选动作与尺寸试播
-      vendor/                 八个原引擎文件及来源说明，仅由本模块访问
+    dev/bot/page.tsx           仅开发环境的 Bot 试播入口
 
   components/
-    ui/                       shadcn 基础组件
-    site/                     全站导航、主题 Provider 与明暗切换等跨页面外壳
-  config/
-    site.ts                   站点身份、公开个人资料与导航定义
+    bot/                       角色入口、交互场景、引擎与 vendor 素材
+    projects/                  首页和目录共用的项目卡片与目录视图
+    writing/                   首页和目录共用的文章卡片、目录与正文
+    ui/                        shadcn 基础组件
+    site/                      全站导航与主题
+
   lib/
-    utils.ts                  cn 等与具体业务无关的纯工具
+    projects/                  项目数据与公开类型
+    writing/                   frontmatter 校验、服务端读取与公开类型
+    utils.ts                   跨业务纯工具
+  config/
+    site.ts                   站点身份、个人资料与导航
 
 scripts/
   sync-writing.ts             校验源仓库后替换本站文章缓存
@@ -93,32 +62,30 @@ tests/
   e2e/                        跨页导航、问答累积和阅读路径
 ```
 
-只在实际出现对应职责时创建文件。`features` 内按业务放置视图、状态、数据与验证；不另建全站的 `hooks`、`services` 或通用 `types` 目录来分散同一业务。About Me 首版是静态内容，可留在路由页面，不为了目录对称另设业务模块。
+`_home` 使用 Next.js 的私有文件夹约定，供根布局和首页共用且不暴露路由。项目与文章的 UI 在 `components`，事实数据和服务端读取在 `lib`；同一领域仍各有独立子目录，不把状态、解析或动画塞回 `page.tsx`。只在实际出现职责时创建文件。
 
 ## 模块职责与依赖
 
-| 模块 | 对外提供 | 不应承担 |
+| 位置 | 对外提供 | 不应承担 |
 | --- | --- | --- |
-| app | 路由、metadata、服务端取数、页面组装 | 关键词匹配、Markdown 解析实现、Bot 动画细节 |
-| home | 首页交互、会话与回答函数 | 文件系统访问、文章正文解析、项目数据的第二份副本 |
-| projects | 项目条目、卡片和目录 | 会话状态与 Bot 动作 |
-| writing | 文章查询、摘要卡片、正文渲染 | 首页问答规则 |
-| bot | 由表现状态驱动的角色 | 判断访客问题或读取业务内容 |
+| app 路由文件 | 路由、metadata、服务端取数、页面组装 | 关键词匹配、Markdown 解析实现、Bot 动画细节 |
+| app/_home | 首页交互、会话与回答函数 | 文件系统访问、文章正文解析、项目数据的第二份副本 |
+| components/projects | 项目卡片和目录 | 会话状态与项目事实数据 |
+| components/writing | 文章卡片、目录、正文 | 首页问答规则和文件读取 |
+| components/bot | 由表现状态驱动的角色 | 判断访客问题或读取业务内容 |
+| lib/projects、lib/writing | 事实数据、文章校验、服务端查询和公开类型 | React 视图与路由 |
 | components/ui | 通用基础控件 | 项目、文章、会话等业务判断 |
 
 依赖方向：
 
 ```text
-app ──> home ──> projects 的卡片 / 公开类型
- │       ├────> writing 的卡片 / 公开类型
- │       └────> bot
- ├────> projects 的数据 / 目录
- └────> writing 的服务端查询 / 目录 / 正文
-
-业务视图 ──> components/ui + lib
+app 路由 ──> app/_home、components/{projects,writing,bot}、lib/{projects,writing}
+app/_home ──> components/{projects,writing} 的卡片、components/bot 的入口、lib 的公开类型
+components/{projects,writing} ──> 对应 lib 的公开类型
+lib ──> 不依赖 app 和 components
 ```
 
-`projects`、`writing`、`bot` 不反向引用 `home`，业务模块不引用 `app`。这里允许 `home` 作为组合模块使用另外三个模块的明确公开入口；不为追求禁止所有跨模块 import 而额外添加转发层。模块内部文件不作为其他模块随意引用的公共接口。
+`app/_home` 只能使用项目与文章的公开类型和卡片，以及 Bot 对外入口，不导入文章 loader 或引擎内部文件。`components/ui` 和全站外壳不反向依赖业务目录。ESLint 对这些路径加约束；`server-only` 保护正文查询的运行边界，不为目录更名增加转发层。
 
 ## 三个关键接口
 
@@ -128,7 +95,7 @@ app ──> home ──> projects 的卡片 / 公开类型
 
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
-项目数据集中在 `projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答从对应公开目录选取最新三篇，因而源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
+项目数据集中在 `lib/projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答从对应公开目录选取最新三篇，因而源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
 
 ### 回答接口：页面只消费回答结果
 
@@ -166,9 +133,9 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 倾听姿态在引擎内使用 dtState 驱动一次约 550ms 的点头，随后只保留轻微呼吸与眨眼，眼型及视线固定。持续聚焦和输入不会重新进入状态或循环点头；重新进入倾听时可再次回应。沿用已有状态切换与帧时钟，不增加 home 信号、React 状态或计时器，减少动态效果仍由统一渲染层处理。依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)按经过时间推进动作，避免不同刷新率改变动作时长。
 
-首页介绍区与会话顶部之间的位置、尺寸过渡归 `home/components/introduction.tsx` 管理：Motion 测量布局，只在 compact 状态变化时移动同一个 Bot，保持 SVG 和引擎实例连续。清空时反向返回，追问不重播，减少动态效果时立即切换。角色内部动作仍归 bot，不向会话 Hook 添加动画状态。
+首页介绍区与会话顶部之间的位置、尺寸过渡归 `app/_home/components/introduction.tsx` 管理：Motion 测量布局，只在 compact 状态变化时移动同一个 Bot，保持 SVG 和引擎实例连续。清空时反向返回，追问不重播，减少动态效果时立即切换。角色内部动作仍归 bot，不向会话 Hook 添加动画状态。
 
-主题入口的共享高亮归 `home/components/topic-shortcuts.tsx`：组件只保存视觉悬停与键盘焦点，以同一个 Motion layoutId 在卡片之间移动底板，跨间隙保持上一个目标，键盘焦点优先，离开后清除；点击消费高亮，禁用期间不显示。首页双列／四列与会话紧凑布局复用这一实现，颜色、边框和图标使用 Tailwind，减少动态效果时直接定位。不改变 Bot 关注接口或会话数据。视觉参考用户提供的 Visual Atlas `anchor-positioning-hover-cards`；实现依据 [Motion 共享布局动画](https://motion.dev/docs/react-layout-animations#shared-layout-animations)，复用已安装依赖，不增加坐标测量 Hook 或全局样式。
+主题入口的共享高亮归 `app/_home/components/topic-shortcuts.tsx`：组件只保存视觉悬停与键盘焦点，以同一个 Motion layoutId 在卡片之间移动底板，跨间隙保持上一个目标，键盘焦点优先，离开后清除；点击消费高亮，禁用期间不显示。首页双列／四列与会话紧凑布局复用这一实现，颜色、边框和图标使用 Tailwind，减少动态效果时直接定位。不改变 Bot 关注接口或会话数据。视觉参考用户提供的 Visual Atlas `anchor-positioning-hover-cards`；实现依据 [Motion 共享布局动画](https://motion.dev/docs/react-layout-animations#shared-layout-animations)，复用已安装依赖，不增加坐标测量 Hook 或全局样式。
 
 ## Next.js 的服务端与客户端约束
 
@@ -185,11 +152,11 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 | 未来变更 | 主要修改位置 | 验证 |
 | --- | --- | --- |
-| 增加项目或改仓库链接 | projects/data.ts | 目录与回答出现相同条目和目的地 |
-| 调整笔记卡片样式 | writing/article-card.tsx | 首页与两类目录同步变化 |
+| 增加项目或改仓库链接 | lib/projects/data.ts | 目录与回答出现相同条目和目的地 |
+| 调整笔记卡片样式 | components/writing/article-card.tsx | 首页与两类目录同步变化 |
 | 新增或撤下文章 | 源仓库 frontmatter + 内容同步 | 元数据校验、目录与直接正文访问 |
-| 调整问答匹配或接入 AI | home/answer-question.ts 及其内部实现 | 从问题得到正确回答和有效内容引用 |
-| 改 Bot 动作或更换引擎 | bot 内部 | 状态映射、卸载、键盘/减少动态效果 |
+| 调整问答匹配或接入 AI | app/_home/answer-question.ts 及其内部实现 | 从问题得到正确回答和有效内容引用 |
+| 改 Bot 动作或更换引擎 | components/bot 内部 | 状态映射、卸载、键盘/减少动态效果 |
 | 调整顶部菜单 | config/site.ts + components/site | 顶部点击进入目录而非触发问答 |
 
 ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。架构测试验证别名与相对路径导入限制。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。

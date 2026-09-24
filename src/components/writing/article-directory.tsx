@@ -1,5 +1,5 @@
 import { ArticleCard } from "./article-card";
-import type { ArticleSummary } from "./types";
+import type { ArticleSummary } from "@/lib/writing/types";
 
 export function ArticleDirectory({
   articles,

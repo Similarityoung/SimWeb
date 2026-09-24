@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import type { ArticleSummary } from "./types";
+import type { ArticleSummary } from "@/lib/writing/types";
 
 export function ArticleCard({ article }: { article: ArticleSummary }) {
   return (

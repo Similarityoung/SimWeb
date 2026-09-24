@@ -1,4 +1,4 @@
-import { HomeExperience } from "@/features/home/home-experience";
+import { HomeExperience } from "@/app/_home/home-experience";
 
 export default function HomePage() {
   return <HomeExperience />;

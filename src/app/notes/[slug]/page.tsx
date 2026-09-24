@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import {
-  getArticle,
-  getArticleSummaries,
-} from "@/features/writing/content.server";
-import { ArticleReader } from "@/features/writing/article-reader";
+import { getArticle, getArticleSummaries } from "@/lib/writing/content.server";
+import { ArticleReader } from "@/components/writing/article-reader";
 
 type Props = { params: Promise<{ slug: string }> };
 export const dynamicParams = false;

@@ -19,20 +19,18 @@ npm run dev
 
 | 内容 | 位置 |
 | --- | --- |
-| 路由、服务端取数、共享布局 | `src/app` |
-| 首页、会话、预写回答 | `src/features/home` |
-| 项目清单、项目卡片与目录 | `src/features/projects` |
-| 文章元数据校验、Markdown 读取、卡片与正文 | `src/features/writing` |
+| 路由、共享布局、首页会话与预写回答 | `src/app`、`src/app/_home` |
+| 项目、文章和 Bot 界面 | `src/components` |
+| 项目数据、文章校验与服务端读取 | `src/lib/projects`、`src/lib/writing` |
 | 已发布 Markdown 的同步缓存 | `content/writing` |
-| Bot 组件、浏览器引擎与生命周期 | `src/features/bot` |
-| shadcn 基础组件、全站导航 | `src/components` |
+| shadcn 基础组件、全站导航 | `src/components/ui`、`src/components/site` |
 | 个人资料与菜单 | `src/config/site.ts` |
 
 完整职责与依赖约束见 [架构文档](docs/frontend-architecture.md)。ESLint 限制跨模块导入，服务端正文入口使用 `server-only`。
 
 ## 修改内容
 
-- 项目编辑 `src/features/projects/data.ts`，卡片直达配置的 GitHub 或官网。
+- 项目编辑 `src/lib/projects/data.ts`，卡片直达配置的 GitHub 或官网。
 - 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content/writing` 是已发布文章的同步缓存。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
 - 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?)`。
 - 手动检查源仓库：`npm run sync:writing -- /path/to/Obisidian-Open`，然后运行 `npm run check`。脚本先校验全部候选文章；任何缺失字段或重复 slug 都会阻止替换当前缓存。
@@ -56,7 +54,7 @@ npm run dev
 
 ## Bot 动作预览
 
-开发服务器运行时访问 `/dev/bot`，试播 24 种动作（含平静、五种待机表情、睡着／醒来与完成动画）及 192 / 54 / 43px 尺寸；从预览页返回首页可测试完整流程。生产环境该路由返回 404。动作候选及睡眠时长在 `src/features/bot/behavior.ts`，展示节奏在 `src/features/home/answer-presentation.ts`；引擎内已排除用户指定的眼型 7、8。
+开发服务器运行时访问 `/dev/bot`，试播 24 种动作（含平静、五种待机表情、睡着／醒来与完成动画）及 192 / 54 / 43px 尺寸；从预览页返回首页可测试完整流程。生产环境该路由返回 404。动作候选及睡眠时长在 `src/components/bot/behavior.ts`，展示节奏在 `src/app/_home/answer-presentation.ts`；引擎内已排除用户指定的眼型 7、8。
 
 ## 验证
 
@@ -71,6 +69,6 @@ npm run format:check
 
 ## Vercel
 
-仓库已提供 Next.js 的 `vercel.json`，安装命令为 `npm ci`，构建命令为 `npm run build`。当前没有必需环境变量。`.github/workflows/sync-writing.yml` 在默认分支每天北京时间 10:17 及手动触发时检出两个公开仓库，校验、构建并仅在内容变化时提交到 SimWeb `main`。Vercel Git 集成连接 SimWeb 且生产分支为 `main` 后，内容提交会触发部署。源仓库的元数据整理完成并通过首次手动同步前，不切换 2.0 到 `main`。
+仓库已提供 Next.js 的 `vercel.json`，安装命令为 `npm ci`，构建命令为 `npm run build`。当前没有必需环境变量。`.github/workflows/sync-writing.yml` 在默认分支每天北京时间 10:17 及手动触发时检出两个公开仓库，校验、构建并仅在内容变化时提交到 SimWeb `main`。Vercel Git 集成连接 SimWeb 且生产分支为 `main` 后，内容提交会触发部署。目前 2.0 仍在功能分支，等待公开正文的双链处理与首次同步验收后切换 `main`。
 
-原型 Bot 的来源声明见 [vendor/README.md](src/features/bot/vendor/README.md)。
+原型 Bot 的来源声明见 [vendor/README.md](src/components/bot/vendor/README.md)。

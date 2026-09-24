@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BotPreview } from "@/features/bot/bot-preview";
+import { BotPreview } from "@/components/bot/bot-preview";
 
 export const dynamic = "force-dynamic";
 export const metadata = {

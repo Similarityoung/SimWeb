@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPublishedArticles } from "../src/features/writing/catalog";
+import { readPublishedArticles } from "../src/lib/writing/catalog";
 
 export function syncWriting(source: string, target: string): number {
   const published = readPublishedArticles(source);

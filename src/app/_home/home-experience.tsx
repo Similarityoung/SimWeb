@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useHomeConversation } from "./conversation-provider";
 import { useAnswerPresentation } from "./use-answer-presentation";
-import type { BotMood } from "@/features/bot/bot";
+import type { BotMood } from "@/components/bot/bot";
 import type { PresentationPhase } from "./answer-presentation";
 import { Introduction } from "./components/introduction";
 import { TopicShortcuts } from "./components/topic-shortcuts";

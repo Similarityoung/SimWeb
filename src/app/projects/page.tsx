@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageIntro } from "@/components/site/page-intro";
-import { ProjectDirectory } from "@/features/projects/project-directory";
+import { ProjectDirectory } from "@/components/projects/project-directory";
 
 export const metadata: Metadata = {
   title: "Projects",

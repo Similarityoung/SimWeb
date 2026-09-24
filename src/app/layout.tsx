@@ -3,10 +3,10 @@ import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site/site-header";
 import { ThemeProvider } from "@/components/site/theme-provider";
 import { site } from "@/config/site";
-import { projects } from "@/features/projects/data";
-import { getArticleSummaries } from "@/features/writing/content.server";
-import { ConversationProvider } from "@/features/home/conversation-provider";
-import { validateCatalog } from "@/features/home/answer-question";
+import { projects } from "@/lib/projects/data";
+import { getArticleSummaries } from "@/lib/writing/content.server";
+import { ConversationProvider } from "@/app/_home/conversation-provider";
+import { validateCatalog } from "@/app/_home/answer-question";
 import "./globals.css";
 
 const sans = localFont({

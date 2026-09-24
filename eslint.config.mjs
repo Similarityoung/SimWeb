@@ -3,11 +3,8 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
 const forbid = (regex, message) => ({ regex, message });
-const noRoutes = forbid(
-  "(^|/)app(/|$)",
-  "Business modules must not depend on app routes.",
-);
 const restrictions = (patterns) => ["error", { patterns }];
+const domains = ["projects", "writing", "bot"];
 
 export default defineConfig([
   ...nextVitals,
@@ -15,26 +12,29 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     "next-env.d.ts",
-    "src/features/bot/vendor/**",
+    "src/components/bot/vendor/**",
     ".local/**",
     "test-results/**",
     "playwright-report/**",
   ]),
   {
-    files: ["src/features/home/**/*.{ts,tsx}"],
+    files: ["src/app/_home/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": restrictions([
-        noRoutes,
         forbid(
-          "(^|/)projects/(?!(types|project-card)(\\.[jt]sx?)?$)",
-          "Home may only use the public project types and card.",
+          "(^|/)app/(?!_home(/|$))|^(\\.\\./)+(page|layout|notes|thoughts|projects|about|dev)(/|\\.|$)",
+          "Home must not depend on route files.",
         ),
         forbid(
-          "(^|/)writing/(?!(types|article-card)(\\.[jt]sx?)?$)",
+          "(^|/)lib/projects/(?!types(\\.[jt]sx?)?$)|(^|/)components/projects/(?!project-card(\\.[jt]sx?)?$)",
+          "Home may only use the public project type and card.",
+        ),
+        forbid(
+          "(^|/)lib/writing/(?!types(\\.[jt]sx?)?$)|(^|/)components/writing/(?!article-card(\\.[jt]sx?)?$)",
           "Home receives public article summaries; do not import content loaders or internals.",
         ),
         forbid(
-          "(^|/)bot/(?!bot(\\.[jt]sx?)?$)",
+          "(^|/)components/bot/(?!bot(\\.[jt]sx?)?$)",
           "Use the Bot component; keep the engine private.",
         ),
         forbid(
@@ -44,29 +44,48 @@ export default defineConfig([
       ]),
     },
   },
-  ...["projects", "writing", "bot"].map((feature) => ({
-    files: [`src/features/${feature}/**/*.{ts,tsx}`],
-    rules: {
-      "no-restricted-imports": restrictions([
-        noRoutes,
-        forbid(
-          `(^|/)(${["home", "projects", "writing", "bot"].filter((name) => name !== feature).join("|")})(/|$)`,
-          "Lower-level business modules must not depend on another feature.",
-        ),
-      ]),
-    },
-  })),
+  ...domains.map((domain) => {
+    const otherDomains = domains.filter((name) => name !== domain).join("|");
+    return {
+      files: [`src/components/${domain}/**/*.{ts,tsx}`],
+      rules: {
+        "no-restricted-imports": restrictions([
+          forbid("(^|/)app(/|$)", "Shared modules must not depend on routes."),
+          forbid(
+            `(^|/)(components|lib)/(${otherDomains})(/|$)|^(\\.\\./)+(${otherDomains})(/|$)`,
+            "A domain must not depend on another domain's internals.",
+          ),
+        ]),
+      },
+    };
+  }),
+  ...["projects", "writing"].map((domain) => {
+    const otherDomains = domains.filter((name) => name !== domain).join("|");
+    return {
+      files: [`src/lib/${domain}/**/*.{ts,tsx}`],
+      rules: {
+        "no-restricted-imports": restrictions([
+          forbid("(^|/)app(/|$)", "Data modules must not depend on routes."),
+          forbid("(^|/)components(/|$)", "Data modules must not depend on UI."),
+          forbid(
+            `(^|/)lib/(${otherDomains})(/|$)|^(\\.\\./)+(${otherDomains})(/|$)`,
+            "A domain must not depend on another domain's internals.",
+          ),
+        ]),
+      },
+    };
+  }),
   {
     files: [
-      "src/components/**/*.{ts,tsx}",
+      "src/components/{ui,site}/**/*.{ts,tsx}",
       "src/config/**/*.{ts,tsx}",
-      "src/lib/**/*.{ts,tsx}",
+      "src/lib/*.{ts,tsx}",
     ],
     rules: {
       "no-restricted-imports": restrictions([
         forbid(
-          "(^|/)(features|app)(/|$)",
-          "Shared UI, configuration and utilities must not depend on business modules or routes.",
+          "(^|/)(app|bot|projects|writing)(/|$)",
+          "Shared UI, configuration and utilities must not depend on routes or domain modules.",
         ),
       ]),
     },

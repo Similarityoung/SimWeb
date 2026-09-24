@@ -2,7 +2,7 @@
 
 这八个引擎文件来自 `visual-atlas/cases/grok-icon-study/source/replica` 的 Grok Bot 学习复刻。角色造型、商标、几何数据及原始素材归 xAI 或相应权利人所有；原项目声明仅供学习参考，请勿商用或再分发。本站在原型基础上作个人站适配，此说明不代表取得额外授权。
 
-引擎只由 `src/features/bot/runtime.client.ts` 在浏览器加载。首页动作的选择、优先级与计时位于 `bot/behavior.ts`、`scene-controller.ts` 和 `use-bot-scenes.ts`；本目录只负责绘制和状态过渡。
+引擎只由 `src/components/bot/runtime.client.ts` 在浏览器加载。首页动作的选择、优先级与计时位于 `bot/behavior.ts`、`scene-controller.ts` 和 `use-bot-scenes.ts`；本目录只负责绘制和状态过渡。
 
 本站对原引擎的改动集中在：
 

@@ -1,5 +1,5 @@
-import type { Project } from "@/features/projects/types";
-import type { ArticleSummary } from "@/features/writing/types";
+import type { Project } from "@/lib/projects/types";
+import type { ArticleSummary } from "@/lib/writing/types";
 
 export type TopicId = "projects" | "notes" | "thoughts" | "about";
 export type ContentReference =

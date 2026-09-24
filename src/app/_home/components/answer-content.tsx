@@ -1,7 +1,7 @@
 "use client";
 
-import { ProjectCard } from "@/features/projects/project-card";
-import { ArticleCard } from "@/features/writing/article-card";
+import { ProjectCard } from "@/components/projects/project-card";
+import { ArticleCard } from "@/components/writing/article-card";
 import { resolveReference } from "../answer-question";
 import type { Answer, PublicCatalog } from "../types";
 import type { AnswerPresentation } from "../answer-presentation";

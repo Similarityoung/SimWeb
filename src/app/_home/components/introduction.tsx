@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Bot, type BotMood } from "@/features/bot/bot";
+import { Bot, type BotMood } from "@/components/bot/bot";
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageIntro } from "@/components/site/page-intro";
-import { ArticleDirectory } from "@/features/writing/article-directory";
-import { getArticleSummaries } from "@/features/writing/content.server";
+import { ArticleDirectory } from "@/components/writing/article-directory";
+import { getArticleSummaries } from "@/lib/writing/content.server";
 
 export const metadata: Metadata = {
   title: "Thoughts",

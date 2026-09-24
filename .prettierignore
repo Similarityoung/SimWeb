@@ -2,5 +2,5 @@ node_modules/
 .next/
 .local/
 content/
-src/features/bot/vendor/
+src/components/bot/vendor/
 package-lock.json

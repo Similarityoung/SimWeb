@@ -5,7 +5,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
-import type { Article } from "./types";
+import type { Article } from "@/lib/writing/types";
 
 export function ArticleReader({ article }: { article: Article }) {
   return (
