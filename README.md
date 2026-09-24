@@ -22,7 +22,7 @@ npm run dev
 | 路由、共享布局、首页会话与预写回答 | `src/app`、`src/app/_home` |
 | 项目、文章和 Bot 界面 | `src/components` |
 | 项目数据、文章校验与服务端读取 | `src/lib/projects`、`src/lib/writing` |
-| 已发布 Markdown 的同步缓存 | `content/writing` |
+| 已发布 Markdown 的同步缓存 | `content` |
 | shadcn 基础组件、全站导航 | `src/components/ui`、`src/components/site` |
 | 个人资料与菜单 | `src/config/site.ts` |
 
@@ -31,7 +31,7 @@ npm run dev
 ## 修改内容
 
 - 项目编辑 `src/lib/projects/data.ts`，卡片直达配置的 GitHub 或官网。
-- 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content/writing` 是已发布文章的同步缓存。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
+- 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content` 整个目录是已发布文章的同步缓存，不在其中手工维护其他文件。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
 - 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?)`。
 - 手动检查源仓库：`npm run sync:writing -- /path/to/Obisidian-Open`，然后运行 `npm run check`。脚本先校验全部候选文章；任何缺失字段或重复 slug 都会阻止替换当前缓存。
 

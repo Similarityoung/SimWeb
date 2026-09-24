@@ -34,7 +34,7 @@ if (
   const source = process.argv[2];
   if (!source)
     throw new Error("Usage: npm run sync:writing -- <source-directory>");
-  const target = path.join(process.cwd(), "content/writing");
+  const target = path.join(process.cwd(), "content");
   console.log(
     `Synced ${syncWriting(path.resolve(source), target)} published articles`,
   );

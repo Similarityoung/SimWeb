@@ -4,7 +4,7 @@ import { readPublishedArticles } from "./catalog";
 import type { Article, ArticleSummary, WritingKind } from "./types";
 
 function articles(): Article[] {
-  return readPublishedArticles(path.join(process.cwd(), "content/writing")).map(
+  return readPublishedArticles(path.join(process.cwd(), "content")).map(
     ({ article }) => article,
   );
 }
