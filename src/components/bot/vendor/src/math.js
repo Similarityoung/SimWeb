@@ -12,15 +12,12 @@
   const DT = 1 / 120;
   const springSteps = (dt) => Math.max(1, Math.ceil(dt / DT));
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-  const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
   const sign = () => (Math.random() < 0.5 ? -1 : 1);
   const K2 = (n) => (n < 0.5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2);
   const Rc = (n) => 1 - Math.pow(1 - n, 3);
   const y1e = (n) => 1 + 2.70158 * Math.pow(n - 1, 3) + 1.70158 * Math.pow(n - 1, 2);
   const Dke = (n) => n * n * (3 - 2 * n);
-  const x_t = (n, e) => 1 - Math.exp(Math.log(1 - n) * 60 * e);
-  const Rn = (n, bs = 1 / 60) => x_t(n, bs);
 
   const polyPath = (pts) =>
     "M" + pts.map((p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join("L") + "Z";
@@ -34,14 +31,6 @@
   };
   const lerpPoly = (a, b, t) =>
     a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t]);
-  const lerpFace = (n, e, t) => ({
-    x: n.x + (e.x - n.x) * t,
-    y: n.y + (e.y - n.y) * t,
-    sx: n.sx + (e.sx - n.sx) * t,
-    sy: n.sy + (e.sy - n.sy) * t,
-    eye: n.eye + (e.eye - n.eye) * t,
-    leftDX: (n.leftDX ?? 0) + ((e.leftDX ?? 0) - (n.leftDX ?? 0)) * t,
-  });
 
   function flattenPath(d, e = 4) {
     const t = d.match(/[MLCQZmlcqz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) ?? [];
@@ -141,7 +130,7 @@
     return fn;
   }
 
-  // Source z_t — live span of a polyline at Y (used while shape-morphing)
+  // Source z_t — live span of a polyline at Y (used by the turning body)
   function spanPoly(n, e, Re) {
     let t = -Infinity, s = Infinity;
     for (let r = 0; r < n.length; r++) {
@@ -183,65 +172,11 @@
     ];
   }
 
-  // Source HBe — silhouette radii of a solid-of-revolution at yaw `angle`.
-  function solidRadii(solid, angle, n = 96) {
-    const c = Math.cos(angle), s = Math.sin(angle);
-    const r = solid.map(([x, y, z, rad]) => [x * c + z * s, y, rad]);
-    const raw = Array.from({ length: n }, (_, idx) => {
-      const u = (idx / n) * Math.PI * 2;
-      const d = Math.cos(u), m = Math.sin(u);
-      let f = 0;
-      for (const [h, y, k] of r) {
-        const v = d * h + m * y;
-        const b = v * v - (h * h + y * y) + k * k;
-        if (b <= 0) continue;
-        const x = v + Math.sqrt(b);
-        if (x > f) f = x;
-      }
-      return f;
-    });
-    const o = raw.length;
-    return raw.map((l, i) => (
-      raw[(i - 2 + o) % o] + 4 * raw[(i - 1 + o) % o] + 6 * raw[i]
-      + 4 * raw[(i + 1) % o] + raw[(i + 2) % o]
-    ) / 16);
-  }
-
-  // Source Po().turnAt — scale the polar ring by HBe(yaw)/HBe(0).
-  function makeTurnAt(solid, ring, Re) {
-    const rest = solidRadii(solid, 0);
-    return (yaw) => {
-      let v = solidRadii(solid, yaw).map((x, i) => clamp((x + 12) / (rest[i] + 12), 0.32, 1.5));
-      const n = v.length;
-      for (let p = 0; p < 3; p++) {
-        const prev = v;
-        v = prev.map((E, A) => (
-          prev[(A - 2 + n) % n] + 4 * prev[(A - 1 + n) % n] + 6 * prev[A]
-          + 4 * prev[(A + 1) % n] + prev[(A + 2) % n]
-        ) / 16);
-      }
-      return ring.map(([x, y], i) => [Re + (x - Re) * v[i], Re + (y - Re) * v[i]]);
-    };
-  }
-
-  // Source _Fe — map a pointer onto an ellipse around the mark
-  function mapPointer(rect, pt, JFe = 0.6, iin = 22, ain = 14, oin = 2) {
-    const t = rect.left + rect.width / 2;
-    const s = rect.top + rect.height / 2;
-    const r = pt.x - t, i = pt.y - s;
-    const o = Math.min(1, Math.sqrt(Math.hypot(r, i) / (rect.width * oin)));
-    const l = Math.atan2(i, r);
-    return {
-      x: t + JFe * (ain / iin) * o * Math.cos(l) * rect.width,
-      y: s + JFe * o * Math.sin(l) * rect.height,
-    };
-  }
-
   g.GROK_MATH = {
-    spring, stepSpring, DT, springSteps,
-    clamp, lerp, rand, sign, K2, Rc, y1e, Dke, x_t, Rn,
-    polyPath, centroid, lerpPoly, lerpFace,
-    flattenPath, buildSpan, spanAt, spanPoly,
-    rot3, relRot, mapPointer, solidRadii, makeTurnAt,
+    spring, stepSpring, springSteps,
+    clamp, rand, sign, K2, Rc, y1e, Dke,
+    polyPath, centroid, lerpPoly,
+    flattenPath, spanAt, spanPoly,
+    relRot,
   };
 })(window);

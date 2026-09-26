@@ -70,7 +70,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
   });
 }
 
-test("a new question completes the old answer, and clearing cancels output", async ({
+test("a new question waits for the previous answer, and clearing cancels output", async ({
   page,
 }) => {
   await page.goto("/");
@@ -79,11 +79,22 @@ test("a new question completes the old answer, and clearing cancels output", asy
     "data-state",
     "streaming",
   );
-  await page.getByRole("button", { name: "Projects", exact: true }).click();
+  const projects = page.getByRole("button", { name: "Projects", exact: true });
+  const input = page.getByRole("textbox", { name: "Ask a question" });
+  const send = page.getByRole("button", { name: "Send question" });
+  await expect(projects).toBeDisabled();
+  await input.fill("What are your projects?");
+  await expect(send).toBeDisabled();
+  await input.press("Enter");
+  await expect(page.getByTestId("exchange")).toHaveCount(1);
+  await expect(input).toHaveValue("What are your projects?");
   await expect(page.getByTestId("answer").first()).toHaveAttribute(
     "data-state",
     "complete",
   );
+  await expect(projects).toBeEnabled();
+  await expect(send).toBeEnabled();
+  await projects.click();
   await expect(page.getByTestId("answer").last()).toHaveAttribute(
     "data-state",
     "streaming",

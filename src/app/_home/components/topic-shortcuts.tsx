@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/browser-signals";
 import {
   ArrowUpRight,
   Feather,

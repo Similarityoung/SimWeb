@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { usePageHidden, useReducedMotion } from "@/lib/browser-signals";
 import { cn } from "@/lib/utils";
 import { selectBehavior, type BotMood, type CharacterState } from "./behavior";
 import { loadRuntime, type BotRuntime } from "./runtime.client";
@@ -26,6 +27,16 @@ export function Character({
   });
   const [failed, setFailed] = useState(false);
   const ready = useEffectEvent(() => onReady?.());
+  const reduceMotion = useReducedMotion();
+  const hidden = usePageHidden();
+  const settings = useEffectEvent(() => ({ reduceMotion, hidden }));
+
+  useEffect(() => {
+    if (runtime.current) runtime.current.reduceMotion = reduceMotion;
+  }, [reduceMotion]);
+  useEffect(() => {
+    runtime.current?.setPaused(hidden);
+  }, [hidden]);
 
   useEffect(() => {
     latest.current.state = state ?? selectBehavior(mood);
@@ -38,35 +49,20 @@ export function Character({
     loadRuntime()
       .then(() => {
         if (disposed || !svg.current) return;
-        const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const current = settings();
         const character = new window.GrokCharacter(svg.current, {
-          mode: "manual",
-          shape: "blob",
           state: latest.current.state,
-          color: "black",
-          scheme: "light",
-          loginWrap: true,
-          followPointer: false,
-          reduceMotion: motion.matches,
+          reduceMotion: current.reduceMotion,
+          paused: current.hidden,
           inkFlat: "var(--bot-body)",
           eyeColor: "var(--bot-eyes)",
-          autoTricks: false,
           onChange: ({ state: selected }: { state: string }) => {
             svg.current?.setAttribute("data-state", selected);
           },
         });
         runtime.current = character;
         ready();
-        const updateMotion = () => {
-          character.reduceMotion = motion.matches;
-        };
-        const updateVisibility = () => character.setPaused(document.hidden);
-        motion.addEventListener("change", updateMotion);
-        document.addEventListener("visibilitychange", updateVisibility);
-        updateVisibility();
         cleanup = () => {
-          motion.removeEventListener("change", updateMotion);
-          document.removeEventListener("visibilitychange", updateVisibility);
           character.destroy();
           runtime.current = null;
         };

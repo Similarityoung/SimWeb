@@ -2,26 +2,28 @@
 
 import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MAX_QUESTION_LENGTH, normalizeQuestion } from "@/lib/answer";
 import { Input } from "@/components/ui/input";
 
 export function Composer({
-  pending,
+  submitDisabled,
   value,
   onChange,
   onSubmit,
 }: {
-  pending: boolean;
+  submitDisabled: boolean;
   value: string;
   onChange: (value: string) => void;
   onSubmit: (text: string) => void;
 }) {
+  const text = normalizeQuestion(value);
   return (
     <form
       className="mt-3.5 flex min-h-14 items-center gap-3 rounded-[15px] border border-border-strong bg-background p-2 pl-4 transition-colors focus-within:border-foreground sm:min-h-[60px] sm:rounded-[16px] sm:px-2.5 sm:pl-5"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!value.trim() || pending) return;
-        onSubmit(value);
+        if (!text || submitDisabled) return;
+        onSubmit(text);
       }}
     >
       <label htmlFor="question" className="sr-only">
@@ -31,7 +33,7 @@ export function Composer({
         id="question"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        maxLength={300}
+        maxLength={MAX_QUESTION_LENGTH}
         autoComplete="off"
         placeholder="What would you like to know?"
         className="h-9 min-w-0 border-0 bg-transparent px-0 text-base shadow-none ring-0 placeholder:font-mono placeholder:text-[13px] focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none sm:text-[15px] dark:bg-transparent"
@@ -43,7 +45,7 @@ export function Composer({
       <Button
         type="submit"
         size="icon"
-        disabled={!value.trim() || pending}
+        disabled={!text || submitDisabled}
         aria-label="Send question"
         className="size-10 rounded-full bg-foreground text-background shadow-none hover:bg-accent active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
       >

@@ -1,79 +1,84 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, openEngine } from "./bot-runtime";
 
-// Exercise the real SVG renderer at a fixed instant, so breathing and frame
-// scheduling cannot hide a discontinuity introduced by changing state.
+test("bouncing restores the face even when it interrupts arrival", async ({
+  page,
+}) => {
+  await openEngine(page);
+  const results = await page.evaluate(() =>
+    [0, 0.99].flatMap((random) =>
+      [0, 120, 1000].map((delay) =>
+        window.__withBot({ state: "spawning", random }, ({ bot, advance }) => {
+          advance(2000);
+          bot.setState("idle");
+          advance(delay);
+          let faceless = 0;
+          let faded = false;
+          // A bad first exit used to leave a half turn behind for later clicks too.
+          for (let click = 0; click < 3; click++) {
+            bot.setState("bouncing");
+            advance(1000);
+            bot.setState("idle");
+            for (let t = 0; t < 1000; t += 10) {
+              advance(10);
+              if (
+                bot.fx.amount < 0.04 &&
+                bot.eyeEls.some((eye) => eye.style.display === "none")
+              )
+                faceless++;
+              if (
+                bot.eyeEls.some(
+                  (eye) =>
+                    Number(eye.style.opacity) > 0.1 &&
+                    Number(eye.style.opacity) < 0.9,
+                )
+              )
+                faded = true;
+            }
+          }
+          return { random, delay, faceless, faded };
+        }),
+      ),
+    ),
+  );
+  for (const result of results) {
+    expect(result.faceless, JSON.stringify(result)).toBe(0);
+    expect(result.faded, JSON.stringify(result)).toBe(true);
+  }
+});
+
 test("eye transitions preserve the rendered contour, including interruptions", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.waitForFunction(() => "GrokCharacter" in window);
-  const result = await page.evaluate(() => {
-    type Bot = {
-      eyeMorph: { x: number };
-      eyeEls: SVGPathElement[];
-      setState: (name: string) => void;
-      _paint: (now: number) => void;
-      destroy: () => void;
-    };
-    const { GrokCharacter } = window as unknown as {
-      GrokCharacter: new (svg: SVGSVGElement, options: object) => Bot;
-    };
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    document.body.append(svg);
-    const bot = new GrokCharacter(svg, {
-      mode: "manual",
-      state: "celebrate",
-      paused: true,
-      autoTricks: false,
-      followPointer: false,
-    });
-    const now = performance.now();
-    function contour() {
-      return bot.eyeEls.flatMap((eye) =>
-        Array.from({ length: 32 }, (_, i) => {
-          const p = eye.getPointAtLength((eye.getTotalLength() * i) / 32);
-          const q = p.matrixTransform(eye.getCTM()!);
-          return [q.x, q.y];
-        }).flat(),
-      );
-    }
-    function change(name: string) {
-      bot._paint(now);
-      const before = contour();
-      bot.setState(name);
-      bot._paint(now);
-      return Math.max(
-        ...contour().map((value, i) => Math.abs(value - before[i])),
-      );
-    }
-    try {
-      const leavingCompletion = change("idle");
-      // Interrupt the transition midway, as hover/focus or a new answer can.
-      bot.eyeMorph.x = 0.4;
-      const interrupted = change("listening");
-      const rapidRetarget = change("happy");
-      bot.eyeMorph.x = 1;
-      bot._paint(now);
-      const beforeRestart = contour();
-      const restart = change("happy");
-      return {
-        leavingCompletion,
-        interrupted,
-        rapidRetarget,
-        restart,
-        finite: beforeRestart.every(Number.isFinite),
-      };
-    } finally {
-      bot.destroy();
-      svg.remove();
-    }
-  });
-  expect(result.finite).toBe(true);
-  for (const key of [
-    "leavingCompletion",
-    "interrupted",
-    "rapidRetarget",
-    "restart",
-  ] as const)
-    expect(result[key], key).toBeLessThan(0.05);
+  await openEngine(page);
+  const results = await page.evaluate(() =>
+    window.__withBot({ state: "celebrate" }, ({ bot, contour }) => {
+      const sample = () => contour(bot.eyeEls, 32);
+      return (
+        [
+          ["idle", undefined],
+          ["listening", 0.4],
+          ["happy", undefined],
+          ["happy", 1],
+        ] as const
+      ).map(([state, morph]) => {
+        if (typeof morph === "number") bot.eyeMorph.x = morph;
+        bot._paint(performance.now());
+        const before = sample();
+        bot.setState(state);
+        bot._paint(performance.now());
+        const after = sample();
+        return {
+          state,
+          jump: Math.max(
+            ...after.map((value, i) => Math.abs(value - before[i])),
+          ),
+          finite: [...before, ...after].every(Number.isFinite),
+        };
+      });
+    }),
+  );
+  for (const result of results) {
+    expect(result.finite).toBe(true);
+    expect(result.jump, result.state).toBeLessThan(0.05);
+  }
 });

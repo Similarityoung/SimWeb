@@ -1,9 +1,6 @@
 import "server-only";
-import {
-  readPublishedArticles,
-  type PublishedArticle,
-} from "@/lib/writing/catalog";
-import path from "node:path";
+import type { PublishedArticle } from "./catalog";
+import { getPublishedArticles } from "./content.server";
 
 const ignored = new Set([
   "a",
@@ -102,8 +99,5 @@ export function rankArticles(
 }
 
 export function relevantArticles(query: string) {
-  return rankArticles(
-    query,
-    readPublishedArticles(path.join(process.cwd(), "content")),
-  );
+  return rankArticles(query, getPublishedArticles());
 }

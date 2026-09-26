@@ -1,124 +1,86 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./bot-runtime";
+import { changeMotion, openIdle, setRandom } from "./bot-page";
 
-for (const random of [0, 0.99]) {
+for (const { random, restoreMotion } of [
+  { random: 0, restoreMotion: false },
+  { random: 0.99, restoreMotion: false },
+  { random: 0, restoreMotion: true },
+]) {
   const responding = "writing";
-  test(`writing ends with a ribbon turn, one hop and landing particles with random ${random}`, async ({
+  test(`writing ends with a ribbon turn, one hop and landing particles with random ${random}${restoreMotion ? " after restoring motion" : ""}`, async ({
     page,
   }) => {
-    await page.addInitScript((value) => {
-      Math.random = () => value;
-    }, random);
-    await page.addInitScript(() => {
-      Object.defineProperty(window, "GrokCharacter", {
-        configurable: true,
-        set(
-          Character: new (...args: unknown[]) => {
-            extras: { turn: number | null; hop: number };
-          },
-        ) {
-          Object.defineProperty(window, "GrokCharacter", {
-            configurable: true,
-            writable: true,
-            value: class extends Character {
-              constructor(...args: unknown[]) {
-                super(...args);
-                Object.assign(window, { __bot: this });
-              }
-            },
-          });
-        },
-      });
-    });
-    await page.goto("/");
+    await setRandom(page, random);
+    if (restoreMotion) await page.emulateMedia({ reducedMotion: "reduce" });
+    await openIdle(page);
+    if (restoreMotion) await changeMotion(page, "no-preference");
     const bot = page.getByRole("img", { name: "Interactive character" });
-    // Wait for arrival to finish, not the idle frame before initialization.
-    await expect(bot.locator("svg")).toHaveAttribute("data-state", "spawning");
-    await expect(bot.locator("svg")).toHaveAttribute("data-state", "idle");
-    const result = await page.evaluate(
-      () =>
-        new Promise<{
-          samples: {
-            phase: string;
-            state: string;
-            cards: number;
-            progressRing: boolean;
-            ribbons: boolean;
-            particles: number;
-            turn: number;
-            hop: number;
-            at: number;
-          }[];
-          sameSvg: boolean;
-        }>((resolve, reject) => {
-          const svg = document.querySelector(
-            '[aria-label="Interactive character"] svg',
-          );
-          const samples: {
-            phase: string;
-            state: string;
-            cards: number;
-            progressRing: boolean;
-            ribbons: boolean;
-            particles: number;
-            turn: number;
-            hop: number;
-            at: number;
-          }[] = [];
-          const start = performance.now();
-          const deadline = setTimeout(
-            () => reject(new Error("Presentation did not settle")),
-            13_000,
-          );
-          const sample = () => {
-            const answer = document.querySelector('[data-testid="answer"]');
-            const phase = answer?.getAttribute("data-phase") ?? "";
-            const ring = svg?.querySelector("circle[stroke-dashoffset]");
-            const extras = (
-              window as unknown as {
-                __bot: { extras: { turn: number | null; hop: number } };
-              }
-            ).__bot.extras;
-            samples.push({
-              particles: svg?.querySelectorAll("[data-particle]").length ?? 0,
-              turn: Math.abs(extras.turn ?? 0),
-              hop: extras.hop,
-              phase,
-              state: svg?.getAttribute("data-state") ?? "",
-              cards: answer?.querySelectorAll("a").length ?? 0,
-              progressRing: !!ring && getComputedStyle(ring).display !== "none",
-              ribbons: [
-                ...(svg?.querySelectorAll("path[data-trail]") ?? []),
-              ].some(
-                (path) =>
-                  !!path.getAttribute("d") &&
-                  Number(path.getAttribute("opacity")) > 0,
-              ),
-              at: performance.now() - start,
-            });
-            if (
-              phase === "complete" &&
-              samples.some((frame) => frame.state === "celebrate") &&
-              svg?.getAttribute("data-state") === "idle"
-            ) {
-              clearTimeout(deadline);
-              resolve({
-                samples,
-                sameSvg:
-                  svg ===
-                  document.querySelector(
-                    '[aria-label="Interactive character"] svg',
-                  ),
-              });
-            } else requestAnimationFrame(sample);
-          };
-          document
-            .querySelector<HTMLButtonElement>(
-              '[aria-label="Conversation topics"] > button:nth-child(2)',
-            )!
-            .click();
-          requestAnimationFrame(sample);
-        }),
-    );
+    const result = await page.evaluate(async () => {
+      const svg = document.querySelector(
+        '[aria-label="Interactive character"] svg',
+      );
+      const samples: {
+        phase: string;
+        state: string;
+        cards: number;
+        progressRing: boolean;
+        ribbons: boolean;
+        particles: number;
+        turn: number;
+        hop: number;
+        at: number;
+      }[] = [];
+      const start = performance.now();
+      await new Promise<void>((resolve, reject) => {
+        const deadline = setTimeout(
+          () => reject(new Error("Presentation did not settle")),
+          13_000,
+        );
+        const sample = () => {
+          const answer = document.querySelector('[data-testid="answer"]');
+          const phase = answer?.getAttribute("data-phase") ?? "";
+          const ring = svg?.querySelector("circle[stroke-dashoffset]");
+          const extras = window.__bot.extras;
+          samples.push({
+            particles: svg?.querySelectorAll("[data-particle]").length ?? 0,
+            turn: Math.abs(extras.turn ?? 0),
+            hop: extras.hop,
+            phase,
+            state: svg?.getAttribute("data-state") ?? "",
+            cards: answer?.querySelectorAll("a").length ?? 0,
+            progressRing: !!ring && getComputedStyle(ring).display !== "none",
+            ribbons: [
+              ...(svg?.querySelectorAll("path[data-trail]") ?? []),
+            ].some(
+              (path) =>
+                !!path.getAttribute("d") &&
+                Number(path.getAttribute("opacity")) > 0,
+            ),
+            at: performance.now() - start,
+          });
+          if (
+            phase === "complete" &&
+            samples.some((frame) => frame.state === "celebrate") &&
+            svg?.getAttribute("data-state") === "idle"
+          ) {
+            clearTimeout(deadline);
+            resolve();
+          } else requestAnimationFrame(sample);
+        };
+        document
+          .querySelector<HTMLButtonElement>(
+            '[aria-label="Conversation topics"] > button:nth-child(2)',
+          )!
+          .click();
+        requestAnimationFrame(sample);
+      });
+      return {
+        samples,
+        sameSvg:
+          svg ===
+          document.querySelector('[aria-label="Interactive character"] svg'),
+      };
+    });
     const { samples } = result;
     expect(result.sameSvg).toBe(true);
     expect(
@@ -249,36 +211,26 @@ test("focus cannot replace the active move; clearing card presentation cannot re
 test("reduced motion freezes the decorative SVG while text still unfolds", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    Math.random = () => 0;
-  });
+  await setRandom(page, 0);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("button", { name: /^Notes/ }).click();
   await expect(page.getByTestId("streaming-text")).not.toBeEmpty();
-  const result = await page.evaluate(
-    () =>
-      new Promise<{ svgs: string[]; lengths: number[] }>((resolve) => {
-        const svg = document.querySelector(
-          '[aria-label="Interactive character"] svg',
-        )!;
-        const svgs: string[] = [],
-          lengths: number[] = [];
-        const start = performance.now();
-        const sample = () => {
-          svgs.push(svg.innerHTML);
-          lengths.push(
-            document.querySelector('[data-testid="streaming-text"]')
-              ?.textContent?.length ?? 0,
-          );
-          if (performance.now() - start < 500) requestAnimationFrame(sample);
-          else resolve({ svgs, lengths });
-        };
-        requestAnimationFrame(sample);
-      }),
+  const samples = await page.evaluate(() => {
+    const svg = document.querySelector(
+      '[aria-label="Interactive character"] svg',
+    )!;
+    return window.__sampleFrames(500, () => ({
+      svg: svg.innerHTML,
+      length:
+        document.querySelector('[data-testid="streaming-text"]')?.textContent
+          ?.length ?? 0,
+    }));
+  });
+  expect(new Set(samples.map((sample) => sample.svg)).size).toBe(1);
+  expect(new Set(samples.map((sample) => sample.length)).size).toBeGreaterThan(
+    1,
   );
-  expect(new Set(result.svgs).size).toBe(1);
-  expect(new Set(result.lengths).size).toBeGreaterThan(1);
   await expect(page.getByTestId("answer")).toHaveAttribute(
     "data-state",
     "complete",
@@ -320,6 +272,8 @@ for (const effect of ["ribbons", "particles"] as const) {
     await page.getByRole("button", { name: /^Notes/ }).click();
     await expect(svg).toHaveAttribute("data-state", "writing");
     await expect(effects).toHaveCount(0);
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
     await expect(svg).toHaveAttribute("data-state", "celebrate", {
       timeout: 8_000,
     });

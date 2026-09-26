@@ -96,76 +96,6 @@ test("expired and cancelled callbacks cannot replace a newer move", () => {
   assert.equal(currentMove(done).state, "idle");
 });
 
-test("completion celebrates once per answer, including with a focused composer", () => {
-  const event = {
-    type: "base",
-    mood: "listening",
-    activityKey: "one",
-    completed: true,
-  } as const;
-  const completed = sceneReducer(createSceneModel("responding", "one"), event);
-  assert.equal(currentMove(completed).state, "celebrate");
-  assert.equal(sceneReducer(completed, event), completed);
-  const done = sceneReducer(completed, {
-    type: "expire",
-    id: completed.move!.id,
-  });
-  assert.equal(currentMove(done).state, "listening");
-  assert.equal(sceneReducer(done, event), done);
-  assert.equal(
-    currentMove(sceneReducer(done, { ...event, mood: "idle" })).state,
-    "idle",
-  );
-});
-
-test("clear and follow-up cancel celebration without replaying a past completion", () => {
-  const event = {
-    type: "base",
-    mood: "idle",
-    activityKey: "one",
-    completed: true,
-  } as const;
-  const completed = sceneReducer(createSceneModel("responding", "one"), event);
-  const cleared = sceneReducer(completed, { type: "base", mood: "idle" });
-  assert.equal(currentMove(cleared).state, "idle");
-  const followUp = sceneReducer(completed, {
-    type: "base",
-    mood: "responding",
-    activityKey: "two",
-  });
-  assert.equal(currentMove(followUp).state, "writing");
-  assert.equal(
-    sceneReducer(followUp, { type: "expire", id: completed.move!.id }),
-    followUp,
-  );
-  assert.equal(
-    currentMove(sceneReducer(followUp, { ...event, activityKey: "two" })).state,
-    "celebrate",
-  );
-  assert.equal(currentMove(cue(completed, "tap")).state, "bouncing");
-});
-
-test("completion while hidden is consumed without replay on visibility or focus changes", () => {
-  const hidden = sceneReducer(createSceneModel("responding", "one"), {
-    type: "visibility",
-    hidden: true,
-  });
-  const event = {
-    type: "base",
-    mood: "idle",
-    activityKey: "one",
-    completed: true,
-  } as const;
-  const done = sceneReducer(hidden, event);
-  assert.equal(currentMove(done).state, "idle");
-  const visible = sceneReducer(done, { type: "visibility", hidden: false });
-  assert.equal(sceneReducer(visible, event), visible);
-  assert.equal(
-    currentMove(sceneReducer(visible, { ...event, mood: "listening" })).state,
-    "listening",
-  );
-});
-
 test("hidden pages discard transient moves and do not replay them on return", () => {
   const active = cue(createSceneModel("idle"), "tap");
   const hidden = sceneReducer(active, { type: "visibility", hidden: true });
@@ -197,77 +127,86 @@ test("arrival is consumed once, including when an answer preempts it", () => {
   assert.equal(sceneReducer(idle, event), idle);
 });
 
-test("unmatched content uses confused; one-time failures restore idle or listening", () => {
-  assert.equal(currentMove(createSceneModel("unmatched")).state, "confused");
-  for (const mood of ["idle", "listening"] as const) {
+for (const [flag, reaction] of [
+  ["completed", "celebrate"],
+  ["failed", "alerting"],
+] as const) {
+  test(`${flag} reacts once per answer, then restores idle or listening`, () => {
+    assert.equal(currentMove(createSceneModel("unmatched")).state, "confused");
+    for (const mood of ["idle", "listening"] as const) {
+      const event = {
+        type: "base",
+        mood,
+        activityKey: "one",
+        [flag]: true,
+      } as const;
+      const active = sceneReducer(createSceneModel("responding", "one"), event);
+      assert.equal(currentMove(active).state, reaction);
+      assert.equal(sceneReducer(active, event), active);
+      const done = sceneReducer(active, {
+        type: "expire",
+        id: active.move!.id,
+      });
+      assert.equal(currentMove(done).state, mood);
+      assert.equal(sceneReducer(done, event), done);
+      const focused = sceneReducer(done, { ...event, mood: "listening" });
+      assert.equal(currentMove(focused).state, "listening");
+      const blurred = sceneReducer(focused, { ...event, mood: "idle" });
+      assert.equal(currentMove(blurred).state, "idle");
+      assert.equal(
+        cue(blurred, "idle-expression").move!.scene,
+        "idle-expression",
+      );
+    }
+  });
+
+  test(`${flag} feedback is cancelled by new activity and never replays after clearing or hiding`, () => {
     const event = {
       type: "base",
-      mood,
+      mood: "idle",
       activityKey: "one",
-      failed: true,
+      [flag]: true,
     } as const;
-    const error = sceneReducer(createSceneModel("responding", "one"), event);
-    assert.equal(currentMove(error).state, "alerting");
-    assert.equal(sceneReducer(error, event), error);
-    const done = sceneReducer(error, {
-      type: "expire",
-      id: error.move!.id,
-    });
-    assert.equal(currentMove(done).state, mood);
-    assert.equal(sceneReducer(done, event), done);
-    const focused = sceneReducer(done, { ...event, mood: "listening" });
-    assert.equal(currentMove(focused).state, "listening");
-    const blurred = sceneReducer(focused, { ...event, mood: "idle" });
-    assert.equal(currentMove(blurred).state, "idle");
+    const active = sceneReducer(createSceneModel("responding", "one"), event);
+    assert.equal(currentMove(active).state, reaction);
     assert.equal(
-      cue(blurred, "idle-expression").move!.scene,
-      "idle-expression",
+      currentMove(sceneReducer(active, { ...event, mood: "listening" })).state,
+      "listening",
     );
-  }
-});
-
-test("failed-answer feedback yields to new questions and never replays after hiding or clearing", () => {
-  const event = {
-    type: "base",
-    mood: "idle",
-    activityKey: "one",
-    failed: true,
-  } as const;
-  const error = sceneReducer(createSceneModel("responding", "one"), event);
-  assert.equal(currentMove(error).state, "alerting");
-  const focused = sceneReducer(error, { ...event, mood: "listening" });
-  assert.equal(currentMove(focused).state, "listening");
-  const followUp = sceneReducer(error, {
-    type: "base",
-    mood: "responding",
-    activityKey: "two",
+    assert.equal(
+      currentMove(sceneReducer(active, { type: "base", mood: "idle" })).state,
+      "idle",
+    );
+    const followUp = sceneReducer(active, {
+      type: "base",
+      mood: "responding",
+      activityKey: "two",
+    });
+    assert.equal(currentMove(followUp).state, "writing");
+    assert.equal(
+      sceneReducer(followUp, { type: "expire", id: active.move!.id }),
+      followUp,
+    );
+    assert.equal(
+      currentMove(sceneReducer(followUp, { ...event, activityKey: "two" }))
+        .state,
+      reaction,
+    );
+    if (flag === "completed")
+      assert.equal(currentMove(cue(active, "tap")).state, "bouncing");
+    // Cover both an active reaction being hidden and an answer finishing while hidden.
+    for (const model of [active, createSceneModel("responding", "one")]) {
+      const hidden = sceneReducer(model, { type: "visibility", hidden: true });
+      const done = sceneReducer(hidden, event);
+      assert.equal(currentMove(done).state, "idle");
+      const visible = sceneReducer(done, { type: "visibility", hidden: false });
+      assert.equal(currentMove(visible).state, "idle");
+      assert.equal(sceneReducer(visible, event), visible);
+      assert.equal(
+        currentMove(sceneReducer(visible, { ...event, mood: "listening" }))
+          .state,
+        "listening",
+      );
+    }
   });
-  assert.equal(currentMove(followUp).state, "writing");
-  assert.equal(
-    sceneReducer(followUp, { type: "expire", id: error.move!.id }),
-    followUp,
-  );
-  assert.equal(
-    currentMove(sceneReducer(followUp, { ...event, activityKey: "two" })).state,
-    "alerting",
-  );
-  const cleared = sceneReducer(error, { type: "base", mood: "idle" });
-  assert.equal(currentMove(cleared).state, "idle");
-  const hidden = sceneReducer(error, { type: "visibility", hidden: true });
-  const visible = sceneReducer(hidden, { type: "visibility", hidden: false });
-  assert.equal(currentMove(sceneReducer(visible, event)).state, "idle");
-  const failedWhileHidden = sceneReducer(
-    sceneReducer(createSceneModel("responding", "one"), {
-      type: "visibility",
-      hidden: true,
-    }),
-    event,
-  );
-  assert.equal(currentMove(failedWhileHidden).state, "idle");
-  assert.equal(
-    currentMove(
-      sceneReducer(failedWhileHidden, { type: "visibility", hidden: false }),
-    ).state,
-    "idle",
-  );
-});
+}

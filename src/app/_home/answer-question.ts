@@ -1,7 +1,11 @@
+import {
+  normalizeQuestion,
+  QUESTION_LENGTH_ERROR,
+  type Answer,
+  type ContentReference,
+} from "@/lib/answer";
 import { preparedAnswers, topics } from "./presets";
 import type {
-  Answer,
-  ContentReference,
   PublicCatalog,
   Question,
   ResolvedContent,
@@ -9,6 +13,8 @@ import type {
 } from "./types";
 
 export class AnswerRateLimitError extends Error {}
+
+const greeting = /^(hello|hi|hey|你好|您好)[!！。\s]*$/i;
 
 function interleaveByCategory(
   articles: readonly PublicCatalog["articles"][number][],
@@ -91,11 +97,9 @@ export function validateCatalog(catalog: PublicCatalog): void {
   }
 }
 
-function isPreparedQuestion(question: Question): boolean {
-  if (question.topic) return true;
-  const text = question.text.trim().toLowerCase();
+function isPreparedQuestion(text: string): boolean {
   return (
-    /^(hello|hi|hey|你好|您好)[!！。\s]*$/i.test(text) ||
+    greeting.test(text) ||
     /^(?:show me |what are your |tell me about your )?(?:notes|thoughts|projects)\??$/.test(
       text,
     ) ||
@@ -115,7 +119,6 @@ function isPreparedQuestion(question: Question): boolean {
 
 async function remoteAnswer(
   question: string,
-  catalog: PublicCatalog,
   signal?: AbortSignal,
 ): Promise<Answer> {
   const response = await fetch("/api/answer", {
@@ -128,11 +131,7 @@ async function remoteAnswer(
   if (response.status === 429) throw new AnswerRateLimitError();
   if (!response.ok)
     throw new Error(`Answer request failed: ${response.status}`);
-  const answer = (await response.json()) as Answer;
-  answer.references.forEach((reference) =>
-    resolveReference(reference, catalog),
-  );
-  return answer;
+  return (await response.json()) as Answer;
 }
 
 function matches(text: string, keyword: string) {
@@ -148,11 +147,9 @@ export async function answerQuestion(
   aiEnabled = false,
 ): Promise<Answer> {
   signal?.throwIfAborted();
-  const text = question.text.trim().toLowerCase();
-  if (!text || text.length > 300)
-    throw new Error("A question must contain between 1 and 300 characters.");
-  if (aiEnabled && !isPreparedQuestion(question))
-    return remoteAnswer(question.text.trim(), catalog, signal);
+  const normalized = normalizeQuestion(question.text);
+  if (!normalized) throw new Error(QUESTION_LENGTH_ERROR);
+  const text = normalized.toLowerCase();
   const topic =
     question.topic ??
     topics.find((item) =>
@@ -160,19 +157,22 @@ export async function answerQuestion(
         matches(text, keyword),
       ),
     )?.id;
-  const answer: Answer = topic
-    ? preparedAnswer(topic, catalog, question.topicPage)
-    : /^(hello|hi|hey|你好|您好)[!！。\s]*$/i.test(text)
-      ? {
-          kind: "answer",
-          text: "Hello! Make yourself at home. Ask me about my projects, notes, or what I’ve been thinking about.",
-          references: [],
-        }
-      : {
-          kind: "unmatched",
-          text: "I don’t have a prepared answer for that yet. Try one of the topics below, or browse the complete collections in the menu.",
-          references: [],
-        };
+  const answer: Answer =
+    aiEnabled && !question.topic && !isPreparedQuestion(text)
+      ? await remoteAnswer(normalized, signal)
+      : topic
+        ? preparedAnswer(topic, catalog, question.topicPage)
+        : greeting.test(text)
+          ? {
+              kind: "answer",
+              text: "Hello! Make yourself at home. Ask me about my projects, notes, or what I’ve been thinking about.",
+              references: [],
+            }
+          : {
+              kind: "unmatched",
+              text: "I don’t have a prepared answer for that yet. Try one of the topics below, or browse the complete collections in the menu.",
+              references: [],
+            };
   answer.references.forEach((reference) =>
     resolveReference(reference, catalog),
   );

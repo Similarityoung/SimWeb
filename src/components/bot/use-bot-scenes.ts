@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePageHidden, useReducedMotion } from "@/lib/browser-signals";
 import { useTheme } from "next-themes";
 import {
   IDLE_PAUSE_MS,
@@ -40,6 +41,8 @@ export function useBotScenes({
     createSceneModel(mood, activityKey, arrival),
   );
   const [ready, setReady] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const hidden = usePageHidden();
   const { resolvedTheme } = useTheme();
   const previousTheme = useRef<string | undefined>(undefined);
   const cue = useCallback(
@@ -59,8 +62,7 @@ export function useBotScenes({
   const onReady = useCallback(() => setReady(true), []);
   const wakeOnActivity = useEffectEvent(() => {
     if (model.move?.scene !== "sleep") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-      end("sleep");
+    if (reducedMotion) end("sleep");
     else cue("wake");
   });
 
@@ -87,28 +89,21 @@ export function useBotScenes({
   }, [ready, model.move]);
   useEffect(() => {
     if (!ready) return;
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      clearTimeout(timer);
-      if (motion.matches) {
-        end("idle-expression");
-        return;
-      }
-      if (mood !== "idle" || model.move || model.hidden) return;
-      const [min, max] = IDLE_PAUSE_MS;
-      timer = setTimeout(
-        () => cue("idle-expression"),
-        min + Math.random() * (max - min),
-      );
-    };
-    schedule();
-    motion.addEventListener("change", schedule);
-    return () => {
-      clearTimeout(timer);
-      motion.removeEventListener("change", schedule);
-    };
-  }, [ready, mood, model.move, model.hidden, cue, end]);
+    if (reducedMotion) {
+      end("idle-expression");
+      return;
+    }
+    if (mood !== "idle" || model.move || hidden) return;
+    const [min, max] = IDLE_PAUSE_MS;
+    const timer = setTimeout(
+      () => cue("idle-expression"),
+      min + Math.random() * (max - min),
+    );
+    return () => clearTimeout(timer);
+  }, [ready, mood, model.move, hidden, reducedMotion, cue, end]);
+  useEffect(() => {
+    if (model.hidden !== hidden) dispatch({ type: "visibility", hidden });
+  }, [hidden, model.hidden]);
   useEffect(() => {
     if (
       ready &&
@@ -123,15 +118,11 @@ export function useBotScenes({
     let sleepTimer: ReturnType<typeof setTimeout>;
     const resetIdle = () => {
       clearTimeout(sleepTimer);
-      if (document.hidden || isAnswerMood(mood)) return;
+      if (hidden || isAnswerMood(mood)) return;
       sleepTimer = setTimeout(() => cue("sleep"), SLEEP_AFTER_MS);
     };
     const activity = () => {
       wakeOnActivity();
-      resetIdle();
-    };
-    const visibility = () => {
-      dispatch({ type: "visibility", hidden: document.hidden });
       resetIdle();
     };
     const events = [
@@ -146,15 +137,13 @@ export function useBotScenes({
         passive: true,
         capture: true,
       });
-    document.addEventListener("visibilitychange", visibility);
     resetIdle();
     return () => {
       clearTimeout(sleepTimer);
       for (const event of events)
         document.removeEventListener(event, activity, true);
-      document.removeEventListener("visibilitychange", visibility);
     };
-  }, [ready, mood, cue]);
+  }, [ready, mood, hidden, cue]);
 
   return {
     ...currentMove(model),

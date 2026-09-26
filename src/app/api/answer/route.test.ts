@@ -37,14 +37,16 @@ test("the endpoint rejects cross-origin and oversized requests before retrieval"
       }),
     );
     assert.equal(crossOrigin.status, 403);
-    const oversized = await POST(
-      new Request("https://example.com/api/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "x".repeat(3000) }),
-      }),
-    );
-    assert.equal(oversized.status, 400);
+    for (const text of ["x".repeat(3000), null, 3, " \n", "x".repeat(301)]) {
+      const invalid = await POST(
+        new Request("https://example.com/api/answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        }),
+      );
+      assert.equal(invalid.status, 400);
+    }
   } finally {
     if (previousKey === undefined) delete process.env.DEEPSEEK_API_KEY;
     else process.env.DEEPSEEK_API_KEY = previousKey;

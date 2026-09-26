@@ -1,3 +1,5 @@
+import { GATHER_MS } from "./motion-timing";
+
 export const behaviors = {
   idle: ["idle"],
   listening: ["listening"],
@@ -8,8 +10,6 @@ export type BotMood = keyof typeof behaviors;
 
 export const IDLE_PAUSE_MS = [20_000, 30_000] as const;
 export const SLEEP_AFTER_MS = 60_000;
-// The source engine's spawning gather cycle lasts 2 seconds (FX.CYCLE_ON).
-const GATHER_MS = 2_000;
 
 // A scene owns its candidates, lifetime and cooldown. There is no action queue.
 export const scenes = {

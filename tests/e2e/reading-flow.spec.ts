@@ -40,9 +40,12 @@ test("conversation survives reading and navigation, then clears on reload", asyn
   });
   await page.getByRole("button", { name: /^Notes/ }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(1);
-  await expect
-    .poll(() => page.getByTestId("exchange").getByRole("link").count())
-    .toBeGreaterThan(0);
+  const firstNote = page
+    .getByTestId("exchange")
+    .first()
+    .getByRole("link")
+    .first();
+  await expect(firstNote).toBeVisible();
   await expect
     .poll(async () => {
       const question = await page
@@ -59,11 +62,6 @@ test("conversation survives reading and navigation, then clears on reload", asyn
     .fill("Show me your projects");
   await page.getByRole("button", { name: "Send question" }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(2);
-  const firstNote = page
-    .getByTestId("exchange")
-    .first()
-    .getByRole("link")
-    .first();
   const noteTitle = await firstNote.getAttribute("aria-label");
   const noteHref = await firstNote.getAttribute("href");
   expect(noteHref).toMatch(/\?from=conversation$/);

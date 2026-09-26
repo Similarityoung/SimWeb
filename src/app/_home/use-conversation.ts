@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { normalizeQuestion } from "@/lib/answer";
 import { answerQuestion, AnswerRateLimitError } from "./answer-question";
 import type { Message, PublicCatalog, Question } from "./types";
 
@@ -14,8 +15,8 @@ export function useConversation(catalog: PublicCatalog, aiEnabled: boolean) {
 
   const submit = useCallback(
     async (question: Question) => {
-      const text = question.text.trim();
-      if (!text || text.length > 300 || request.current) return;
+      const text = normalizeQuestion(question.text);
+      if (!text || request.current) return;
       const controller = new AbortController();
       request.current = controller;
       const rotatingTopic =

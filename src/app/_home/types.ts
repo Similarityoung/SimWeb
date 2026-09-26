@@ -1,17 +1,11 @@
+import type { Answer } from "@/lib/answer";
 import type { Project } from "@/lib/projects/types";
 import type { ArticleSummary } from "@/lib/writing/types";
 
 export type TopicId = "projects" | "notes" | "thoughts" | "about";
-export type ContentReference =
-  { type: "project"; id: string } | { type: "article"; id: string };
 export type PublicCatalog = {
   projects: readonly Project[];
   articles: readonly ArticleSummary[];
-};
-export type Answer = {
-  kind: "answer" | "unmatched";
-  text: string;
-  references: readonly ContentReference[];
 };
 export type Question = { text: string; topic?: TopicId; topicPage?: number };
 export type Message = {

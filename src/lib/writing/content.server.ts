@@ -3,12 +3,12 @@ import path from "node:path";
 import { readPublishedArticles, type PublishedArticle } from "./catalog";
 import type { ArticlePage, ArticleSummary, WritingKind } from "./types";
 
-function articles(): PublishedArticle[] {
+export function getPublishedArticles(): PublishedArticle[] {
   return readPublishedArticles(path.join(process.cwd(), "content"));
 }
 
 export function getArticleSummaries(kind?: WritingKind): ArticleSummary[] {
-  return articles()
+  return getPublishedArticles()
     .map(({ article }) => article)
     .filter((article) => !kind || article.kind === kind)
     .map(({ body, ...summary }) => {
@@ -21,7 +21,7 @@ export function getArticle(
   kind: WritingKind,
   slug: string,
 ): ArticlePage | undefined {
-  const published = articles();
+  const published = getPublishedArticles();
   const match = published.find(
     ({ article }) => article.kind === kind && article.slug === slug,
   );

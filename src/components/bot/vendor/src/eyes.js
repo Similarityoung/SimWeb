@@ -1,7 +1,7 @@
 /* L3 — eye morph, wink, blink queue, placement. Source en / ks / mn / P2. */
 (function (g) {
   const {
-    clamp, lerpPoly, centroid, polyPath, Dke, spanAt, spanPoly, Rn,
+    clamp, centroid, polyPath, Dke, spanAt,
   } = g.GROK_MATH;
 
   function queueBlink(q, now) {
@@ -34,42 +34,32 @@
 
   function paintEyes(opt) {
     const {
-      now, polys, shape, face, faceTune, uniformEyes, eyeScaleProp,
-      blinkX, gazeX, gazeY, winkAt, winkEye, turn, cr, pointer, notifyX,
-      overlayX, eyeEls, badgeEl, badgeColor, Re, G9e, VJt, extras, ringHint,
+      now, polys, shape, face, faceTune,
+      blinkX, gazeX, gazeY, winkAt, winkEye, turn, cr, notifyX,
+      overlayX, eyeEls, badgeEl, Re, G9e,
     } = opt;
+    const faceOpacity = 1 - Dke(clamp(overlayX * 2, 0, 1));
     const $i = {
       x: face.x,
       y: face.y,
       sx: face.sx * (faceTune?.gap ?? 1),
       sy: face.sy * (faceTune?.height ?? 1),
-      eye: face.eye * (faceTune?.size ?? 1),
       leftDX: face.leftDX ?? 0,
     };
-    const sX = uniformEyes ? $i.leftDX : 0;
+    const sX = $i.leftDX;
     const cents = [centroid(polys[0]), centroid(polys[1])];
     let a1 = 0, o1 = 0;
     for (const p of polys[0]) a1 = Math.max(a1, Math.abs(p[0] - cents[0][0]));
     for (const p of polys[1]) o1 = Math.max(o1, Math.abs(p[0] - cents[1][0]));
     const l1 = Math.abs(cents[1][0] - (cents[0][0] + sX)) * $i.sx;
-    const pre = uniformEyes ? 0 : VJt;
-    const _ee = a1 + o1 > 0.5 ? clamp((l1 - pre) / (a1 + o1), 0.35, 4) : 4;
-    const Uee = (uniformEyes ? 1 : $i.eye) * clamp(eyeScaleProp, 0.25, 4);
-    const oX = Math.min(clamp(opt.eyeBoostX, 0.2, 2) * Uee, _ee);
+    const _ee = a1 + o1 > 0.5 ? clamp(l1 / (a1 + o1), 0.35, 4) : 4;
+    const oX = Math.min(clamp(opt.eyeBoostX, 0.2, 2), _ee);
     const Hee = Math.min(oX * clamp(faceTune?.eyeWidth ?? 1, 0.2, 3), _ee);
     const u1 = oX * clamp(faceTune?.eyeHeight ?? 1, 0.2, 3);
-    const liveSpan = ringHint
-      ? (y) => spanPoly(ringHint, y, Re)
-      : spanAt(shape.path, Re);
-    const top = opt.top ?? shape.top;
-    const bottom = opt.bottom ?? shape.bottom;
-    const Vn = opt.emphasisBlend || 0;
-    const midX = (cents[0][0] + cents[1][0]) / 2;
-    const midY = (cents[0][1] + cents[1][1]) / 2;
-    const pullX = (Re - midX) * 0.42 * Vn;
-    const pullY = (Re - midY) * 0.42 * Vn;
-    const gazeW = pointer ? 0.2 : 1;
-    const badgeRing = opt.badgeRing || ringHint;
+    const liveSpan = spanAt(shape.path, Re);
+    const top = shape.top;
+    const bottom = shape.bottom;
+    const badgeRing = opt.badgeRing;
     const Yl = badgeRing
       ? badgeRing[Math.round(badgeRing.length * 7 / 8) % badgeRing.length]
       : [Re, shape.top];
@@ -84,9 +74,7 @@
       let Wo = (Ea - Re) * $i.sx;
       let _c = 1, vre = 1, km = 1, Ree = 0, Fee = 0, zee = 1, bre = true, Tre = 1;
       let Sre = clamp(Re + $i.y + (Ti - Re) * $i.sy, top + 2, bottom - 2);
-      const use3d = !!cr;
-
-      if (use3d) {
+      {
         const xr = (Ea - Re) / Re;
         const Fr = (Re - Ti) / Re;
         const Ia = Math.sqrt(Math.max(0, 1 - xr * xr - Fr * Fr)) || 0.02;
@@ -136,26 +124,19 @@
 
       let Kj = Math.sin(now * 42e-5 + i) * 1.4 + Math.sin(now * 0.001 + i * 2) * 0.5;
       let Ko = Math.sin(now * 58e-5 + i) * 0.9;
-      if (pointer) {
-        Kj += pointer.x * (1 - 0.6 * Vn) + pullX;
-        Ko += pointer.y * (1 - 0.6 * Vn) + pullY;
-      } else {
-        Kj += pullX;
-        Ko += pullY;
-      }
-      Kj += gazeX * gazeW + (extras.Zr || 0);
-      Ko += gazeY * gazeW + (extras.wi || 0);
+      Kj += gazeX;
+      Ko += gazeY;
       const $ee = clamp(notifyX, 0, 1);
       Kj -= 10 * $ee;
       Ko += 7 * $ee;
 
       const Vee = clamp(_c * Hee, 0.02, 2.4);
       const _2 = clamp(vre * lid * u1, 0.02, 2.4);
-      eyeEls[i].style.display = bre && overlayX < 0.5 ? "" : "none";
-      const useTurnOr3d = turn != null || use3d;
+      eyeEls[i].style.display = bre && faceOpacity > 0 ? "" : "none";
+      eyeEls[i].style.opacity = faceOpacity.toFixed(3);
       const Ume = G9e * _2 + 2;
       const vl = clamp(
-        useTurnOr3d ? Sre + Ko * $i.sy : Re + $i.y + (Ti + Ko - Re) * $i.sy,
+        Sre + Ko * $i.sy,
         top + Ume,
         bottom - Ume
       );
@@ -184,18 +165,13 @@
         }
       }
 
-      if (use3d) {
+      {
         const FrM = clamp((turn != null ? _c : 1) * Hee, 0.02, 2.4);
         const IaM = clamp(lid * u1, 0.02, 2.4);
         const liM = km * FrM, blM = Ree * FrM, IoM = Fee * IaM, uoM = zee * IaM;
         eyeEls[i].setAttribute(
           "transform",
           `translate(${dd.toFixed(2)} ${Yj.toFixed(2)}) matrix(${liM.toFixed(4)} ${blM.toFixed(4)} ${IoM.toFixed(4)} ${uoM.toFixed(4)} 0 0) translate(${(-Gn).toFixed(2)} ${(-Ti).toFixed(2)})`
-        );
-      } else {
-        eyeEls[i].setAttribute(
-          "transform",
-          `translate(${dd.toFixed(2)} ${Yj.toFixed(2)}) scale(${Vee.toFixed(4)} ${_2.toFixed(4)}) translate(${(-Gn).toFixed(2)} ${(-Ti).toFixed(2)})`
         );
       }
     }
@@ -205,7 +181,7 @@
       if (amt <= 0.01) badgeEl.style.display = "none";
       else {
         badgeEl.style.display = "";
-        badgeEl.style.fill = badgeColor || "var(--gb-badge, #1d9bf0)";
+        badgeEl.style.fill = "var(--gb-badge, #1d9bf0)";
         badgeEl.setAttribute("cx", Yl[0].toFixed(1));
         badgeEl.setAttribute("cy", Yl[1].toFixed(1));
         badgeEl.setAttribute("r", (20 * amt).toFixed(2));
@@ -213,5 +189,5 @@
     }
   }
 
-  g.GROK_EYES = { queueBlink, consumeBlink, paintEyes, lerpPoly };
+  g.GROK_EYES = { queueBlink, consumeBlink, paintEyes };
 })(window);

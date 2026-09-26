@@ -1,5 +1,5 @@
 import { createAnswerChunks } from "./answer-chunks";
-import type { Answer } from "./types";
+import type { Answer } from "@/lib/answer";
 
 export type PresentationPhase =
   "sending" | "waiting" | "streaming" | "cards" | "complete" | "error";

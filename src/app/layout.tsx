@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site/site-header";
 import { ThemeProvider } from "@/components/site/theme-provider";
+import { isAiEnabled } from "@/config/ai.server";
 import { site } from "@/config/site";
 import { projects } from "@/lib/projects/data";
 import { getArticleSummaries } from "@/lib/writing/content.server";
@@ -50,13 +51,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <ThemeProvider>
-          <ConversationProvider
-            catalog={catalog}
-            aiEnabled={
-              process.env.DEEPSEEK_PUBLIC_ENABLED === "true" &&
-              Boolean(process.env.DEEPSEEK_API_KEY)
-            }
-          >
+          <ConversationProvider catalog={catalog} aiEnabled={isAiEnabled()}>
             <SiteHeader />
             {children}
           </ConversationProvider>

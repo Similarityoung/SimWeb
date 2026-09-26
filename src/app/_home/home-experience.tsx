@@ -38,13 +38,18 @@ export function HomeExperience() {
   const active = messages.length > 0;
   const latest = messages.at(-1);
   const answerMood = presentation.frame && phaseMood[presentation.frame.phase];
+  const answerInProgress =
+    pending ||
+    (presentation.frame !== undefined &&
+      presentation.frame.phase !== "complete" &&
+      presentation.frame.phase !== "error");
   const mood =
     (answerMood === "responding" && latest?.answer?.kind === "unmatched"
       ? "unmatched"
       : answerMood) ?? (focused || hoveredTopic ? "listening" : "idle");
 
   function ask(question: Question) {
-    if (pending) return;
+    if (answerInProgress) return;
     setDraft("");
     setHoveredTopic(undefined);
     if (question.topic) setFocused(false);
@@ -122,14 +127,14 @@ export function HomeExperience() {
       >
         <TopicShortcuts
           compact={active}
-          disabled={pending}
+          disabled={answerInProgress}
           onAsk={ask}
           onHover={(topic) => {
             if (answerMood !== "responding") setHoveredTopic(topic);
           }}
         />
         <Composer
-          pending={pending}
+          submitDisabled={answerInProgress}
           value={draft}
           onChange={setDraft}
           onSubmit={(text) => ask({ text })}

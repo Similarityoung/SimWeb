@@ -1,16 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { openIdle } from "./bot-page";
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`eyes remain clipped to the moving body in ${colorScheme} mode`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
-    await page.goto("/");
-    const svg = page
-      .getByRole("img", { name: "Interactive character" })
-      .locator("svg");
-    await expect(svg).toHaveAttribute("data-state", "spawning");
-    await expect(svg).toHaveAttribute("data-state", "idle");
+    await openIdle(page);
     // Sample the real renderer through movement and body morphs, including the
     // final turn where an eye correctly disappears behind the silhouette.
     const result = await page.evaluate(

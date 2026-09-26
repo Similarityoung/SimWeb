@@ -1,5 +1,10 @@
 import { relevantArticles } from "@/lib/writing/search.server";
-import type { Answer } from "@/app/_home/types";
+import {
+  normalizeQuestion,
+  QUESTION_LENGTH_ERROR,
+  type Answer,
+} from "@/lib/answer";
+import { isAiEnabled } from "@/config/ai.server";
 
 const noStore = { "Cache-Control": "no-store" };
 const maxBodyBytes = 2048;
@@ -34,10 +39,7 @@ async function readLimitedBody(request: Request): Promise<unknown> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (
-    process.env.DEEPSEEK_PUBLIC_ENABLED !== "true" ||
-    !process.env.DEEPSEEK_API_KEY
-  )
+  if (!isAiEnabled())
     return error(503, "AI answers are not available right now.");
   if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
     return error(415, "Expected JSON.");
@@ -51,17 +53,11 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return error(400, "Invalid request body.");
   }
-  if (
-    !body ||
-    typeof body !== "object" ||
-    !("text" in body) ||
-    typeof body.text !== "string" ||
-    body.text.trim().length < 1 ||
-    body.text.trim().length > 300
-  )
-    return error(400, "Question must contain between 1 and 300 characters.");
+  const question = normalizeQuestion(
+    body && typeof body === "object" && "text" in body ? body.text : undefined,
+  );
+  if (!question) return error(400, QUESTION_LENGTH_ERROR);
 
-  const question = body.text.trim();
   const matches = relevantArticles(question);
   if (!matches.length) {
     const answer: Answer = {

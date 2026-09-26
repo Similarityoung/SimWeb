@@ -3,7 +3,8 @@
 import { ProjectCard } from "@/components/projects/project-card";
 import { ArticleCard } from "@/components/writing/article-card";
 import { resolveReference } from "../answer-question";
-import type { Answer, PublicCatalog } from "../types";
+import type { PublicCatalog } from "../types";
+import type { Answer } from "@/lib/answer";
 import type { AnswerPresentation } from "../answer-presentation";
 
 export function AnswerContent({

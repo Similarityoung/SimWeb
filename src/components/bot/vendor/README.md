@@ -2,13 +2,18 @@
 
 这八个引擎文件来自 `visual-atlas/cases/grok-icon-study/source/replica` 的 Grok Bot 学习复刻。角色造型、商标、几何数据及原始素材归 xAI 或相应权利人所有；原项目声明仅供学习参考，请勿商用或再分发。本站在原型基础上作个人站适配，此说明不代表取得额外授权。
 
-引擎只由 `src/components/bot/runtime.client.ts` 在浏览器加载。首页动作的选择、优先级与计时位于 `bot/behavior.ts`、`scene-controller.ts` 和 `use-bot-scenes.ts`；本目录只负责绘制和状态过渡。
+引擎只由 `src/components/bot/runtime.client.ts` 在浏览器加载。首页动作的选择、优先级与计时位于 `bot/behavior.ts`、`scene-controller.ts` 和 `use-bot-scenes.ts`；本目录只负责绘制和状态过渡。`fx.js` 与场景定义共同引用 `bot/motion-timing.ts` 的聚拢时长。
+
+本站固定使用 blob 外形与宿主传入的动作；已删除换形、鼠标跟随、引导轮播、自动特技及配色接口和专用状态。`geometry-data.js` 只保留 blob、书写效果使用的 teardrop、眼型及尺寸数据。首页与开发预览都不会触发的旧动作及其专用装饰已删除；现有试播动作保留。
 
 本站对原引擎的改动集中在：
 
 - `tables.js` 从眼型播放清单排除 7、8；平静待机固定基础眼型，其余完整表情保留。
 - `pose.js`、`eyes.js` 与 `character.js` 处理倾听点头、眼睛过渡、减少动态效果、状态中断和首次入场形态。
 - `tricks.js`、`fx.js` 处理完成时的单次转身、跳跃、彩带与落地粒子；停止后清理残留。
-- 首次入场及休眠苏醒复用 `spawning` 的聚拢粒子。中途打断休眠时沿用当前身体尺寸，粒子在身体尚大时绘于前方以保持可见。
+- `OverlayLayer` 统一管理初始化和后续动作的过渡、弹簧及图层时钟；每帧结果由身体与装饰共用。庆祝等待身体展开后开始，打断时把当前高度、转角交给已有弹簧收回。
+- 首次入场及休眠苏醒经过同一个 `OverlayLayer.setState` 入口，复用 `spawning`；首次从小形态开始，中途唤醒从当前身体尺寸开始。
+- 聚拢粒子、休眠圆环与光晕共用活动场景策略，退出即停止装饰、保留身体过渡。
+- 缓动、路径采样、轮廓混合与横截面计算复用 `GROK_MATH`；缩放只保留 `tables.js` 的数据，角色和特效共用 SVG 元素创建函数。
 
 未进入正式互动的原始动作仍可在仅开发环境开放的 `/dev/bot` 中试播。

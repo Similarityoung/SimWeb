@@ -1,7 +1,11 @@
+import { GATHER_MS } from "../../motion-timing";
+
 /* L3 — overlay glyphs + particle ribbons. Symbols: E_t I_t za/$a/Ms/oi/_r/ua/No/Eo/Ho/hl/cd/Bt. */
 (function (global) {
   const NS = "http://www.w3.org/2000/svg";
-  const Re0 = 114.2705;
+  const { clamp, rand, sign, Rc, y1e, K2, Dke, flattenPath, spanPoly, spring, springSteps, stepSpring } = global.GROK_MATH;
+  const { SPRINGS } = global.GROK_TABLES;
+  const Re0 = global.GROK_GEO.Re;
   const STAR_COLOR = "#f4c34e";
   const PALETTE = ["#f9705c", "#5b95f0", "#3fbe86", "#f5b13f", "#9a72ee", "#35c3bd"];
   const STAR = (() => {
@@ -15,10 +19,8 @@
   })();
 
   const MAP = {
-    thinking: "dots",
     orbit: "orbit",
     radar: "radar",
-    progress: "progress",
     spawning: "gather",
     dictating: "wave",
     sending: "send",
@@ -30,33 +32,18 @@
     writing: "pencil",
     alerting: "bang",
   };
-  const CYCLE = new Set(["progress", "spawning"]);
-  const CYCLE_ON = { progress: 2500, spawning: 2000 };
+  const ACTIVE_ONLY = new Set(["gather", "standby"]);
+  const CYCLE_ON = { spawning: GATHER_MS };
   const CYCLE_OFF = 1500;
-  const SCALE = {
-    dots: 1.5, orbit: 1.14, radar: 1.14, progress: 1.32, gather: 1.15,
-    wave: 1.42, send: 1.12, receive: 1.12, dock: 1.3, ball: 1.22,
-    whirl: 1.45, pencil: 1.18, bang: 1.28, standby: 1.75,
-  };
   const RADIUS = {
-    dots: 22, orbit: 19, radar: 19, progress: 19, gather: 19, wave: 16,
+    orbit: 19, radar: 19, gather: 19, wave: 16,
     send: 20, receive: 20, dock: 20, ball: 18, whirl: 15, pencil: 17,
     bang: 13, standby: 13,
   };
   const P_BLEND = 0.62;
-  const DOT_R = 22;
-  const DOT_GAP = 62;
-  const POP0 = 0.84;
-  const POP1 = 0.22;
   const SEND_MS = 1500;
   const RECV_MS = 1700;
   const PENCIL_MS = 2500;
-
-  const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const Rc = (n) => 1 - Math.pow(1 - n, 3);
-  const y1e = (n) => 1 + 2.70158 * Math.pow(n - 1, 3) + 1.70158 * Math.pow(n - 1, 2);
-  const K2 = (n) => (n < 0.5 ? 4 * n * n * n : 1 - Math.pow(-2 * n + 2, 3) / 2);
 
   function el(tag, attrs) {
     const n = document.createElementNS(NS, tag);
@@ -79,36 +66,6 @@
       const t = (e / n) * Math.PI * 2;
       return [R + Math.cos(t) * R, R + Math.sin(t) * R];
     });
-  }
-
-  function flattenPath(d, step = 4) {
-    const t = d.match(/[MLCQZmlcqz]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) ?? [];
-    const s = [];
-    let r = 0, i = "", o = 0, l = 0, c = 0, u = 0;
-    const rd = () => parseFloat(t[r++]);
-    const m = (f, h) => {
-      const y = Math.max(2, Math.ceil(h / step));
-      for (let k = 1; k <= y; k++) s.push(f(k / y));
-    };
-    while (r < t.length) {
-      if (/[a-z]/i.test(t[r])) i = t[r++].toUpperCase();
-      if (i === "Z") {
-        if (Math.hypot(c - o, u - l) > 0.01) m((f) => [o + (c - o) * f, l + (u - l) * f], Math.hypot(c - o, u - l));
-        o = c; l = u; continue;
-      }
-      if (r >= t.length) break;
-      if (i === "M") { o = rd(); l = rd(); c = o; u = l; s.push([o, l]); i = "L"; }
-      else if (i === "L") { const f = rd(), h = rd(); m((y) => [o + (f - o) * y, l + (h - l) * y], Math.hypot(f - o, h - l)); o = f; l = h; }
-      else if (i === "C") {
-        const f = rd(), h = rd(), y = rd(), k = rd(), v = rd(), b = rd(), x = o, N = l;
-        m((E) => {
-          const A = 1 - E;
-          return [A * A * A * x + 3 * A * A * E * f + 3 * A * E * E * y + E * E * E * v, A * A * A * N + 3 * A * A * E * h + 3 * A * E * E * k + E * E * E * b];
-        }, Math.hypot(f - o, h - l) + Math.hypot(y - f, k - h) + Math.hypot(v - y, b - k));
-        o = v; l = b;
-      } else r++;
-    }
-    return s;
   }
 
   function polarRing(pts, R, n = 96) {
@@ -138,23 +95,6 @@
     });
   }
 
-  function lerpRing(a, b, t) {
-    return a.map((p, i) => [p[0] + (b[i][0] - p[0]) * t, p[1] + (b[i][1] - p[1]) * t]);
-  }
-
-  function spanHalf(ring, y, R) {
-    let left = -Infinity, right = Infinity;
-    for (let i = 0; i < ring.length; i++) {
-      const a = ring[i], b = ring[(i + 1) % ring.length];
-      if (a[1] <= y === b[1] <= y) continue;
-      const x = a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]);
-      if (x <= R) {
-        if (x > left) left = x;
-      } else if (x < right) right = x;
-    }
-    return [Number.isFinite(left) ? left : R, Number.isFinite(right) ? right : R];
-  }
-
   function capsule(n, e, R) {
     const t = n / 2, s = R - e / 2 + t, r = R + e / 2 - t;
     return `M${R - t} ${s}A${t} ${t} 0 0 1 ${R + t} ${s}L${R + t} ${r}A${t} ${t} 0 0 1 ${R - t} ${r}Z`;
@@ -180,7 +120,7 @@
     const mt = (((Pt / PENCIL_MS) % 1) + 1) % 1;
     if (mt < 0.68) {
       const Mt = mt / 0.68;
-      const Lt = Mt * Mt * (3 - 2 * Mt);
+      const Lt = Dke(Mt);
       const yn = clamp(Mt / 0.08, 0, 1) * clamp((1 - Mt) / 0.08, 0, 1);
       return { x: -54 + 118 * Lt, y: 26, wig: Math.sin(Mt * 24) * 3.2 * yn, rot: 17 + Math.sin(Pt * 6e-4) * 1, lift: false };
     }
@@ -203,13 +143,12 @@
     return 0.42 + 0.29 * Math.sin(ze * 0.0021) * Math.sin(ze * 0.0034) + 0.29 * Math.sin(ze * 0.0013 + 1.7);
   }
 
-  function createParticles({ back, front, idPrefix, getRadius }) {
-    const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function createParticles({ back, front, idPrefix, getRadius, getReducedMotion }) {
     const scale = () => getRadius() / Re0;
     let spin = 0, sizeScale = 1, wide = false, sustain = false, last = -1;
     let parts = [];
-    const burst = (W = 20, H = 1, G = 0) => {
-      if (reduce || !back || parts.length > 120) return;
+    const burst = (W = 20, H = 1, G = 0, maxLife = 0.85) => {
+      if (getReducedMotion() || !back || parts.length > 120) return;
       const R = global.GROK_GEO.Re;
       for (let Y = 0; Y < W; Y++) {
         const U = (Y / W) * Math.PI * 2 + rand(-0.35, 0.35);
@@ -220,7 +159,7 @@
         parts.push({
           x: R + Math.cos(U) * ee, y: R + Math.sin(U) * ee,
           vx: Math.cos(U) * te + ne * Z, vy: Math.sin(U) * te + j * Z - rand(20, 75),
-          life: 0, max: rand(0.45, 0.85), r: X ? rand(4, 7) : rand(3.5, 8),
+          life: 0, max: rand(0.45, maxLife), r: X ? rand(4, 7) : rand(3.5, 8),
           rot: rand(0, 360), vr: rand(-260, 260), color: X ? STAR_COLOR : PALETTE[(Math.random() * PALETTE.length) | 0],
           round: !X && Math.random() < 0.3, star: X, orbit: null, el: null,
         });
@@ -311,7 +250,7 @@
       if (was && !nowFast) { spawnQ.length = 0; cooling = false; }
     };
     const seedBelts = (now) => {
-      if (reduce || !back) return;
+      if (getReducedMotion() || !back) return;
       const H = Math.abs(spinVel);
       const live = parts.some((U) => U.orbit != null && U.ret < 1);
       if (sustain && seeding && spawnQ.length === 0 && H >= THRESH && !live) { seeding = false; cooling = true; }
@@ -468,7 +407,7 @@
       this.back = el("g", { "aria-hidden": "true" });
       this.front = el("g", { "aria-hidden": "true" });
       this.dots = [0, 1].map(() => el("path", { style: "fill:var(--fg);display:none" }));
-      this.rings = [0, 1, 2, 3, 4, 5, 6].map(() =>
+      this.rings = [0, 1, 2, 3, 4].map(() =>
         el("circle", { cx: "0", cy: "0", r: "0", fill: "none", style: "display:none;stroke:var(--fg)" })
       );
       this.parts = [0, 1, 2, 3, 4, 5, 6].map(() =>
@@ -478,10 +417,117 @@
       this.ink = [];
       this.recvDir = -0.7;
       this.recvTick = -1;
+      this.state = null;
+      this.active = this.kind = this.previous = null;
+      this.blend = spring(0);
+      this.mix = spring(1);
+      this.turn = spring(0);
+      this.on = this.rest = false;
+      this.restAt = 0;
+      this.turnDir = 1;
+      this.gatherHold = null;
       this.overlayAt = 0;
-      this.circlePath = "";
-      this.pencilPath = "";
-      this.bangPath = "";
+      // Visual timelines outlive semantic states while their layers fade out.
+      this.startedAt = {};
+      this.circlePath = closedSpline(circleRing(Re0));
+      this.pencilPath = capsule(30, 88, Re0);
+      this.bangPath = taper(30, 17, 96, Re0);
+    }
+
+    // Initialization, wake-up and interruptions all enter through this method.
+    // Only the initial pose differs: a first arrival starts fully condensed.
+    setState(state, now, reduce) {
+      const initial = this.state === null;
+      this.gatherHold = state === "spawning" && this.state === "powering-down"
+        ? this.blend.x : null;
+      if (this.gatherHold !== null) this.blend.v = 0;
+      if (initial && state === "spawning" && !reduce) this.blend.x = 1;
+      this.state = state;
+      this._retarget(now, reduce);
+    }
+
+    _retarget(now, reduce) {
+      const want = MAP[this.state] || null;
+      const lifecycle = this.state === "spawning" || this.state === "powering-down" || this.kind === "gather";
+      if (want !== this.active) {
+        this.active = want;
+        if (want) this.overlayAt = now;
+        this.rest = false;
+        this.restAt = 0;
+      }
+      let on = want != null && !(reduce && this.state === "spawning");
+      const cycleMs = CYCLE_ON[this.state];
+      if (want && cycleMs && !reduce) {
+        if (!this.rest && now - this.overlayAt > cycleMs) {
+          this.rest = true;
+          this.restAt = now;
+        } else if (this.rest && now - this.restAt > CYCLE_OFF) {
+          this.rest = false;
+          this.overlayAt = now;
+        }
+        on = !this.rest;
+      }
+      this.blend.t = on ? (this.gatherHold ?? 1) : 0;
+      if (on !== this.on) {
+        if (on && !reduce && !lifecycle) {
+          this.turnDir = sign();
+          this.turn.t += Math.PI * this.turnDir;
+        } else if (!on) {
+          // Return to the front even if arrival skipped the entry half-turn.
+          const rounds = Math.round(this.turn.t / Math.PI) / 2;
+          this.turn.t = (this.turnDir > 0 ? Math.ceil(rounds) : Math.floor(rounds)) * Math.PI * 2;
+        }
+        this.on = on;
+      }
+      if (want && want !== this.kind) {
+        if (want === this.previous) {
+          // Reverse a partial morph without replacing its visible mixture.
+          this.previous = this.kind;
+          this.mix.x = 1 - this.mix.x;
+          this.mix.v = -this.mix.v;
+        } else {
+          this.previous = this.kind && this.blend.x > 0.02 ? this.kind : null;
+          this.mix.x = this.previous ? 0 : 1;
+          this.mix.v = 0;
+          this.mix.t = 1;
+          this.startedAt[want] = now;
+        }
+        this.kind = want;
+        this.overlayAt = now;
+      }
+      if (!want && this.blend.x < 0.004) {
+        this.kind = null;
+        this.previous = null;
+      }
+      if (this.mix.x > 0.996) this.previous = null;
+    }
+
+    update(now, dt, reduce) {
+      this._retarget(now, reduce);
+      const steps = springSteps(dt);
+      for (let i = 0; i < steps; i++) {
+        stepSpring(this.blend, ...SPRINGS.overlay, dt / steps);
+        stepSpring(this.mix, ...SPRINGS.overlayMix, dt / steps);
+        stepSpring(this.turn, ...SPRINGS.overlayTurn, dt / steps);
+      }
+      if (reduce) {
+        this.turn.t = 0;
+        for (const item of [this.blend, this.mix, this.turn]) {
+          item.x = item.t;
+          item.v = 0;
+        }
+      }
+    }
+
+    get amount() { return clamp(this.blend.x, 0, 1); }
+    get remainingTurn() { return Math.abs(this.turn.t - this.turn.x); }
+    get unfolded() { return this.amount < 0.04 && this.remainingTurn < 0.04; }
+
+    frame(now) {
+      const { active, kind: cur, previous: prev } = this;
+      const yl = this.amount, mix = clamp(this.mix.x, 0, 1);
+      const turn = yl > 0.001 || this.remainingTurn > 0.01 ? this.turn.x : null;
+      return { active, cur, prev, yl, mix, turn, extra: this.extras(now, cur, prev, yl, mix) };
     }
 
     attach(svg, bodyGroup) {
@@ -510,62 +556,42 @@
       }
     }
 
-    amount(name, cur, prev, yl, mix) {
+    weight(name, cur, prev, yl, mix) {
       if (name === cur) return yl * mix;
       if (name === prev) return yl * (1 - mix);
       return 0;
     }
 
-    dotsPulse(now, slot, yl, reduce = false) {
-      const Dt = ((((now - this.overlayAt) / 1400 + 0.119) % 1) + 1) % 1;
-      let Mt = Math.abs(Dt - slot / 3);
-      Mt = Math.min(Mt, 1 - Mt);
-      const Lt = reduce ? 1 : Math.exp(-(Mt * Mt) / (2 * 0.15 * 0.15));
-      const yn = reduce ? 0 : 1;
-      return { lift: Lt * 9 * yl * yn, pop: 1 + yn * (POP0 + POP1 * Lt - 1), tone: 1 - yn * 0.5 * (1 - Lt) };
-    }
-
-    paint(now, stateAt, cur, prev, yl, mix, R, reduce = false) {
+    paint(now, frame, R, reduce = false) {
+      const { active, cur, prev, yl, mix, extra } = frame;
       this.hideAll();
-      this._reduce = reduce;
       // A shutdown interrupted before contraction leaves the body large enough
       // to cover the original dark particles. Draw those gather dots above it.
-      const gatherForeground = cur === "gather" && yl < 0.95 && !reduce;
+      const gatherForeground = active === "gather" && cur === "gather" && yl < 0.95 && !reduce;
       this.placeGather(gatherForeground);
-      const extra = this.extras(now, stateAt, cur, prev, yl, mix);
       // Gather particles describe the wake-up, even when sleep was interrupted
       // before the body had time to contract (yl === 0).
-      const kl = (name) => this.amount(
+      const kl = (name) => this.weight(
         name, cur, prev, name === "gather" ? (reduce ? 0 : 1) : yl, mix
       );
-      const run = (name, fn) => { const a = kl(name); if (a > 0.004) fn(a); };
-      run("dots", (a) => this.paintDots(a, now, R));
+      const run = (name, fn) => {
+        if (ACTIVE_ONLY.has(name) && active !== name) return;
+        const a = kl(name);
+        if (a > 0.004) fn(a);
+      };
       run("orbit", (a) => this.paintOrbit(a, now, R));
       run("radar", (a) => this.paintRadar(a, now, R, extra.A2));
-      run("progress", (a) => this.paintProgress(a, now, R));
+      // Lifecycle decorations belong to the active scene. Its shape can keep
+      // blending after interruption without replaying particles or a ring.
       run("gather", (a) => this.paintGather(a, now, R, gatherForeground));
       run("wave", (a) => this.paintWave(a, now, R));
-      run("send", (a) => this.paintSend(a, now, stateAt, R));
-      run("receive", (a) => this.paintRecv(a, now, stateAt, R));
-      run("dock", (a) => this.paintDock(a, now, stateAt, R));
-      run("pencil", (a) => this.paintPencil(a, now, stateAt, R));
-      run("bang", (a) => this.paintBang(a, now, stateAt, R));
+      run("send", (a) => this.paintSend(a, now, this.startedAt.send, R));
+      run("receive", (a) => this.paintRecv(a, now, this.startedAt.receive, R));
+      run("dock", (a) => this.paintDock(a, now, this.startedAt.dock, R));
+      run("pencil", (a) => this.paintPencil(a, now, this.startedAt.pencil, R));
+      if (kl("pencil") <= 0.004) this.ink = [];
+      run("bang", (a) => this.paintBang(a, now, this.startedAt.bang, R));
       run("standby", (a) => this.paintStandby(a, now, R));
-    }
-
-    paintDots(ze, now, R) {
-      const mt = [R - DOT_GAP, R + DOT_GAP];
-      for (let Dt = 0; Dt < 2; Dt++) {
-        const Mt = this.dots[Dt];
-        const Lt = clamp((ze - Dt * 0.12) / (1 - Dt * 0.12), 0, 1);
-        if (Lt <= 0.004) { Mt.style.display = "none"; continue; }
-        const yn = Rc(Lt), an = y1e(Lt), Et = this.dotsPulse(now, Dt === 0 ? 0 : 2, ze, this._reduce);
-        const En = (DOT_R * yn * Et.pop) / R * 1.02;
-        Mt.style.display = "";
-        Mt.setAttribute("d", this.circlePath);
-        Mt.setAttribute("transform", `translate(${(R + (mt[Dt] - R) * an).toFixed(1)} ${(R - Et.lift).toFixed(1)}) scale(${En.toFixed(4)}) translate(${-R} ${-R})`);
-        Mt.setAttribute("opacity", (yn * Et.tone).toFixed(3));
-      }
     }
 
     paintOrbit(ze, now, R) {
@@ -596,37 +622,13 @@
       }
     }
 
-    paintProgress(ze, now, R) {
-      const mt = Rc(ze), Dt = y1e(ze), Mt = 62;
-      const Lt = clamp((now - this.overlayAt) / CYCLE_ON.progress, 0, 1);
-      const yn = clamp(Lt / 0.85, 0, 1);
-      const an = this.rings[3];
-      an.style.display = "";
-      an.setAttribute("cx", `${R}`); an.setAttribute("cy", `${R}`);
-      an.setAttribute("r", (Mt * Dt).toFixed(1));
-      an.setAttribute("stroke-width", "5");
-      an.removeAttribute("stroke-dasharray");
-      an.removeAttribute("transform");
-      an.setAttribute("opacity", (mt * 0.16).toFixed(3));
-      const Et = this.rings[4];
-      const En = Mt * Dt, Zt = 2 * Math.PI * En;
-      Et.style.display = "";
-      Et.setAttribute("cx", `${R}`); Et.setAttribute("cy", `${R}`);
-      Et.setAttribute("r", En.toFixed(1));
-      Et.setAttribute("stroke-width", "5");
-      Et.setAttribute("stroke-dasharray", `${Zt.toFixed(1)}`);
-      Et.setAttribute("stroke-dashoffset", (Zt * (1 - yn)).toFixed(1));
-      Et.setAttribute("transform", `rotate(-90 ${R} ${R})`);
-      Et.setAttribute("opacity", mt.toFixed(3));
-    }
-
     paintGather(ze, now, R, foreground = false) {
       const mt = Rc(ze), Dt = CYCLE_ON.spawning;
       for (let Mt = 0; Mt < 5; Mt++) {
         const Lt = this.parts[Mt];
         const yn = clamp(((now - this.overlayAt) / Dt - Mt * 0.09) / 0.62, 0, 1);
         if (yn >= 1) { Lt.style.display = "none"; continue; }
-        const an = 1 - Math.pow(1 - yn, 3), Et = Mt * 2.4 + yn * 2.2, En = 96 * (1 - an);
+        const an = Rc(yn), Et = Mt * 2.4 + yn * 2.2, En = 96 * (1 - an);
         Lt.style.display = "";
         Lt.setAttribute("cx", (R + En * Math.cos(Et)).toFixed(1));
         Lt.setAttribute("cy", (R + En * Math.sin(Et) * 0.8).toFixed(1));
@@ -682,7 +684,7 @@
         Zt.setAttribute("r", (5 * (1 - bn * 0.6) * mt).toFixed(2));
         Zt.setAttribute("opacity", (mt * 0.3 * (1 - bn)).toFixed(3));
       }
-      const dn = this.rings[5];
+      const dn = this.rings[3];
       const on3 = clamp((Dt - 0.18) / 0.3, 0, 1), bn3 = on3 > 0 && on3 < 1;
       dn.style.display = bn3 ? "" : "none";
       if (bn3) {
@@ -697,7 +699,7 @@
     paintRecv(ze, now, stateAt, R) {
       const mt = Rc(ze), Dt = now - stateAt, Mt = Math.floor(Dt / RECV_MS);
       if (Mt !== this.recvTick) { this.recvTick = Mt; this.recvDir = rand(-Math.PI * 1.25, Math.PI * 0.25); }
-      const Lt = (((Dt / RECV_MS) % 1) + 1) % 1, yn = clamp(Lt / 0.6, 0, 1), an = 1 - Math.pow(1 - yn, 3);
+      const Lt = (((Dt / RECV_MS) % 1) + 1) % 1, yn = clamp(Lt / 0.6, 0, 1), an = Rc(yn);
       const Et = Math.cos(this.recvDir), En = Math.sin(this.recvDir), Zt = 108 * (1 - an), dn = this.parts[5];
       const bn = yn < 1;
       dn.style.display = bn ? "" : "none";
@@ -708,7 +710,7 @@
         dn.setAttribute("r", (3.5 + 6.5 * an).toFixed(2));
         dn.setAttribute("opacity", (mt * clamp(yn * 3.5, 0, 1) * (0.3 + 0.7 * an)).toFixed(3));
       }
-      const on = this.rings[6];
+      const on = this.rings[4];
       const bn2 = clamp((Lt - 0.58) / 0.32, 0, 1), Cn = bn2 > 0 && bn2 < 1;
       on.style.display = Cn ? "" : "none";
       if (Cn) {
@@ -726,7 +728,7 @@
         const an = this.parts[5 + yn];
         const Et = clamp((Dt - (0.2 + yn * 1.3)) / 0.9, 0, 1);
         if (Et <= 0) { an.style.display = "none"; continue; }
-        const En = 1 - Math.pow(1 - Et, 3);
+        const En = Rc(Et);
         const Zt = now * 0.001 * Lt + yn * Math.PI;
         const dn = R + Mt * Math.sin(Zt), on = R + Mt * 0.5 * Math.cos(Zt) + Math.sin(now * 0.003 + yn) * 2;
         const bn = R - 120 + yn * 30, Cn = R + 95;
@@ -797,30 +799,27 @@
       }
     }
 
-    extras(now, stateAt, cur, prev, yl, mix) {
-      const kl = (name) => this.amount(name, cur, prev, yl, mix);
-      const Lee = kl("dots");
-      const rX = this.dotsPulse(now, 1, yl, this._reduce);
+    extras(now, cur, prev, yl, mix) {
+      const kl = (name) => this.weight(name, cur, prev, yl, mix);
       let iX = 1;
-      if (cur === "dots" || prev === "dots") iX = 1 + (rX.pop - 1) * (Lee / Math.max(yl, 0.001));
       const Fme = kl("receive");
       if (Fme > 0.004) {
-        const _t = ((((now - stateAt) / RECV_MS) % 1) + 1) % 1, gn = clamp((_t - 0.58) / 0.34, 0, 1);
+        const _t = ((((now - this.startedAt.receive) / RECV_MS) % 1) + 1) % 1, gn = clamp((_t - 0.58) / 0.34, 0, 1);
         iX *= 1 + 0.11 * Math.sin(gn * Math.PI) * Fme;
       }
       const zme = kl("send");
       if (zme > 0.004) {
-        const _t = ((((now - stateAt) / SEND_MS) % 1) + 1) % 1;
+        const _t = ((((now - this.startedAt.send) / SEND_MS) % 1) + 1) % 1;
         const gn = _t < 0.18 ? -0.06 * Math.sin((_t / 0.18) * Math.PI) : 0;
         const Gn = _t >= 0.18 && _t < 0.42 ? 0.05 * Math.sin(((_t - 0.18) / 0.24) * Math.PI) : 0;
         iX *= 1 + (gn + Gn) * zme;
       }
       const qee = kl("bang");
-      if (qee > 0.004) iX *= 1 + 0.04 * Math.exp(-(((now - stateAt) / 1000) % 2.2) * 5.5) * qee;
+      if (qee > 0.004) iX *= 1 + 0.04 * Math.exp(-(((now - this.startedAt.bang) / 1000) % 2.2) * 5.5) * qee;
       let yre = 0, aX = 0, wl = 0;
       const c1 = kl("pencil");
       if (c1 > 0.004) {
-        const _t = pencilPose(now, stateAt);
+        const _t = pencilPose(now, this.startedAt.pencil);
         yre += _t.x * c1; aX += (_t.y + _t.wig * 0.5) * c1; wl += _t.rot * c1;
       }
       if (qee > 0.004) aX += 58 * qee;
@@ -832,7 +831,7 @@
       }
       const kre = kl("ball");
       if (kre > 0.004) {
-        const _t = (now - stateAt) / 1000, gn = 0.62, Gn = 52, Ti = (8 * Gn) / (gn * gn), Ui = 40;
+        const _t = (now - this.startedAt.ball) / 1000, gn = 0.62, Gn = 52, Ti = (8 * Gn) / (gn * gn), Ui = 40;
         const Si = Math.sqrt((2 * Ui) / Ti);
         let Ea;
         if (_t < Si) Ea = Ui - 0.5 * Ti * _t * _t;
@@ -847,29 +846,11 @@
         return (tbl[cur] || 19) * mix + (prev ? tbl[prev] || tbl[cur] : tbl[cur] || 19) * (1 - mix);
       };
       const A2 = mixR(RADIUS);
-      const wre = (A2 / (global.GROK_GEO?.Re || Re0)) * iX;
+      const wre = (A2 / Re0) * iX;
       const standby = kl("standby");
       const fade = standby > 0 ? (0.28 + 0.2 * Math.sin(now * 0.0016)) * standby : 0;
-      const zoomCur = cur ? Math.max(SCALE[cur], 1) : 1;
-      const zoomPrev = prev ? Math.max(SCALE[prev], 1) : zoomCur;
-      const zoom = 1 + (zoomCur * mix + zoomPrev * (1 - mix) - 1) * yl;
-      return { Lee, rX, yre, aX, wl, wre, fade, zoom, A2 };
+      return { yre, aX, wl, wre, fade, A2 };
     }
-
-    resetInk() { this.ink = []; }
-  }
-
-  const turnAtCache = new Map();
-  function turnAtOf(name, path, R) {
-    if (turnAtCache.has(name)) return turnAtCache.get(name);
-    const solid = global.GROK_GEO.solids?.[name];
-    if (!solid || !global.GROK_MATH?.makeTurnAt) {
-      turnAtCache.set(name, null);
-      return null;
-    }
-    const fn = global.GROK_MATH.makeTurnAt(solid, shapeRing(path, R), R);
-    turnAtCache.set(name, fn);
-    return fn;
   }
 
   const beltCache = new Map();
@@ -884,7 +865,7 @@
     }
     m = 0;
     for (let y = top; y <= bot; y += 2) {
-      const [L, Right] = spanHalf(ring, y, R);
+      const [L, Right] = spanPoly(ring, y, R);
       const half = (Right - L) / 2;
       if (half > m) m = half;
     }
@@ -892,30 +873,13 @@
     return m;
   }
 
-  function shapeMetrics(shape, R) {
-    return {
-      face: shape.face,
-      ring: shapeRing(shape.path, R),
-      tilt: shape.tiltScale || 1,
-      belt: shape.beltRadius || beltRadius(shape.path, R),
-    };
-  }
-
   global.GROK_FX = {
-    MAP, CYCLE, CYCLE_ON, CYCLE_OFF, SCALE, P_BLEND,
+    P_BLEND, el,
     createParticles,
     OverlayLayer,
     closedSpline,
-    circleRing,
     shapeRing,
-    lerpRing,
-    rotateRing,
-    capsule,
-    taper,
-    turnAtOf,
     beltRadius,
-    shapeMetrics,
-    circlePathOf(R) { return closedSpline(circleRing(R)); },
     overlayRing(kind, R, teardropPath) {
       if (kind === "pencil" && teardropPath) {
         const ring = polarRing(flattenPath(teardropPath), R);

@@ -1,4 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./bot-runtime";
+import { changeMotion } from "./bot-page";
 
 async function observeMovement(
   page: Page,
@@ -15,7 +17,6 @@ async function observeMovement(
       return { x, y, width, height };
     };
     const before = measure();
-    const frames: ReturnType<typeof measure>[] = [];
     const selector =
       action === "clear"
         ? 'button[aria-label="Clear conversation"]'
@@ -32,15 +33,7 @@ async function observeMovement(
           ?.click();
       }, 120);
     }
-    await new Promise<void>((resolve) => {
-      const started = performance.now();
-      const sample = (now: number) => {
-        frames.push(measure());
-        if (now - started < 850) requestAnimationFrame(sample);
-        else resolve();
-      };
-      requestAnimationFrame(sample);
-    });
+    const frames = await window.__sampleFrames(850, measure);
     return {
       before,
       after: measure(),
@@ -118,19 +111,35 @@ test("the same Bot travels to the assistant position and returns, including inte
   await expect(page.getByTestId("exchange")).toHaveCount(0);
 });
 
-test("reduced motion switches the Bot position without travel", async ({
-  page,
-}) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await openHome(page);
-  const movement = await observeMovement(page, "ask");
-  expect(movement.sameSvg).toBe(true);
-  expect(movement.after.y).toBeLessThan(movement.before.y - 4);
-  expect(
-    movement.frames.every(
-      (frame) =>
-        Math.abs(frame.y - movement.before.y) < 1 ||
-        Math.abs(frame.y - movement.after.y) < 1,
-    ),
-  ).toBe(true);
-});
+for (const changeWhileMounted of [false, true]) {
+  test(`reduced motion switches position without travel${changeWhileMounted ? " and restores travel after a live preference change" : ""}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({
+      reducedMotion: changeWhileMounted ? "no-preference" : "reduce",
+    });
+    await openHome(page);
+    if (changeWhileMounted) await changeMotion(page, "reduce");
+    const movement = await observeMovement(page, "ask");
+    expect(movement.sameSvg).toBe(true);
+    expect(movement.after.y).toBeLessThan(movement.before.y - 4);
+    expect(
+      movement.frames.every(
+        (frame) =>
+          Math.abs(frame.y - movement.before.y) < 1 ||
+          Math.abs(frame.y - movement.after.y) < 1,
+      ),
+    ).toBe(true);
+    if (changeWhileMounted) {
+      await changeMotion(page, "no-preference");
+      const restored = await observeMovement(page, "clear");
+      expect(restored.sameSvg).toBe(true);
+      expect(
+        restored.frames.some(
+          (frame) =>
+            frame.y > restored.before.y + 2 && frame.y < restored.after.y - 2,
+        ),
+      ).toBe(true);
+    }
+  });
+}

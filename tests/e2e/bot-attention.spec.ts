@@ -1,14 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const svgOf = (page: Page) =>
-  page.getByRole("button", { name: "Play with Bot" }).locator("svg");
-
-async function openIdle(page: Page) {
-  await page.clock.install();
-  await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "spawning");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-}
+import type { Page } from "@playwright/test";
+import { expect, test } from "./bot-runtime";
+import { openIdle, svgOf } from "./bot-page";
 
 async function watchStateChanges(page: Page) {
   // setState also resets the nod when given the same state. Observe every write.
@@ -21,9 +13,48 @@ async function watchStateChanges(page: Page) {
   });
 }
 
+for (const interaction of ["hover", "focus", "click"] as const) {
+  test(`a card ${interaction} during entrance cancels gather particles while the body unfolds`, async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile && interaction === "hover",
+      "Touch has no pointer hover",
+    );
+    await page.clock.install();
+    await page.goto("/");
+    const svg = svgOf(page);
+    await expect(svg).toHaveAttribute("data-state", "spawning");
+    await page.clock.runFor(300);
+    const card = page.getByRole("button", { name: /^Projects/ });
+    await card[interaction]();
+    await expect(svg).toHaveAttribute(
+      "data-state",
+      interaction === "click" ? "writing" : "listening",
+    );
+    const samples = await svg.evaluate((svg) =>
+      window.__sampleFrames(
+        650,
+        () =>
+          [
+            ...svg.querySelectorAll("circle, [data-trail], [data-particle]"),
+          ].filter(
+            (part) =>
+              getComputedStyle(part).display !== "none" &&
+              Number(part.getAttribute("opacity") ?? 1) > 0.01,
+          ).length,
+      ),
+    );
+    expect(samples.length).toBeGreaterThan(5);
+    expect(Math.max(...samples)).toBe(0);
+  });
+}
+
 test("tabbing between cards and input keeps one listening gesture; leaving restores idle", async ({
   page,
 }) => {
+  await page.clock.install();
   await openIdle(page);
   const projects = page.getByRole("button", { name: /^Projects/ });
   await projects.focus();
@@ -47,6 +78,7 @@ test("hover and focus cooperate without restarting listening or clearing the oth
   isMobile,
 }) => {
   test.skip(isMobile, "Touch has no persistent pointer hover");
+  await page.clock.install();
   await openIdle(page);
   const projects = page.getByRole("button", { name: /^Projects/ });
   const notes = page.getByRole("button", { name: /^Notes/ });

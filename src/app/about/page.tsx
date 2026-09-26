@@ -1,20 +1,16 @@
+import { PageShell } from "@/components/site/page-shell";
 import type { Metadata } from "next";
 import { ArrowUpRight } from "lucide-react";
-import { PageIntro } from "@/components/site/page-intro";
 import { site } from "@/config/site";
 
 export const metadata: Metadata = { title: "About Me" };
 
 export default function AboutPage() {
   return (
-    <main
-      id="main-content"
-      className="mx-auto max-w-4xl px-[18px] pt-10 pb-20 sm:px-7 sm:pt-16"
+    <PageShell
+      title="About me"
+      description={`Hi, I’m ${site.fullName}. You might know me as ${site.name}.`}
     >
-      <PageIntro
-        title="About me"
-        description="Hi, I’m Zerui Yang. You might know me as Similarityoung."
-      />
       <div className="max-w-2xl space-y-6 text-base leading-8 text-foreground/80">
         <p>
           I’m a backend developer and an Apache Dubbo Committer. I work mainly
@@ -52,6 +48,6 @@ export default function AboutPage() {
           <ArrowUpRight className="size-4" aria-hidden />
         </a>
       </div>
-    </main>
+    </PageShell>
   );
 }

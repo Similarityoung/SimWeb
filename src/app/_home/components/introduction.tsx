@@ -1,7 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/lib/browser-signals";
 import { Bot, type BotMood } from "@/components/bot/bot";
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";

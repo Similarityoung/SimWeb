@@ -1,4 +1,6 @@
-import type { Answer, TopicId } from "./types";
+import type { TopicId } from "./types";
+import type { Answer } from "@/lib/answer";
+import { site } from "@/config/site";
 
 export const topics: readonly {
   id: TopicId;
@@ -102,7 +104,7 @@ export const preparedAnswers: Record<TopicId, Answer> = {
   },
   about: {
     kind: "answer",
-    text: "I’m Zerui Yang, a backend developer and Apache Dubbo Committer. I work mainly in Go, around RPC and distributed systems, and I’m exploring agent workflows. You can find more in About Me above.",
+    text: `I’m ${site.fullName}, a backend developer and Apache Dubbo Committer. I work mainly in Go, around RPC and distributed systems, and I’m exploring agent workflows. You can find more in About Me above.`,
     references: [],
   },
 };

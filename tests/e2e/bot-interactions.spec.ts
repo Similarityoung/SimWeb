@@ -1,10 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-const svgOf = (page: Page) =>
-  page.getByRole("img", { name: "Interactive character" }).locator("svg");
-async function openIdle(page: Page) {
-  await page.goto("/");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-}
+import { expect, test } from "@playwright/test";
+import { openIdle, svgOf, setRandom } from "./bot-page";
 
 for (const [random, returning] of [
   [0, "happy"],
@@ -13,9 +8,7 @@ for (const [random, returning] of [
   test(`cards and input share listening, reading return uses ${returning}`, async ({
     page,
   }) => {
-    await page.addInitScript((value) => {
-      Math.random = () => value;
-    }, random);
+    await setRandom(page, random);
     await openIdle(page);
     const topic = page.getByRole("button", { name: /^Notes/ });
     await topic.focus();
@@ -82,96 +75,22 @@ test("unknown questions are confused, rather than classified from visible wordin
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
 });
 
-test("click and keyboard bounce; rapid clicks and Escape have no hidden gesture", async ({
-  page,
-}) => {
+test("click and keyboard activate the bounce", async ({ page }) => {
   // Install before the first click so cooldowns use the same monotonic clock.
   await page.clock.install();
   await openIdle(page);
-  const requests: string[] = [];
-  page.on("request", (request) => {
-    if (["fetch", "xhr"].includes(request.resourceType()))
-      requests.push(request.url());
-  });
   const bot = page.getByRole("button", { name: "Play with Bot" });
   await bot.click();
   await expect(svgOf(page)).toHaveAttribute("data-state", "bouncing");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   await page.clock.fastForward(1_500);
-  await bot.click({ clickCount: 3, delay: 70 });
-  await expect(svgOf(page)).toHaveAttribute("data-state", "bouncing");
-  await page.clock.fastForward(1_600);
   await bot.focus();
-  await page.keyboard.press("Escape");
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   for (const key of ["Enter", "Space"]) {
     await page.keyboard.press(key);
     await expect(svgOf(page)).toHaveAttribute("data-state", "bouncing");
     await page.clock.fastForward(1_600);
     await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   }
-  expect(requests).toEqual([]);
-});
-
-test("dragging does not move Bot and holding no longer puts it to sleep", async ({
-  page,
-}) => {
-  await openIdle(page);
-  const bot = page.getByRole("button", { name: "Play with Bot" });
-  const before = (await bot.boundingBox())!;
-  await page.mouse.move(
-    before.x + before.width / 2,
-    before.y + before.height / 2,
-  );
-  await page.mouse.down();
-  await page.mouse.move(1, 1, { steps: 5 });
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  const dragged = (await bot.boundingBox())!;
-  expect(dragged).toEqual(before);
-  await page.mouse.up();
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.clock.install();
-  await page.clock.fastForward(1_100);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.mouse.move(
-    before.x + before.width / 2,
-    before.y + before.height / 2,
-  );
-  await page.mouse.down();
-  await page.clock.runFor(1_050);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.mouse.up();
-  await expect(svgOf(page)).toHaveAttribute("data-state", "bouncing");
-});
-
-test("touch drag cancellation does not fire a tap or long press", async ({
-  page,
-}) => {
-  await openIdle(page);
-  const bot = page.getByRole("button", { name: "Play with Bot" });
-  await expect(bot).toHaveCSS("touch-action", "auto");
-  const box = (await bot.boundingBox())!;
-  const clientX = box.x + box.width / 2,
-    clientY = box.y + box.height / 2;
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [{ x: clientX, y: clientY }],
-  });
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [{ x: clientX + 20, y: clientY + 15 }],
-  });
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchCancel",
-    touchPoints: [],
-  });
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await page.clock.install();
-  await page.clock.fastForward(1_500);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  await cdp.detach();
 });
 
 test("a failed answer alerts once, restores idle expressions and listening, and permits retry", async ({

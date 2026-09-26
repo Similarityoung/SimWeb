@@ -110,7 +110,7 @@ lib ──> 不依赖 app 和 components
 
 预写回答的分块输出是首页的展示行为：`answer-presentation.ts` 从完整 Answer 生成提交、输出、逐张卡片和完成的时间线；`use-answer-presentation.ts` 是最新回答唯一的计时与取消宿主，记录挂载时已有的消息 ID，并向视图提供阶段、文字长度和卡片数量。`AnswerContent` 只渲染该进度，HomeExperience 将尚未完成的正常回答映射为 responding，未匹配回答为 unmatched，不逐阶段更换动作。`answer-chunks.ts` 生成本地模拟片段，不是模型 tokenizer 或网络协议实现。
 
-完整 Answer 仍由回答函数一次返回，useConversation 不管理展示进度或动画计时。快速追问补全旧回答与卡片，清空或离开首页取消旧调度，导航返回直接显示历史内容。迟到的真实回答在数据就绪后开始输出，不将提交反馈重复播放。典型短回答及卡片约 4～6 秒完成，卡片出现即可点击；正常完成后向 Bot 传完成标记，在内容已可用的同时播放一轮带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听。减少动态效果保留文本与卡片节奏，只停用装饰运动。
+完整 Answer 仍由回答函数一次返回，useConversation 不管理展示进度或动画计时。HomeExperience 根据请求状态与展示阶段阻止新问题提交，直到文字和全部卡片展示完成；输入框可提前起草，卡片可在出现后点击。清空或离开首页取消旧调度，导航返回直接显示历史内容。迟到的真实回答在数据就绪后开始输出，不将提交反馈重复播放。典型短回答及卡片约 4～6 秒完成；正常完成后向 Bot 传完成标记，在内容已可用且可提交下一问的同时播放一轮带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听。减少动态效果保留文本与卡片节奏，只停用装饰运动。
 
 ### Bot 接口：业务只传状态
 
@@ -124,9 +124,13 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 `bot.tsx` 使用原生 button 的 onClick 触发弹跳，兼容鼠标、触摸、Enter / Space；不维护多击、长按、拖动或手动休眠手势，也不拦截滚动。短动作有冷却，点击可打断完成动作，新回答始终抢占。依据 [MDN click 事件](https://developer.mozilla.org/en-US/docs/Web/API/Element/click_event)。
 
-`character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态固定基础眼型，仅保留呼吸与眨眼，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。Character 初始化时固定关闭 followPointer，动态效果偏好切换只调整 reduceMotion，不重新启用跟随；主题卡片与输入框的关注由 home 合并，统一驱动倾听。其他模块不访问引擎实例或 window.GROK_*。
+`character.tsx` 只承载 SVG 与引擎生命周期，加载完成后才启动首次出现动作。原八个引擎文件继续只在客户端加载；所有眼型播放清单排除 7、8，平静状态固定基础眼型，仅保留呼吸与眨眼，五种待机表情使用各自的眼睛与身体姿态，本站关闭情绪自带的随机花式动作。状态切换清理粒子与旋转速度，防止旧彩带残留。主题通过 CSS 变量换色，场景层监听已解析主题以触发惊讶，不重建引擎。页面隐藏时暂停绘制。动态效果偏好切换只调整 reduceMotion；主题卡片与输入框的关注由 home 合并，统一驱动倾听。其他模块不访问引擎实例或 window.GROK_*。
 
-引擎的 `setState(name)` 保持单一接口：从当前已渲染的眼睛轮廓平滑转向目标，打断未完成的过渡时先取当前轮廓再更改目标。表情带来的大小变化沿用原有 eyeScale 弹簧，移除随变形进度重置的额外 7% 放大，避免中断时尺寸跳变。初始化直接采用初始状态的眼型；旧 sleeping／waking 仍作为素材预览，但首页生命周期不再使用其闭眼时序。celebrate 在播放清单中固定单个表情，避免短动作末尾又随机起一轮眼型变形。业务层不传眼型参数、不增加定时器；眼睛的平滑交接继续复用已有弹簧与帧时钟，依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)。
+引擎固定使用 blob 外形，只保留本站和开发预览实际调用的状态、暂停与动态效果设置；原换形、鼠标跟随、引导轮播、自动特技和配色接口已删除。`setState(name)` 保持单一接口：从当前已渲染的眼睛轮廓平滑转向目标，打断未完成的过渡时先取当前轮廓再更改目标。表情带来的大小变化沿用原有 eyeScale 弹簧，移除随变形进度重置的额外 7% 放大，避免中断时尺寸跳变。初始化直接采用初始状态的眼型；旧 sleeping／waking 仍作为素材预览，但首页生命周期不再使用其闭眼时序。celebrate 在播放清单中固定单个表情，避免短动作末尾又随机起一轮眼型变形。业务层不传眼型参数、不增加定时器；眼睛的平滑交接继续复用已有弹簧与帧时钟，依据 [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame)。
+
+`fx.js` 的 `OverlayLayer` 统一持有形态弹簧、交叉混合、旋转和图层时钟。初始化、唤醒及动作打断都经过 `setState`，只有初始尺寸不同；`update` 推进过渡，`frame` 计算一次供身体与装饰共用的帧数据。聚拢粒子与休眠圆环使用同一活动场景策略，退出后停止装饰，身体继续平滑展开；其他图层退场沿用原时钟。`character.js` 负责角色编排，不再另行维护图层状态。数学运算统一复用 `GROK_MATH`，SVG 元素创建复用特效层已有函数，缩放数据只由 `tables.js` 维护；`motion-timing.ts` 的聚拢时长同时供场景调度和绘制使用。
+
+庆祝被打断时把跳跃高度和转角交给现有位移、旋转弹簧收回，取消旧彩带与落地事件。书写结束先展开身体并收稳形态切换的转角，再播放完整的一圈转身与跳跃，仍在原 2.4 秒完成场景内结束。测试通过 `tests/e2e/bot-runtime.ts` 的 fixture 复用真实引擎、手动时钟、逐帧采样与资源清理，页面准备和浏览器信号操作放在 `bot-page.ts`。覆盖 43 / 54 / 192px 连续切换、30 / 60 / 120Hz 庆祝时序、入场抢占与睡眠唤醒。依据 [Playwright fixtures](https://playwright.dev/docs/test-fixtures)。
 
 开发路由保留 24 种素材动作（含平静、五种待机表情、睡着／醒来、完成动画）与 192 / 54 / 43px 尺寸试播；实际场景通过真实首页验证。进度环已移除；雷达、口述和嗡鸣仅留在素材预览，自动嗡鸣的场景、计时器及避让冷却已删除，正常回答只用书写。该路由生产返回 404。
 
@@ -151,6 +155,10 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 主题使用 next-themes，由根布局组装 `components/site/theme-provider.tsx`，默认跟随系统，页头 `theme-toggle.tsx` 切换明暗。只有手动主题偏好以 `simweb-theme` 写入 localStorage，会话仍不持久化。首屏脚本在绘制前设置 html 的主题 class，按钮的图标和可访问名称用 CSS 明暗变体切换，避免服务端与客户端根据不同主题渲染不同 DOM。Bot 的渲染层通过现有 inkFlat / eyeColor 参数引用局部 CSS 变量；场景层监听主题变化，换色不重建引擎。文章正文通过 Typography 暗色变体和语义颜色适配。
 
 ## 修改与验证如何集中
+
+问题规范化、长度上限和两端回答契约统一在 `lib/answer.ts`，AI 开关统一在 `config/ai.server.ts`；正文两类路由共用 `app/_writing/article-route.tsx`，四个目录／介绍页面共用 `components/site/page-shell.tsx`。检索与页面查询从 `content.server.ts` 的同一入口读取当前公开内容。
+
+`lib/browser-signals.ts` 使用 React useSyncExternalStore 统一动态效果偏好与页面可见性订阅。Character、场景 Hook、介绍布局和主题高亮全部消费该入口；引擎暂停、场景取消、布局变化仍各归其生命周期，不重建引擎。已安装 Motion 的 useReducedMotion 不会在偏好改变后更新组件，因此仅保留 Motion 的布局动画能力。CSS 媒体规则继续处理 CSS 动画。
 
 | 未来变更 | 主要修改位置 | 验证 |
 | --- | --- | --- |
