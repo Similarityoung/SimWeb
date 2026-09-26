@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { usePathname } from "next/navigation";
 import { initialVisit, nextVisit, type HomeVisit } from "./home-visit";
 import { useConversation } from "./use-conversation";
@@ -10,25 +17,36 @@ const ConversationContext = createContext<
   | (ReturnType<typeof useConversation> & {
       catalog: PublicCatalog;
       arrival: HomeVisit["arrival"];
+      scrollPositionRef: RefObject<{ messageId?: string; top: number }>;
     })
   | null
 >(null);
 
 export function ConversationProvider({
   catalog,
+  aiEnabled,
   children,
 }: {
   catalog: PublicCatalog;
+  aiEnabled: boolean;
   children: ReactNode;
 }) {
-  const conversation = useConversation(catalog);
+  const conversation = useConversation(catalog, aiEnabled);
+  const scrollPositionRef = useRef<{ messageId?: string; top: number }>({
+    top: 0,
+  });
   const pathname = usePathname();
   const [visit, setVisit] = useState(() => initialVisit(pathname));
   const current = nextVisit(visit, pathname);
   if (current !== visit) setVisit(current);
   return (
     <ConversationContext
-      value={{ ...conversation, catalog, arrival: current.arrival }}
+      value={{
+        ...conversation,
+        catalog,
+        arrival: current.arrival,
+        scrollPositionRef,
+      }}
     >
       {children}
     </ConversationContext>

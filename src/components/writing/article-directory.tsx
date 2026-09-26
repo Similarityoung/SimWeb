@@ -15,7 +15,7 @@ export function ArticleDirectory({
   return (
     <section aria-label="All articles" className="grid gap-4 sm:grid-cols-2">
       {articles.map((article) => (
-        <ArticleCard key={article.id} article={article} />
+        <ArticleCard key={article.id} article={article} source="directory" />
       ))}
     </section>
   );

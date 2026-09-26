@@ -22,8 +22,15 @@ const phaseMood: Partial<Record<PresentationPhase, BotMood>> = {
 };
 
 export function HomeExperience() {
-  const { messages, pending, submit, clear, catalog, arrival } =
-    useHomeConversation();
+  const {
+    messages,
+    pending,
+    submit,
+    clear,
+    catalog,
+    arrival,
+    scrollPositionRef,
+  } = useHomeConversation();
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState("");
   const [hoveredTopic, setHoveredTopic] = useState<string>();
@@ -46,6 +53,7 @@ export function HomeExperience() {
 
   function reset() {
     clear();
+    scrollPositionRef.current = { top: 0 };
     setDraft("");
     setHoveredTopic(undefined);
   }
@@ -96,6 +104,7 @@ export function HomeExperience() {
           messages={messages}
           catalog={catalog}
           presentation={presentation}
+          scrollPositionRef={scrollPositionRef}
         />
       )}
       <div

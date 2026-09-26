@@ -50,7 +50,13 @@ export default function RootLayout({
           Skip to content
         </a>
         <ThemeProvider>
-          <ConversationProvider catalog={catalog}>
+          <ConversationProvider
+            catalog={catalog}
+            aiEnabled={
+              process.env.DEEPSEEK_PUBLIC_ENABLED === "true" &&
+              Boolean(process.env.DEEPSEEK_API_KEY)
+            }
+          >
             <SiteHeader />
             {children}
           </ConversationProvider>

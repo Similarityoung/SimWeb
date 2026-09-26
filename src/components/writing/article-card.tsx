@@ -1,14 +1,20 @@
-import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { ArticleSummary } from "@/lib/writing/types";
+import { ArticleCardLink } from "./article-card-link";
 
-export function ArticleCard({ article }: { article: ArticleSummary }) {
+export function ArticleCard({
+  article,
+  source,
+}: {
+  article: ArticleSummary;
+  source?: "conversation" | "directory";
+}) {
   return (
-    <Link
-      href={article.href}
-      className="group block h-full rounded-xl"
-      aria-label={article.title}
+    <ArticleCardLink
+      href={source ? `${article.href}?from=${source}` : article.href}
+      articleId={article.id}
+      title={article.title}
     >
       <Card className="h-full gap-4 p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50">
         <div className="flex items-center justify-between gap-4 font-mono text-[11px] text-muted-foreground">
@@ -38,6 +44,6 @@ export function ArticleCard({ article }: { article: ArticleSummary }) {
           </p>
         )}
       </Card>
-    </Link>
+    </ArticleCardLink>
   );
 }

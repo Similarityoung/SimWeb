@@ -100,9 +100,9 @@ lib ──> 不依赖 app 和 components
 
 ### 回答接口：页面只消费回答结果
 
-外部形状为 `answerQuestion(question, catalog, signal?): Promise<Answer>`。请求包含问题和可选的明确主题，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类，视图不通过提示文案猜测是否匹配。首版只实现本地预写问答。
+外部形状为 `answerQuestion(question, catalog, signal?, aiEnabled?): Promise<Answer>`。请求包含问题和可选的明确主题，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类，视图不通过提示文案猜测是否匹配。主题卡及一般主题问题直接使用预写回答；启用公开 AI 后，具体自由提问调用服务端 `/api/answer`。
 
-用户已明确要求未来 AI 扩展，因此保留这一个稳定入口；未来若接模型，增加服务端调用并在此处接入。当前不建设 provider 插件体系、模型基类、依赖注入容器、后台配额系统或流式协议。若未来流式交互改变产品契约，再单独设计该扩展。
+`/api/answer` 使用 `lib/writing/search.server.ts` 检索已发布文章的标题、摘要、标签和正文，最多选三篇并截取短摘录；服务端才持有 DeepSeek 密钥。模型只生成简答，文章引用由服务端的检索结果确定和客户端公开目录验证。接口限制输入大小、问题长度、模型输出与请求时间，不存储 IP 或会话；主域名和 Vercel 直连地址分别由 Cloudflare 与 Vercel WAF 按 IP 限流，部署配置见 `docs/ai-answer-setup.md`。不建设 provider 插件体系、模型基类、向量数据库或后台配额系统。当前仍由既有展示时间线呈现完整答案，不引入网络流式协议。
 
 `use-conversation.ts` 仅负责消息、请求状态、提交与清空。匹配和内容引用属于回答函数；滚动、输入焦点和卡片排版属于视图；动作及动画生命周期属于 Bot。首版不增加全站状态库。
 
@@ -144,6 +144,7 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 - `content.server.ts` 使用 `server-only` 防止被客户端导入，文件读取和 Markdown 解析不会进入首页浏览器包。
 - 服务端给首页传递的是可序列化的公开摘要，不传正文、文件路径、未选中的文章或草稿。
 - `article-card.tsx` 只依赖公开数据类型、基础组件和链接组件，可供首页交互与服务端目录共同使用。
+- 文章打开动效由 `article-card-link.tsx` 的小型客户端入口与服务端 `article-reader.tsx` 的标题区共享 React ViewTransition 名称；只给实际点击的卡片命名，避免会话中重复文章冲突。正文解析仍在服务端，浏览器不支持视图过渡或用户要求减少动态效果时直接导航。依据 [Next.js 视图过渡指南](https://nextjs.org/docs/app/guides/view-transitions)。
 - 不用一个混合导出的 `index.ts` 同时暴露内容查询、正文解析与客户端卡片。服务端查询入口与浏览器可用入口保持明确分离。
 - `globals.css` 仅保留主题定义、基础样式和必要关键帧。业务布局使用 Tailwind，shadcn 提供基础组件，不承担问答或内容规则。
 

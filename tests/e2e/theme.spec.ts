@@ -37,7 +37,7 @@ test("theme follows the system until chosen, then persists through reading and r
     .getByRole("link")
     .first()
     .click();
-  await expect(page).toHaveURL(/\/notes\/[a-z0-9-]+$/);
+  await expect(page).toHaveURL(/\/notes\/[a-z0-9-]+\?from=directory$/);
   await expect(page.locator(".prose")).toBeAttached();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.reload();
@@ -115,7 +115,7 @@ test("all navigation and theme controls fit at 320px on home and inner pages", a
       page
         .getByRole("navigation", { name: "Main navigation" })
         .getByRole("link"),
-    ).toHaveCount(4);
+    ).toHaveCount(5);
     for (const target of ["light", "dark"]) {
       await page
         .getByRole("button", { name: `Switch to ${target} theme` })

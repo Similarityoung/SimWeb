@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { answerQuestion } from "./answer-question";
+import { answerQuestion, AnswerRateLimitError } from "./answer-question";
 import type { Message, PublicCatalog, Question } from "./types";
 
-export function useConversation(catalog: PublicCatalog) {
+export function useConversation(catalog: PublicCatalog, aiEnabled: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState(false);
   const request = useRef<AbortController | null>(null);
@@ -25,6 +25,7 @@ export function useConversation(catalog: PublicCatalog) {
           { ...question, text },
           catalog,
           controller.signal,
+          aiEnabled,
         );
         if (!controller.signal.aborted)
           setMessages((current) =>
@@ -39,7 +40,10 @@ export function useConversation(catalog: PublicCatalog) {
               message.id === id
                 ? {
                     ...message,
-                    error: "Something went wrong. Please try asking again.",
+                    error:
+                      error instanceof AnswerRateLimitError
+                        ? "Too many questions for now. Please wait a little and try again."
+                        : "Something went wrong. Please try asking again.",
                   }
                 : message,
             ),
@@ -53,7 +57,7 @@ export function useConversation(catalog: PublicCatalog) {
         }
       }
     },
-    [catalog],
+    [catalog, aiEnabled],
   );
 
   const clear = useCallback(() => {

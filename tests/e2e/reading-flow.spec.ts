@@ -35,11 +35,31 @@ test("conversation survives reading and navigation, then clears on reload", asyn
     .first();
   const noteTitle = await firstNote.getAttribute("aria-label");
   const noteHref = await firstNote.getAttribute("href");
+  expect(noteHref).toMatch(/\?from=conversation$/);
+  await expect(
+    page.getByTestId("exchange").last().getByTestId("answer"),
+  ).toHaveAttribute("data-state", "complete");
+  await firstNote.scrollIntoViewIfNeeded();
+  const conversation = page.getByRole("region", { name: "Conversation" });
+  const previousScrollTop = await conversation.evaluate((element) =>
+    Math.round(element.scrollTop),
+  );
   await firstNote.click();
-  await expect(page).toHaveURL(new RegExp(`${noteHref}$`));
+  await expect(page).toHaveURL(/\?from=conversation$/);
+  expect(`${new URL(page.url()).pathname}${new URL(page.url()).search}`).toBe(
+    noteHref,
+  );
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(noteTitle!);
+  await expect(
+    page.getByRole("link", { name: "Back to conversation" }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Back to conversation" }).click();
   await expect(page.getByTestId("exchange")).toHaveCount(2);
+  await expect
+    .poll(() =>
+      conversation.evaluate((element) => Math.round(element.scrollTop)),
+    )
+    .toBe(previousScrollTop);
   await expect(page.locator("html")).toHaveAttribute(
     "data-navigation-probe",
     "same-document",
@@ -78,6 +98,9 @@ test("menus open full catalogs, cards have the expected destinations, and direct
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     thoughtTitle!,
   );
+  await expect(
+    page.getByRole("link", { name: "Back to Thoughts" }),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     thoughtTitle!,
@@ -89,6 +112,27 @@ test("menus open full catalogs, cards have the expected destinations, and direct
   ).toBeVisible();
   const response = await page.goto("/notes/not-selected");
   expect(response?.status()).toBe(404);
+});
+
+test("direct and refreshed articles use a directory return", async ({
+  page,
+}) => {
+  await page.goto("/notes/interview-llm-prompt");
+  await expect(
+    page.getByRole("link", { name: "All notes" }).first(),
+  ).toBeVisible();
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Notes/ }).click();
+  const note = page.getByTestId("exchange").first().getByRole("link").first();
+  await expect(note).toBeVisible();
+  await note.click();
+  await expect(
+    page.getByRole("link", { name: "Back to conversation" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("link", { name: "All notes" }).first(),
+  ).toBeVisible();
 });
 
 test("Obsidian links open published articles without reloading the page", async ({

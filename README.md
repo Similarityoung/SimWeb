@@ -2,7 +2,7 @@
 
 羡青山有思，白鹤忘机。
 
-个人站 2.0：Next.js App Router、React、TypeScript、Tailwind CSS 和 shadcn/ui。首页用预写问答引导访客浏览项目与文章，暂不调用 AI。
+个人站 2.0：Next.js App Router、React、TypeScript、Tailwind CSS 和 shadcn/ui。首页用预写问答引导访客浏览项目与文章；公开 AI 问答默认关闭，按[上线条件](docs/ai-answer-setup.md)配置后可启用。
 
 ## 本地运行
 
@@ -32,13 +32,13 @@ npm run dev
 
 - 项目编辑 `src/lib/projects/data.ts`，卡片直达配置的 GitHub 或官网。
 - 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content` 整个目录是已发布文章的同步缓存，不在其中手工维护其他文件。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
-- 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?)`。
+- 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片自动选取各自最新的 3 篇公开文章，不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?, aiEnabled?)`；启用 AI 后，自由提问从公开文章摘录中生成简答与对应卡片。
 - 正文中的 `[[目录/文章]]` 与 `[[目录/文章|显示文字]]` 按公开文章的源路径解析为站内链接；目标未公开或不存在会使构建失败，代码块中的双链保持原文。
 - 手动检查源仓库：`npm run sync:writing -- /path/to/Obisidian-Open`，然后运行 `npm run check`。脚本先校验全部候选文章；任何缺失字段或重复 slug 都会阻止替换当前缓存。
 
 同一标签页内通过站内链接进入目录或正文再返回首页，会话保留；刷新或主动清空会重置。不写入浏览器存储。文章目录与会话复用相同摘要和卡片。
 
-新回答按提交、文本分块、逐张完整卡片的顺序展示；典型短回答及卡片约 4～6 秒完成。Bot 正常回答固定书写，未匹配问题显示困惑，持续到全部内容展示完；正常回答完成后播放约 2.4 秒的带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听，不显示进度环。卡片出现即可点击。快速追问会补全旧回答，导航返回时历史回答不重播；减少动态效果时仍保留分块输出。该效果不调用模型；回答函数明确返回是否匹配的分类。
+新回答按提交、文本分块、逐张完整卡片的顺序展示；典型短回答及卡片约 4～6 秒完成。Bot 正常回答固定书写，未匹配问题显示困惑，持续到全部内容展示完；正常回答完成后播放约 2.4 秒的带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听，不显示进度环。卡片出现即可点击。快速追问会补全旧回答，导航返回时历史回答不重播；减少动态效果时仍保留分块输出。展示动效独立于回答来源，目前不是实时模型 token 流；回答函数明确返回是否匹配的分类。
 
 主题默认跟随系统，页头太阳/月亮按钮可切换明暗。手动选择以 `simweb-theme` 保存到 localStorage，刷新和站内跳转会保留；会话仍仅保存在内存。主题变量位于 `src/app/globals.css`，Provider 与按钮位于 `src/components/site`。
 

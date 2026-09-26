@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  AnswerRateLimitError,
   answerQuestion,
   resolveReference,
   validateCatalog,
@@ -32,6 +33,46 @@ const catalog: PublicCatalog = {
     href: `/notes/${id}`,
   })),
 };
+
+test("free-text questions use the model endpoint when enabled, with validated references", async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async (input, init) => {
+    assert.equal(input, "/api/answer");
+    assert.equal(JSON.parse(String(init?.body)).text, "Redis");
+    called = true;
+    return Response.json({
+      kind: "answer",
+      text: "A concise grounded answer.",
+      references: [{ type: "article", id: "go-design-philosophy" }],
+    });
+  };
+  try {
+    const answer = await answerQuestion(
+      { text: "Redis" },
+      catalog,
+      undefined,
+      true,
+    );
+    assert.equal(called, true);
+    assert.equal(answer.references[0]?.id, "go-design-philosophy");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("a public rate limit reaches the conversation as a distinct error", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 429 });
+  try {
+    await assert.rejects(
+      answerQuestion({ text: "Redis" }, catalog, undefined, true),
+      AnswerRateLimitError,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("English plural topic names and Chinese questions resolve to current content", async () => {
   assert.equal(

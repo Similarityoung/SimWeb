@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import { AnswerContent } from "./answer-content";
 import type { Message, PublicCatalog } from "../types";
 import type { AnswerPresentation } from "../answer-presentation";
@@ -9,24 +9,40 @@ export function Transcript({
   messages,
   catalog,
   presentation,
+  scrollPositionRef,
 }: {
   messages: readonly Message[];
   catalog: PublicCatalog;
   presentation: { messageId?: string; frame?: AnswerPresentation };
+  scrollPositionRef: RefObject<{ messageId?: string; top: number }>;
 }) {
   const scrollArea = useRef<HTMLDivElement>(null);
   const latestExchange = useRef<HTMLElement>(null);
-  useEffect(() => {
-    scrollArea.current?.scrollTo({
-      top: latestExchange.current?.offsetTop ?? 0,
-      behavior: "instant",
-    });
-  }, [messages]);
+  const previousMessagesRef = useRef<readonly Message[] | null>(null);
+  useLayoutEffect(() => {
+    const area = scrollArea.current;
+    if (!area) return;
+    const messageId = messages.at(-1)?.id;
+    if (
+      previousMessagesRef.current === null &&
+      scrollPositionRef.current.messageId === messageId
+    ) {
+      area.scrollTop = scrollPositionRef.current.top;
+    } else if (previousMessagesRef.current !== messages) {
+      area.scrollTop = latestExchange.current?.offsetTop ?? 0;
+    }
+    scrollPositionRef.current = { messageId, top: area.scrollTop };
+    previousMessagesRef.current = messages;
+  }, [messages, scrollPositionRef]);
   return (
     <section
       ref={scrollArea}
+      onScroll={(event) => {
+        scrollPositionRef.current.top = event.currentTarget.scrollTop;
+      }}
       aria-label="Conversation"
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-6 pr-1 [scrollbar-width:thin] sm:py-8"
+      tabIndex={0}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-6 [scrollbar-width:none] focus-visible:outline-1 focus-visible:outline-offset-0 focus-visible:outline-border-strong sm:py-8"
     >
       <div className="relative space-y-9">
         {messages.map((message, index) => (

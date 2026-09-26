@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getArticle, getArticleSummaries } from "@/lib/writing/content.server";
 import { ArticleReader } from "@/components/writing/article-reader";
+import { ArticleReturnLink } from "@/app/_home/article-return-link";
 
 type Props = { params: Promise<{ slug: string }> };
 export const dynamicParams = false;
@@ -22,7 +23,10 @@ export default async function ThoughtPage({ params }: Props) {
   if (!article) notFound();
   return (
     <main id="main-content">
-      <ArticleReader article={article} />
+      <ArticleReader
+        article={article}
+        backLink={<ArticleReturnLink kind={article.kind} />}
+      />
     </main>
   );
 }

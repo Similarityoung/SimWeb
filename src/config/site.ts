@@ -6,6 +6,7 @@ export const site = {
   role: "Backend developer · Apache Dubbo Committer",
   bio: "I work mainly in Go, around RPC and distributed systems. Lately exploring agent workflows.",
   navigation: [
+    { label: "Home", href: "/" },
     { label: "Projects", href: "/projects" },
     { label: "Notes", href: "/notes" },
     { label: "Thoughts", href: "/thoughts" },

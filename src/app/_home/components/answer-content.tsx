@@ -56,7 +56,7 @@ export function AnswerContent({
                 {content.type === "project" ? (
                   <ProjectCard project={content.item} />
                 ) : (
-                  <ArticleCard article={content.item} />
+                  <ArticleCard article={content.item} source="conversation" />
                 )}
               </div>
             );
