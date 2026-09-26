@@ -41,6 +41,7 @@ test("published articles come from frontmatter; drafts and non-article files sta
     const result = readPublishedArticles(directory);
     assert.equal(result.length, 1);
     assert.equal(result[0].article.href, "/notes/a-note");
+    assert.deepEqual(result[0].article.categories, ["Go"]);
     assert.equal(result[0].article.body.trim(), "Body for a-note");
   } finally {
     rmSync(directory, { recursive: true, force: true });

@@ -1,5 +1,36 @@
 import { expect, test } from "@playwright/test";
 
+test("repeated topic clicks show new articles, and clearing restarts the sequence", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const notes = page.getByRole("button", { name: /^Notes/ });
+  await notes.click();
+  const exchanges = page.getByTestId("exchange");
+  const firstLinks = exchanges.first().getByRole("link");
+  await expect(firstLinks).toHaveCount(3);
+  const firstHrefs = await firstLinks.evaluateAll((links) =>
+    links.map((link) => link.getAttribute("href")),
+  );
+  await notes.click();
+  const secondLinks = exchanges.last().getByRole("link");
+  await expect(secondLinks).toHaveCount(3);
+  expect(
+    await secondLinks.evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href")),
+    ),
+  ).not.toEqual(firstHrefs);
+  await page.getByRole("button", { name: "Clear conversation" }).click();
+  await notes.click();
+  const restartedLinks = page.getByTestId("exchange").first().getByRole("link");
+  await expect(restartedLinks).toHaveCount(3);
+  expect(
+    await restartedLinks.evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href")),
+    ),
+  ).toEqual(firstHrefs);
+});
+
 test("conversation survives reading and navigation, then clears on reload", async ({
   page,
 }) => {

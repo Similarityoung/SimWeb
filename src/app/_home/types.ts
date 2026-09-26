@@ -13,7 +13,7 @@ export type Answer = {
   text: string;
   references: readonly ContentReference[];
 };
-export type Question = { text: string; topic?: TopicId };
+export type Question = { text: string; topic?: TopicId; topicPage?: number };
 export type Message = {
   id: string;
   question: string;

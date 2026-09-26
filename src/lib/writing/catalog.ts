@@ -62,7 +62,7 @@ export function readPublishedArticles(directory: string): PublishedArticle[] {
     if (!data.date || Number.isNaN(date.getTime()))
       throw new Error(`${file}: date must be a valid date`);
     const tags = stringList(data.tags, "tags", file);
-    stringList(data.categories, "categories", file);
+    const categories = stringList(data.categories, "categories", file);
 
     return [
       {
@@ -74,6 +74,7 @@ export function readPublishedArticles(directory: string): PublishedArticle[] {
           title,
           summary,
           date: date.toISOString(),
+          categories,
           tags,
           href: `/${kind}/${slug}`,
           body: content,

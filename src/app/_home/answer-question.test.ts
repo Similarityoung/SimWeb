@@ -29,6 +29,7 @@ const catalog: PublicCatalog = {
     title: id,
     summary: "An article",
     date: "2025-01-01T00:00:00.000Z",
+    categories: ["Go"],
     tags: [],
     href: `/notes/${id}`,
   })),
@@ -106,6 +107,58 @@ test("article topic cards follow the public catalog instead of fixed sample IDs"
   assert.deepEqual(
     (await answerQuestion({ text: "thoughts" }, changed)).references,
     [{ type: "article", id: "new-thought" }],
+  );
+});
+
+test("repeated Notes clicks cover the catalog in varied groups before wrapping", async () => {
+  const articles = [
+    ...Array.from({ length: 5 }, (_, index) => ({
+      id: `dubbo-${index}`,
+      categories: ["Dubbo"],
+    })),
+    ...Array.from({ length: 3 }, (_, index) => ({
+      id: `agent-${index}`,
+      categories: ["Agent"],
+    })),
+    { id: "go-0", categories: ["Go"] },
+  ].map(({ id, categories }) => ({
+    id,
+    slug: id,
+    kind: "notes" as const,
+    title: id,
+    summary: "An article",
+    date: "2025-01-01T00:00:00.000Z",
+    tags: [],
+    categories,
+    href: `/notes/${id}`,
+  }));
+  const changed: PublicCatalog = { ...catalog, articles };
+  const batches = await Promise.all(
+    [0, 1, 2].map((topicPage) =>
+      answerQuestion({ text: "Notes", topic: "notes", topicPage }, changed),
+    ),
+  );
+  assert.deepEqual(
+    batches[0].references.map((reference) => reference.id),
+    ["dubbo-0", "agent-0", "go-0"],
+  );
+  assert.match(batches[0].text, /Dubbo, Agent, Go/);
+  assert.match(batches[0].text, /Tap Notes again/);
+  assert.notDeepEqual(batches[1].references, batches[0].references);
+  assert.equal(
+    new Set(
+      batches.flatMap((answer) => answer.references.map((item) => item.id)),
+    ).size,
+    articles.length,
+  );
+  assert.deepEqual(
+    (
+      await answerQuestion(
+        { text: "Notes", topic: "notes", topicPage: 3 },
+        changed,
+      )
+    ).references,
+    batches[0].references,
   );
 });
 

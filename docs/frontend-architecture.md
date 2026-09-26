@@ -96,11 +96,11 @@ lib ──> 不依赖 app 和 components
 
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
-项目数据集中在 `lib/projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答从对应公开目录选取最新三篇，因而源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
+项目数据集中在 `lib/projects/data.ts`。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答按首个 `categories` 值分组，分类内保留日期顺序，交错排列后每次展示最多三篇。会话 Hook 只保存两张主题卡各自的组号，清空时重置；组号轮完回到首组。源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
 
 ### 回答接口：页面只消费回答结果
 
-外部形状为 `answerQuestion(question, catalog, signal?, aiEnabled?): Promise<Answer>`。请求包含问题和可选的明确主题，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类，视图不通过提示文案猜测是否匹配。主题卡及一般主题问题直接使用预写回答；启用公开 AI 后，具体自由提问调用服务端 `/api/answer`。
+外部形状为 `answerQuestion(question, catalog, signal?, aiEnabled?): Promise<Answer>`。请求包含问题、可选的明确主题及当前组号，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类与文章轮选，视图不通过提示文案猜测是否匹配。主题卡及一般主题问题直接使用预写回答；启用公开 AI 后，具体自由提问调用服务端 `/api/answer`。
 
 `/api/answer` 使用 `lib/writing/search.server.ts` 检索已发布文章的标题、摘要、标签和正文，最多选三篇并截取短摘录；服务端才持有 DeepSeek 密钥。模型只生成简答，文章引用由服务端的检索结果确定和客户端公开目录验证。接口限制输入大小、问题长度、模型输出与请求时间，不存储 IP 或会话；主域名和 Vercel 直连地址分别由 Cloudflare 与 Vercel WAF 按 IP 限流，部署配置见 `docs/ai-answer-setup.md`。不建设 provider 插件体系、模型基类、向量数据库或后台配额系统。当前仍由既有展示时间线呈现完整答案，不引入网络流式协议。
 

@@ -11,6 +11,7 @@ const item = (id: string, title: string, body: string): PublishedArticle => ({
     kind: "notes",
     title,
     summary: "A published note",
+    categories: [],
     tags: [],
     date: "2026-01-01T00:00:00.000Z",
     href: `/notes/${id}`,

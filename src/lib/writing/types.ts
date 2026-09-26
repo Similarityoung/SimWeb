@@ -7,6 +7,7 @@ export type ArticleSummary = {
   title: string;
   summary: string;
   date: string;
+  categories: readonly string[];
   tags: readonly string[];
   href: string;
 };

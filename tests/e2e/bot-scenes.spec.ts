@@ -255,7 +255,7 @@ test("reduced motion freezes the decorative SVG while text still unfolds", async
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(page.getByTestId("streaming-text")).toContainText("I write");
+  await expect(page.getByTestId("streaming-text")).not.toBeEmpty();
   const result = await page.evaluate(
     () =>
       new Promise<{ svgs: string[]; lengths: number[] }>((resolve) => {

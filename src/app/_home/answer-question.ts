@@ -10,15 +10,56 @@ import type {
 
 export class AnswerRateLimitError extends Error {}
 
-function preparedAnswer(topic: TopicId, catalog: PublicCatalog): Answer {
+function interleaveByCategory(
+  articles: readonly PublicCatalog["articles"][number][],
+) {
+  const groups = new Map<string, PublicCatalog["articles"][number][]>();
+  for (const article of articles) {
+    const category = article.categories[0] ?? "Other";
+    const group = groups.get(category) ?? [];
+    group.push(article);
+    groups.set(category, group);
+  }
+  const orderedGroups = [...groups.entries()]
+    .sort(
+      ([a, aArticles], [b, bArticles]) =>
+        bArticles.length - aArticles.length || a.localeCompare(b),
+    )
+    .map(([, group]) => group);
+  const interleaved: PublicCatalog["articles"][number][] = [];
+  for (let index = 0; interleaved.length < articles.length; index++) {
+    for (const group of orderedGroups) {
+      if (group[index]) interleaved.push(group[index]);
+    }
+  }
+  return interleaved;
+}
+
+function preparedAnswer(
+  topic: TopicId,
+  catalog: PublicCatalog,
+  topicPage = 0,
+): Answer {
   const preset = preparedAnswers[topic];
   if (topic !== "notes" && topic !== "thoughts") return preset;
+  const articles = interleaveByCategory(
+    catalog.articles.filter((article) => article.kind === topic),
+  );
+  if (!articles.length) return preset;
+  const pageCount = Math.ceil(articles.length / 3);
+  const page = Math.max(0, Math.floor(topicPage)) % pageCount;
+  const selected = articles.slice(page * 3, page * 3 + 3);
+  const categories = [
+    ...new Set(selected.map((article) => article.categories[0] ?? "Other")),
+  ];
+  const label = topic === "notes" ? "Notes" : "Thoughts";
   return {
     ...preset,
-    references: catalog.articles
-      .filter((article) => article.kind === topic)
-      .slice(0, 3)
-      .map((article) => ({ type: "article" as const, id: article.id })),
+    text: `I have ${articles.length} published ${topic}. This set covers ${categories.join(", ")}. ${pageCount > 1 ? `Tap ${label} again for another set, or open the full collection in the menu.` : "Open the full collection in the menu."}`,
+    references: selected.map((article) => ({
+      type: "article",
+      id: article.id,
+    })),
   };
 }
 
@@ -120,7 +161,7 @@ export async function answerQuestion(
       ),
     )?.id;
   const answer: Answer = topic
-    ? preparedAnswer(topic, catalog)
+    ? preparedAnswer(topic, catalog, question.topicPage)
     : /^(hello|hi|hey|你好|您好)[!！。\s]*$/i.test(text)
       ? {
           kind: "answer",
