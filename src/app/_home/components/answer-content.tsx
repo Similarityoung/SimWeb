@@ -28,7 +28,7 @@ export function AnswerContent({
       data-state={complete ? "complete" : phase}
       data-phase={phase}
     >
-      <p className="max-w-2xl text-sm leading-7 text-foreground/80 sm:text-[15px]">
+      <p className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]">
         {streaming ? (
           <>
             <span aria-hidden data-testid="streaming-text">
