@@ -49,6 +49,22 @@ function queryTerms(query: string): string[] {
     .filter((term) => term.length > 1 && !ignored.has(term));
 }
 
+function bestExcerpt(body: string, terms: readonly string[]): string {
+  const text = body.replace(/!\[[^\]]*\]\([^)]+\)/g, "");
+  const lower = text.toLowerCase();
+  const starts = terms
+    .map((term) => lower.indexOf(term))
+    .filter((index) => index >= 0)
+    .map((index) => Math.max(0, index - 220));
+  if (!starts.length) return text.slice(0, 900);
+  const start = starts.reduce((best, candidate) => {
+    const coverage = (at: number) =>
+      terms.filter((term) => lower.slice(at, at + 900).includes(term)).length;
+    return coverage(candidate) > coverage(best) ? candidate : best;
+  });
+  return text.slice(start, start + 900);
+}
+
 export function rankArticles(
   query: string,
   published: readonly PublishedArticle[],
@@ -70,18 +86,16 @@ export function rankArticles(
           (lower[3].includes(term) ? 1 : 0),
         0,
       );
-      const hit =
-        terms
-          .map((term) => lower[3].indexOf(term))
-          .find((index) => index >= 0) ?? 0;
-      const start = Math.max(0, hit - 120);
-      return { article, score, excerpt: body.slice(start, start + 900) };
+      return { article, score, excerpt: bestExcerpt(body, terms) };
     })
     .filter(({ score }) => score > 0)
     .sort(
       (a, b) =>
         b.score - a.score ||
         b.article.article.date.localeCompare(a.article.article.date),
+    )
+    .filter(({ score }, _, ranked) =>
+      ranked[0].score < 5 ? true : score >= ranked[0].score / 5,
     )
     .slice(0, 3)
     .map(({ article, excerpt }) => ({ article, excerpt }));
