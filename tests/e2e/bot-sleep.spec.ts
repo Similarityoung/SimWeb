@@ -104,7 +104,12 @@ test("a quiet focused input can sleep; typing and submitting immediately take ov
   await page.clock.fastForward(1_100);
   await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
   await page.clock.fastForward(3_000);
-  await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(2);
+  await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(4);
+  await expect(
+    page
+      .getByTestId("answer")
+      .getByRole("article", { name: "Xianyu AI Engineering" }),
+  ).toContainText("Internship · Xianyu");
 });
 
 test("touch or click wakes without adding a special Bot gesture; a topic still answers", async ({

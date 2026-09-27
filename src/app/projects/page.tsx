@@ -11,7 +11,7 @@ export default function ProjectsPage() {
   return (
     <PageShell
       title="Projects"
-      description="Open source, experiments, and things I’m building. Each project leads to the place where the work lives."
+      description="Open source, experiments, and things I’m building."
     >
       <ProjectDirectory />
     </PageShell>

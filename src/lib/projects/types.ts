@@ -3,6 +3,7 @@ export type Project = {
   title: string;
   summary: string;
   role: string;
-  href: string;
+  icon: "component" | "panels-top-left" | "network" | "globe" | "workflow";
+  href?: string;
   tags: readonly string[];
 };

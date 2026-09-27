@@ -67,7 +67,7 @@ test("conversation survives reading and navigation, then clears on reload", asyn
   expect(noteHref).toMatch(/\?from=conversation$/);
   await expect(
     page.getByTestId("exchange").last().getByTestId("answer"),
-  ).toHaveAttribute("data-state", "complete");
+  ).toHaveAttribute("data-state", "complete", { timeout: 8_000 });
   await firstNote.scrollIntoViewIfNeeded();
   const conversation = page.getByRole("region", { name: "Conversation" });
   const previousScrollTop = await conversation.evaluate((element) =>
@@ -114,6 +114,11 @@ test("menus open full catalogs, cards have the expected destinations, and direct
   await expect(
     page.getByRole("link", { name: "Dubbo-go-Pixiu, view on GitHub" }),
   ).toHaveAttribute("href", "https://github.com/apache/dubbo-go-pixiu");
+  const internship = page.getByRole("article", {
+    name: "Xianyu AI Engineering",
+  });
+  await expect(internship).toContainText("Internship · Xianyu");
+  await expect(internship.getByRole("link")).toHaveCount(0);
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "Thoughts" })

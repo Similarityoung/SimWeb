@@ -50,6 +50,7 @@ test("theme and clicks never interrupt writing or queue a surprise after complet
   await expect(page.getByTestId("answer")).toHaveAttribute(
     "data-state",
     "complete",
+    { timeout: 8_000 },
   );
   await expect(svgOf(page)).toHaveAttribute("data-state", "celebrate");
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle", {
@@ -105,7 +106,7 @@ test("a failed answer alerts once, restores idle expressions and listening, and 
       predicate: Parameters<typeof find>[0],
       thisArg?: unknown,
     ) {
-      if (this.length === 2 && this[0]?.id === "dubbo-go-pixiu") {
+      if (this[0]?.id === "dubbo-go-pixiu") {
         Array.prototype.find = find;
         throw new Error("Injected content lookup failure");
       }

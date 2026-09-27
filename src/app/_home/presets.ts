@@ -20,11 +20,14 @@ export const topics: readonly {
       "work",
       "pixiu",
       "dubbo",
+      "simweb",
+      "xianyu",
       "mcp",
       "grpc",
       "项目",
       "作品",
       "开源",
+      "闲鱼",
     ],
   },
   {
@@ -86,10 +89,13 @@ export const topics: readonly {
 export const preparedAnswers: Record<TopicId, Answer> = {
   projects: {
     kind: "answer",
-    text: "Much of my work lives in open source. Here are the projects I contribute to and the ideas I’m exploring.",
+    text: "I contribute to Apache Dubbo, build SimWeb, and work on AI engineering at Xianyu. Here’s a selection of my work.",
     references: [
       { type: "project", id: "dubbo-go-pixiu" },
-      { type: "project", id: "pixiu-admin" },
+      { type: "project", id: "dubbo-admin" },
+      { type: "project", id: "dubbo-go" },
+      { type: "project", id: "simweb" },
+      { type: "project", id: "xianyu-ai-engineering" },
     ],
   },
   notes: {

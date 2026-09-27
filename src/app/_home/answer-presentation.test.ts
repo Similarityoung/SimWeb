@@ -47,7 +47,7 @@ test("late answers wait for actual data, then begin the same presentation", () =
   );
   assert.equal(
     frames.find((frame) => frame.phase === "complete")?.visibleCards,
-    2,
+    answer.references.length,
   );
 });
 

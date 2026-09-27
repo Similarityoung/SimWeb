@@ -9,11 +9,18 @@ import {
 import type { PublicCatalog } from "./types";
 
 const catalog: PublicCatalog = {
-  projects: ["dubbo-go-pixiu", "pixiu-admin"].map((id) => ({
+  projects: [
+    "dubbo-go-pixiu",
+    "dubbo-admin",
+    "dubbo-go",
+    "simweb",
+    "xianyu-ai-engineering",
+  ].map((id) => ({
     id,
     title: id,
     summary: "A project",
     role: "Contributor",
+    icon: "component",
     href: `https://github.com/example/${id}`,
     tags: [],
   })),

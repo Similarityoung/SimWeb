@@ -7,7 +7,7 @@
 - 以 `visual-atlas/personal` 原型的风格和 Bot 为起点，使用 Next.js App Router、React、TypeScript、Tailwind CSS 与 shadcn/ui 重建个人站，最终部署到 Vercel。无需沿用 Hugo / PaperMod 的页面与样式。
 - 输入为个人资料、项目、既有 Markdown 文章、预写问答及原型 Bot 引擎；输出为首页、Projects / Notes / Thoughts 完整目录、站内文章正文及 About Me。
 - 文章仍是网站内容。文章源仓库为 `Obisidian-Open`；本站只同步 `draft: false` 的文章，由源文件决定公开范围。
-- 项目卡片维护本人角色与明确目的地，可直接跳 GitHub 或官网；笔记卡片展示标题和摘要并进入站内正文。首页回答与目录复用同一内容条目和卡片。
+- 项目卡片维护本人角色与各自图标；有公开链接的项目可直接跳 GitHub 或官网，没有公开链接的项目只展示简介，不显示跳转箭头或链接悬停效果。笔记卡片展示标题和摘要并进入站内正文。首页回答与目录复用同一内容条目和卡片。
 
 ## 导航与首页
 
