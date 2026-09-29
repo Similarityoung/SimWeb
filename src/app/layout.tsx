@@ -38,11 +38,11 @@ export default function RootLayout({
   validateCatalog(catalog);
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       className={`${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
-      <body>
+      <body lang="en">
         <a
           href="#main-content"
           className="sr-only fixed top-2 left-4 z-10 rounded-md bg-foreground px-4 py-3 text-background focus:not-sr-only"

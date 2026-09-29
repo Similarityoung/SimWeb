@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function SiteHeader() {
   const pathname = usePathname();
   return (
-    <header className="mx-auto flex h-[76px] w-full max-w-4xl shrink-0 items-center justify-between gap-1.5 px-[18px] sm:gap-3 sm:px-7">
+    <header className="site-container flex h-[76px] shrink-0 items-center justify-between gap-1.5 sm:gap-3">
       <nav
         aria-label="Main navigation"
         className="-ml-1 flex items-center min-[380px]:-ml-[7px] sm:-ml-[9px] sm:gap-0.5"
@@ -36,12 +36,7 @@ export function SiteHeader() {
         })}
       </nav>
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          className="h-11 w-8 text-muted-foreground hover:bg-muted hover:text-foreground sm:w-9 dark:hover:bg-muted"
-        >
+        <Button asChild variant="ghost" size="icon" className="h-11 w-8 sm:w-9">
           <a
             href={site.github}
             aria-label="GitHub profile"

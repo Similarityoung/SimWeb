@@ -1,0 +1,67 @@
+.article {
+  overflow-wrap: anywhere;
+  --code-keyword: #9e3b24;
+  --code-string: #3e662d;
+  --code-value: #235e82;
+  --code-title: #7e5317;
+}
+
+:global(.dark) .article {
+  --code-keyword: #ed9478;
+  --code-string: #a6bd82;
+  --code-value: #8fbdd6;
+  --code-title: #d9b17e;
+}
+
+/* Prose wraps long identifiers; code blocks keep their own scroll area. */
+.article pre {
+  overflow-wrap: normal;
+}
+
+.article :global(.hljs-comment),
+.article :global(.hljs-quote) {
+  color: var(--muted-foreground);
+}
+
+.article :global(.hljs-keyword),
+.article :global(.hljs-selector-tag),
+.article :global(.hljs-name),
+.article :global(.hljs-deletion) {
+  color: var(--code-keyword);
+}
+
+.article :global(.hljs-string),
+.article :global(.hljs-regexp),
+.article :global(.hljs-link),
+.article :global(.hljs-addition) {
+  color: var(--code-string);
+}
+
+.article :global(.hljs-number),
+.article :global(.hljs-literal),
+.article :global(.hljs-type),
+.article :global(.hljs-built_in),
+.article :global(.hljs-attr),
+.article :global(.hljs-attribute),
+.article :global(.hljs-variable),
+.article :global(.hljs-template-variable),
+.article :global(.hljs-symbol),
+.article :global(.hljs-bullet),
+.article :global(.hljs-meta) {
+  color: var(--code-value);
+}
+
+.article :global(.hljs-title),
+.article :global(.hljs-section),
+.article :global(.hljs-selector-id),
+.article :global(.hljs-selector-class) {
+  color: var(--code-title);
+}
+
+.article :global(.hljs-emphasis) {
+  font-style: italic;
+}
+
+.article :global(.hljs-strong) {
+  font-weight: 600;
+}

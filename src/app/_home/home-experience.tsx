@@ -63,7 +63,7 @@ export function HomeExperience() {
     <main
       id="main-content"
       className={cn(
-        "mx-auto flex w-full max-w-4xl flex-col px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] sm:px-7 sm:pb-[max(22px,env(safe-area-inset-bottom))]",
+        "site-container flex flex-col pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-[max(22px,env(safe-area-inset-bottom))]",
         active
           ? "h-[calc(100dvh-4.75rem)] min-h-96"
           : "min-h-[max(584px,calc(100svh-4.75rem))] sm:min-h-[max(564px,calc(100svh-4.75rem))]",
@@ -93,7 +93,7 @@ export function HomeExperience() {
             onClick={reset}
             aria-label="Clear conversation"
             title="Clear conversation"
-            className="size-11 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
+            className="size-11"
           >
             <RotateCcw className="size-4" strokeWidth={1.5} aria-hidden />
           </Button>

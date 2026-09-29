@@ -9,10 +9,7 @@ export const metadata: Metadata = {
 
 export default function ProjectsPage() {
   return (
-    <PageShell
-      title="Projects"
-      description="Open source, experiments, and things I’m building."
-    >
+    <PageShell title="Projects">
       <ProjectDirectory />
     </PageShell>
   );

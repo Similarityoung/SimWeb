@@ -12,3 +12,4 @@
 !.env.example
 /playwright-report/
 /test-results/
+/public/pagefind/

@@ -92,13 +92,15 @@ lib ──> 不依赖 app 和 components
 
 ### 内容接口：同一条内容，只维护一次
 
-文章原稿位于 `Obisidian-Open`，本站 `content` 整个目录只缓存已发布 Markdown，同步时会被整体替换。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，正文仅在服务端用于正文页和有界检索摘录。
+文章原稿位于 `Obisidian-Open`，本站 `content` 整个目录只缓存已发布 Markdown，同步时会被整体替换。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，服务端用正文生成阅读页、有界检索摘录和公开全文索引；页面 props 只传摘要，浏览器搜索时可按需获取索引中的正文数据。
 
 `content.server.ts` 从公开文章源路径生成双链目标索引，`wiki-links.ts` 在正文 Markdown 语法树中将双链转成站内链接；目标不存在时构建失败。目录卡片和首页不接收该索引，代码块保留原文。
 
 内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。服务端校验模型引用属于本次提供的公开资料，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
 项目数据集中在 `lib/projects/data.ts`。每项用可序列化的 `icon` 名称指定图标，卡片组件映射为静态导入的 Lucide 组件；`href` 可省略，无公开链接时渲染展示卡片，有链接时保留外链和跳转箭头。Projects 入口固定展示全部项目；Notes / Thoughts 入口在服务端按日期倒序取前三篇，再随机取剩余两篇。项目与文章只有一份事实源，首页与完整目录使用同一条目和卡片组件。
+
+Projects 目录由 `ProjectDirectory` 用单列列表装配 `ProjectCard` 的 `directory` 样式，后者共用项目数据、图标映射与链接语义，默认 `compact` 样式继续服务首页回答。目录复用现有 `ui/card.tsx`，与 Notes 使用同一细边框、主题背景和圆角，取消阴影，卡片间距为 16px。项目名作为 h2，角色位于名称下方；桌面图标占独立列，简介与标签对齐标题，小屏简介与标签横跨全部列。仅可点击项目显示箭头及悬停、键盘焦点反馈，不增加客户端状态或依赖。组件与布局依据 [shadcn Card](https://ui.shadcn.com/docs/components/radix/card) 和 [Tailwind 响应式布局](https://tailwindcss.com/docs/responsive-design)，PageShell 的说明为可选，目录 H1 继续由共享 PageTitle 统一。设计以保留风格为准，DESIGN_VARIANCE / MOTION_INTENSITY / VISUAL_DENSITY 为 4 / 2 / 4，已有项目图标承担视觉识别，交互仅用颜色反馈。
 
 ### 回答接口：页面只消费回答结果
 
@@ -146,6 +148,28 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 主题入口的共享高亮归 `app/_home/components/topic-shortcuts.tsx`：组件只保存视觉悬停与键盘焦点，以同一个 Motion layoutId 在卡片之间移动底板，跨间隙保持上一个目标，键盘焦点优先，离开后清除；点击消费高亮，禁用期间不显示。首页双列／四列与会话紧凑布局复用这一实现，颜色、边框和图标使用 Tailwind，减少动态效果时直接定位。不改变 Bot 关注接口或会话数据。视觉参考用户提供的 Visual Atlas `anchor-positioning-hover-cards`；实现依据 [Motion 共享布局动画](https://motion.dev/docs/react-layout-animations#shared-layout-animations)，复用已安装依赖，不增加坐标测量 Hook 或全局样式。
 
+## 文章目录与阅读来源
+
+全站横向容器由 globals.css 的 `site-container` utility 定义，导航、首页、目录和 404 共用宽度与侧边距。`site/page-shell.tsx` 的 PageFrame 统一目录页与 About Me 的纵向间距，导航下保留小屏 16px、桌面 24px 的顶部 padding，PageShell 与 DirectoryFrame 复用；首页 Bot 布局独立，正文保留独立阅读宽度。Button 的 ghost 变体集中定义灰色悬停与文字颜色，调用处仅指定尺寸，不重复覆盖配色。依据 [Tailwind 自定义 utility](https://tailwindcss.com/docs/adding-custom-styles#adding-custom-utilities) 与 [padding](https://tailwindcss.com/docs/padding)。
+
+正文换行和语法配色限定在 `writing/article-reader.module.css`。阅读容器使用 overflow-wrap: anywhere，pre 恢复 normal 并沿用 Typography 的内部滚动；rehype-highlight 继续在服务端生成 token，CSS 按明暗主题设置配色，不增加客户端高亮器。依据 [MDN overflow-wrap](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/overflow-wrap) 与 [rehype-highlight CSS](https://github.com/rehypejs/rehype-highlight#css)。
+
+两个目录由 `app/_writing/directory.tsx` 的 `WritingDirectory({ kind })` 统一装配：读取摘要，以共享规则生成静态默认页，再用 Suspense 承载 `directory.client.tsx`。后者负责 Notes 输入草稿与检索状态，以及两目录的 URL、分页和 DOM 定位；不重复筛选、排序或分页。Thoughts 查询由共享规则规范为仅含页码，因此始终同步浏览摘要，不调用搜索。两页面继续导出各自 metadata，标题下说明可省略。
+
+`lib/writing/directory.ts` 是目录规则的唯一入口：规范化查询、统计当前栏目的元数据、按条件取交集、日期排序、固定每页 10 条。readDirectoryQuery、directoryHref 与 browseDirectory 共用栏目的查询规则：Notes 支持 q/category/tag/page，Thoughts 只接受 page，输入中其余条件不影响结果也不进入阅读返回链接。无搜索词时同步处理摘要；有搜索词时由 `search.client.ts` 懒加载 Pagefind，先过滤全部命中，再用同一分页规则只读取当前页最多 10 个句柄的 data()。Pagefind 的内部 ID 不能当文章 ID；通过 meta.articleId 校验并映射现有摘要，类型或 URL 不符整页失败。data() 可能包含完整搜索文本，并非只有短摘录。Agent 的 search.server.ts 仍只负责回答中的前三篇摘录。
+
+`components/writing/article-directory.tsx` 展示 DirectoryPage，Notes 用单列卡片与搜索骨架；Thoughts 分页后按年月分组，桌面与小屏均为单列归档，最左侧细竖线连接月份节点。日期使用 time 的 YYYY-MM datetime，完整英文月份位于文章上方，使用 24px / 26px 中等字重作为视觉锚点，年份以 12px 等宽小字跟在右侧。条目只呈现 16px 常规字重标题与 14px 次要颜色摘要，内容限制行宽并提供悬停与焦点反馈。月份之间留出 36px / 40px 间距，组内条目沿同一边缘排列。依据 [HTML time](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/time) 与 [Tailwind 响应式布局](https://tailwindcss.com/docs/responsive-design)。
+
+`directory-controls.tsx` 的 DirectoryFrame 复用 PageFrame / PageTitle：Notes 提供搜索与侧栏布局；Thoughts 只输出标题和列表，不渲染搜索、筛选及标题分隔线。共享分页只在超过一页时出现，Thoughts 不使用横向分隔线。筛选、搜索、已选条件与分页控件不持有业务状态。Notes 桌面两个筛选都展开，小屏复用 ui/select.tsx 的 shadcn / Radix Select，库承担交互、定位和焦点管理，本站适配主题与点击区域。依据 [shadcn Select](https://ui.shadcn.com/docs/components/radix/select) 与 [Radix Select](https://www.radix-ui.com/primitives/docs/components/select)。ArticleCard 用显式 layout 区分 Notes 目录和首页卡片，共用事实数据、链接和阅读来源。
+
+URL 是已提交条件的事实源，草稿不覆盖历史导航。原生 History 与 useSearchParams 同步；连续输入 replace，筛选、翻页、清空 push。输入法期间不提交半成品，筛选提交合并当前草稿，Back/Forward 取消旧定时器。一个请求代次共同约束列表、错误、页码规范化和定位，旧搜索不能更改新状态。静态 HTML 仍是默认首屏，带参数直达由客户端恢复，不能理解为按条件 SSR。sitemap 保留全部文章发现路径。
+
+`lib/writing/reading-location.ts` 集中编码和解析结构化 ReadingOrigin：conversation 或 directory + query。卡片与正文页首共享此契约；返回目录路径由文章 kind 推导，锚点由 ID 推导，不接受自由 returnTo。`app/_writing/article-return-link.tsx` 读取当前会话是否存在，然后调用纯来源规则；首页只传 origin 字面量，不导入目录内部实现。从搜索结果返回须等待条目挂载再一次性滚动并恢复焦点，用户操作或新导航取消旧定位；正文双链与页尾完整目录仍不携带来源。
+
+构建使用固定版本 Pagefind Node API，从共享 catalog.ts 的公开内容生成自定义记录，过滤字段是 kind/category/tag。`scripts/index-writing.ts` 在专属临时目录完成后替换 public/pagefind，任何 errors 阻止启动或构建；predev/prebuild 调用唯一 index:writing 命令，同步脚本不重复生成。生成物忽略 Git 与 ESLint。本地内容更新后重启服务并刷新；不引入 watcher、外层版本 manifest 或跨部署旧标签页一致性协议。公开索引不可加载时明确提示刷新。
+
+索引 language 为 zh，根 HTML 声明 zh-CN，英文界面局部使用 en，文章内容保留中文声明。临时真实试验发现根语言 en 会对连续中文词扩大匹配，语言策略需在真实页面一并验证。依赖依据：[Pagefind Node API](https://pagefind.app/docs/node-api/)、[Search API](https://pagefind.app/docs/api/)、[多语言说明](https://pagefind.app/docs/multilingual/)；Next 行为按仓库安装版本文档核对。
+
 ## Next.js 的服务端与客户端约束
 
 - 路由和正文默认在服务端执行；交互集中在首页体验和 Bot 等确有需要的客户端入口。
@@ -154,13 +178,13 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 - `article-card.tsx` 只依赖公开数据类型、基础组件和链接组件，可供首页交互与服务端目录共同使用。
 - 文章打开动效由 `article-card-link.tsx` 的小型客户端入口与服务端 `article-reader.tsx` 的标题区共享 React ViewTransition 名称；只给实际点击的卡片命名，避免会话中重复文章冲突。正文解析仍在服务端，浏览器不支持视图过渡或用户要求减少动态效果时直接导航。依据 [Next.js 视图过渡指南](https://nextjs.org/docs/app/guides/view-transitions)。
 - 不用一个混合导出的 `index.ts` 同时暴露内容查询、正文解析与客户端卡片。服务端查询入口与浏览器可用入口保持明确分离。
-- `globals.css` 仅保留主题定义、基础样式和必要关键帧。业务布局使用 Tailwind，shadcn 提供基础组件，不承担问答或内容规则。
+- `globals.css` 仅保留主题定义、基础样式、全站容器 utility 和必要关键帧。业务布局使用 Tailwind，shadcn 提供基础组件，不承担问答或内容规则。
 
 主题使用 next-themes，由根布局组装 `components/site/theme-provider.tsx`，默认跟随系统，页头 `theme-toggle.tsx` 切换明暗。只有手动主题偏好以 `simweb-theme` 写入 localStorage，会话仍不持久化。首屏脚本在绘制前设置 html 的主题 class，按钮的图标和可访问名称用 CSS 明暗变体切换，避免服务端与客户端根据不同主题渲染不同 DOM。Bot 的渲染层通过现有 inkFlat / eyeColor 参数引用局部 CSS 变量；场景层监听主题变化，换色不重建引擎。文章正文通过 Typography 暗色变体和语义颜色适配。
 
 ## 修改与验证如何集中
 
-问题规范化、长度上限和两端回答契约统一在 `lib/answer/schema.ts`，AI 开关统一在 `config/ai.server.ts`；正文两类路由共用 `app/_writing/article-route.tsx`，四个目录／介绍页面共用 `components/site/page-shell.tsx`。检索与页面查询从 `content.server.ts` 的同一入口读取当前公开内容。
+问题规范化、长度上限和两端回答契约统一在 `lib/answer/schema.ts`，AI 开关统一在 `config/ai.server.ts`；正文两类路由共用 `app/_writing/article-route.tsx`。Projects / About 使用 `components/site/page-shell.tsx`，Notes / Thoughts 由 DirectoryFrame 分别管理搜索侧栏与极简时间轴外壳。检索与页面查询从 `content.server.ts` 的同一入口读取当前公开内容。
 
 `lib/browser-signals.ts` 使用 React useSyncExternalStore 统一动态效果偏好与页面可见性订阅。Character、场景 Hook、介绍布局和主题高亮全部消费该入口；引擎暂停、场景取消、布局变化仍各归其生命周期，不重建引擎。已安装 Motion 的 useReducedMotion 不会在偏好改变后更新组件，因此仅保留 Motion 的布局动画能力。CSS 媒体规则继续处理 CSS 动画。
 

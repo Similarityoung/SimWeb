@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getArticle, getArticleSummaries } from "@/lib/writing/content.server";
 import type { WritingKind } from "@/lib/writing/types";
 import { ArticleReader } from "@/components/writing/article-reader";
-import { ArticleReturnLink } from "@/app/_home/article-return-link";
+import { ArticleReturnLink } from "./article-return-link";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -30,7 +30,7 @@ export function articleRoute(kind: WritingKind) {
         <main id="main-content">
           <ArticleReader
             article={article}
-            backLink={<ArticleReturnLink kind={kind} />}
+            backLink={<ArticleReturnLink kind={kind} articleId={article.id} />}
           />
         </main>
       );

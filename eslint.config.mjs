@@ -16,6 +16,7 @@ export default defineConfig([
     ".local/**",
     "test-results/**",
     "playwright-report/**",
+    "public/pagefind/**",
   ]),
   {
     files: ["src/app/_home/**/*.{ts,tsx}"],

@@ -8,6 +8,7 @@ import rehypeSlug from "rehype-slug";
 import { remarkWikiLinks } from "@/lib/writing/wiki-links";
 import type { ArticlePage } from "@/lib/writing/types";
 import { BackLink } from "@/components/ui/back-link";
+import styles from "./article-reader.module.css";
 
 export function ArticleReader({
   article,
@@ -17,7 +18,10 @@ export function ArticleReader({
   backLink: ReactNode;
 }) {
   return (
-    <article className="mx-auto max-w-3xl px-6 pt-6 pb-24" lang="zh-CN">
+    <article
+      className={`${styles.article} mx-auto max-w-3xl px-6 pt-6 pb-24`}
+      lang="zh-CN"
+    >
       {backLink}
       <ViewTransition
         name={`article-${article.id}`}

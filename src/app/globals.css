@@ -54,6 +54,10 @@
   --accent: #ed9478;
 }
 
+@utility site-container {
+  @apply mx-auto w-full max-w-4xl px-[18px] sm:px-7;
+}
+
 @layer base {
   * {
     @apply border-border;
