@@ -1,138 +1,175 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./answer-fixture";
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
-  test(`answers append text chunks before showing cards (${reducedMotion})`, async ({
+  test(`real stream progress gates cards and submission (${reducedMotion})`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion });
     await page.goto("/");
-    await expect(
-      page.getByRole("img").locator("svg > *").first(),
-    ).toBeAttached();
-    const result = await page.evaluate(
-      () =>
-        new Promise<{
-          samples: string[];
-          complete: string;
-          earlyCards: boolean;
-        }>((resolve, reject) => {
-          const samples: string[] = [];
-          let earlyCards = false;
-          const observer = new MutationObserver(() => {
-            const answer = document.querySelector('[data-testid="answer"]');
-            const visible = answer?.querySelector(
-              '[data-testid="streaming-text"]',
-            )?.textContent;
-            if (visible && visible !== samples.at(-1)) samples.push(visible);
-            if (answer?.getAttribute("data-state") === "streaming")
-              earlyCards ||= !!answer.querySelector("a");
-            if (answer?.getAttribute("data-state") === "complete") {
-              observer.disconnect();
-              clearTimeout(deadline);
-              resolve({
-                samples,
-                complete: answer.querySelector("p")?.textContent ?? "",
-                earlyCards,
-              });
-            }
-          });
-          const deadline = setTimeout(() => {
-            observer.disconnect();
-            reject(new Error("Answer did not finish"));
-          }, 5000);
-          observer.observe(document.querySelector("main")!, {
-            childList: true,
-            characterData: true,
-            attributes: true,
-            subtree: true,
-          });
-          document
-            .querySelector<HTMLButtonElement>(
-              '[aria-label="Conversation topics"] > button:nth-child(2)',
-            )!
-            .click();
-        }),
-    );
-    expect(result.samples.length).toBeGreaterThan(2);
-    expect(result.earlyCards).toBe(false);
-    expect(result.complete.length).toBeGreaterThan(30);
-    const increments = result.samples.map(
-      (text, index) => text.length - (result.samples[index - 1]?.length ?? 0),
-    );
-    expect(increments.every((size) => size > 1)).toBe(true);
-    expect(new Set(increments).size).toBeGreaterThan(1);
-    expect(
-      result.samples.every((text) => result.complete.startsWith(text)),
-    ).toBe(true);
+    await page.evaluate(() => {
+      window.__answers.manual = true;
+    });
+    await page.getByRole("button", { name: /^Notes/ }).click();
     await expect
-      .poll(() => page.getByTestId("answer").getByRole("link").count())
-      .toBeGreaterThan(0);
+      .poll(() => page.evaluate(() => window.__answers.pending.length))
+      .toBe(1);
+    await page.evaluate(() => window.__answers.advance());
+    await expect(page.getByTestId("streaming-text")).toHaveText("Hello! H");
+    await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(0);
+    await page.getByRole("textbox").fill("Next question");
+    await expect(
+      page.getByRole("button", { name: "Send question" }),
+    ).toBeDisabled();
+    await page.evaluate(() => window.__answers.advance(2));
+    await expect(page.getByTestId("streaming-text")).toHaveText(
+      "Hello! Here is a selection of m",
+    );
+    await page.evaluate(() => window.__answers.advance(3));
+    // The business object is complete, but transport finish has not arrived.
+    await expect(page.getByTestId("answer")).toHaveAttribute(
+      "data-state",
+      "streaming",
+    );
+    await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(0);
+    await page.evaluate(() => window.__answers.flush());
+    await expect(page.getByTestId("answer")).toHaveAttribute(
+      "data-state",
+      "complete",
+    );
+    await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(5);
+    await expect(
+      page.getByRole("button", { name: "Send question" }),
+    ).toBeEnabled();
   });
 }
 
-test("a new question waits for the previous answer, and clearing cancels output", async ({
+test("clear cancels a pending response and starts a clean session", async ({
   page,
 }) => {
   await page.goto("/");
+  await page.evaluate(() => {
+    window.__answers.manual = true;
+  });
   await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(page.getByTestId("answer")).toHaveAttribute(
-    "data-state",
-    "streaming",
-  );
-  const projects = page.getByRole("button", { name: "Projects", exact: true });
-  const input = page.getByRole("textbox", { name: "Ask a question" });
-  const send = page.getByRole("button", { name: "Send question" });
-  await expect(projects).toBeDisabled();
-  await input.fill("What are your projects?");
-  await expect(send).toBeDisabled();
-  await input.press("Enter");
-  await expect(page.getByTestId("exchange")).toHaveCount(1);
-  await expect(input).toHaveValue("What are your projects?");
-  await expect(page.getByTestId("answer").first()).toHaveAttribute(
-    "data-state",
-    "complete",
-  );
-  await expect(projects).toBeEnabled();
-  await expect(send).toBeEnabled();
-  await projects.click();
-  await expect(page.getByTestId("answer").last()).toHaveAttribute(
-    "data-state",
-    "streaming",
-  );
-  await page.getByRole("button", { name: "Clear conversation" }).click();
-  await expect(page.getByTestId("answer")).toHaveCount(0);
-  await page.getByRole("button", { name: /^Thoughts/ }).click();
-  await expect(page.getByTestId("answer")).toHaveAttribute(
-    "data-state",
-    "complete",
-  );
-  await expect(page.getByTestId("exchange")).toHaveCount(1);
   await expect
-    .poll(() => page.getByTestId("answer").getByRole("link").count())
-    .toBeGreaterThan(0);
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  await page.evaluate(() => window.__answers.advance(2));
+  await expect(page.getByTestId("streaming-text")).not.toBeEmpty();
+  await page.getByRole("button", { name: "Clear conversation" }).click();
+  await expect(page.getByTestId("exchange")).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(0);
+  await page.getByRole("button", { name: /^Thoughts/ }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  await page.evaluate(() => window.__answers.flush());
+  await expect(page.getByTestId("answer")).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  await expect(page.getByTestId("exchange")).toHaveCount(1);
+  expect(
+    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
+  ).toBeUndefined();
 });
 
-test("returning home shows history without replaying unfinished output", async ({
+test("navigation preserves a live request without replaying it", async ({
   page,
 }) => {
   await page.goto("/");
+  await page.evaluate(() => {
+    window.__answers.manual = true;
+  });
   await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(page.getByTestId("answer")).toHaveAttribute(
-    "data-state",
-    "streaming",
-  );
+  await expect
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  await page.evaluate(() => window.__answers.advance(2));
+  await expect(page.getByTestId("streaming-text")).not.toBeEmpty();
   await page
-    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("navigation")
     .getByRole("link", { name: "Notes", exact: true })
     .click();
   await expect(page).toHaveURL(/\/notes$/);
+  await page.evaluate(() => window.__answers.flush());
   await page.getByRole("link", { name: "Home", exact: true }).click();
   await expect(page.getByTestId("answer")).toHaveAttribute(
     "data-state",
     "complete",
   );
   await expect(page.getByTestId("streaming-text")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Play with Bot" }),
+  ).not.toHaveAttribute("data-scene", "complete");
+  expect(await page.evaluate(() => window.__answers.requests.length)).toBe(1);
+});
+
+test("disconnect after complete data never shows cards or becomes history", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    window.__answers.manual = true;
+    window.__answers.disconnectBeforeFinish = true;
+  });
+  await page.getByRole("button", { name: /^Projects/ }).click();
   await expect
-    .poll(() => page.getByTestId("answer").getByRole("link").count())
-    .toBeGreaterThan(0);
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  await page.evaluate(() => window.__answers.flush());
+  await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
+  await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__answers.disconnectBeforeFinish = false;
+  });
+  await page.getByRole("button", { name: /^Notes/ }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  expect(
+    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
+  ).toBeUndefined();
+  await page.evaluate(() => window.__answers.flush());
+  await expect(page.getByTestId("answer").last()).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+});
+
+test("stream updates do not pull a reader away from earlier messages", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Notes/ }).click();
+  await expect(page.getByTestId("answer")).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  await page.evaluate(() => {
+    window.__answers.manual = true;
+  });
+  await page.getByRole("button", { name: /^About Me/ }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__answers.pending.length))
+    .toBe(1);
+  const region = page.getByRole("region", { name: "Conversation" });
+  await region.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event("scroll"));
+  });
+  await page.evaluate(() => window.__answers.advance(3));
+  await expect(page.getByTestId("answer").last()).toHaveAttribute(
+    "data-state",
+    "streaming",
+  );
+  expect(await region.evaluate((element) => element.scrollTop)).toBe(0);
+  await page.evaluate(() => window.__answers.flush());
+  await expect(page.getByTestId("answer").last()).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  expect(await region.evaluate((element) => element.scrollTop)).toBe(0);
 });

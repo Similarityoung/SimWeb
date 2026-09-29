@@ -2,52 +2,43 @@
 
 import { ProjectCard } from "@/components/projects/project-card";
 import { ArticleCard } from "@/components/writing/article-card";
-import { resolveReference } from "../answer-question";
-import type { PublicCatalog } from "../types";
-import type { Answer } from "@/lib/answer";
-import type { AnswerPresentation } from "../answer-presentation";
+import { resolveReference } from "../catalog";
+import type { Message, PublicCatalog } from "../types";
 
 export function AnswerContent({
-  answer,
+  message,
   catalog,
-  presentation,
 }: {
-  answer: Answer;
+  message: Message;
   catalog: PublicCatalog;
-  presentation?: AnswerPresentation;
 }) {
-  const phase = presentation?.phase ?? "complete";
-  const streaming =
-    phase === "sending" || phase === "waiting" || phase === "streaming";
-  const complete = phase === "complete";
-  const visibleCards = presentation?.visibleCards ?? answer.references.length;
-
+  const state = message.error
+    ? "error"
+    : message.complete
+      ? "complete"
+      : "streaming";
   return (
     <div
-      aria-busy={!complete}
+      aria-busy={state === "streaming"}
       data-testid="answer"
-      data-state={complete ? "complete" : phase}
-      data-phase={phase}
+      data-state={state}
     >
       <p className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]">
-        {streaming ? (
-          <>
-            <span aria-hidden data-testid="streaming-text">
-              {answer.text.slice(0, presentation?.textLength ?? 0)}
-            </span>
-            <span
-              aria-hidden
-              className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
-            />
-            <span className="sr-only">{answer.text}</span>
-          </>
-        ) : (
-          answer.text
+        <span
+          data-testid={state === "streaming" ? "streaming-text" : undefined}
+        >
+          {message.text}
+        </span>
+        {state === "streaming" && (
+          <span
+            aria-hidden
+            className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
+          />
         )}
       </p>
-      {visibleCards > 0 && (
+      {message.answer && message.answer.references.length > 0 && (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {answer.references.slice(0, visibleCards).map((reference) => {
+          {message.answer.references.map((reference) => {
             const content = resolveReference(reference, catalog);
             return (
               <div

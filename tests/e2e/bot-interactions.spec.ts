@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./answer-fixture";
 import { openIdle, svgOf, setRandom } from "./bot-page";
 
 for (const [random, returning] of [
@@ -73,7 +73,8 @@ test("unknown questions are confused, rather than classified from visible wordin
     "complete",
   );
   await expect(page.getByTestId("answer").getByRole("link")).toHaveCount(0);
-  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
+  await page.getByRole("textbox").focus();
+  await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
 });
 
 test("click and keyboard activate the bounce", async ({ page }) => {
@@ -99,24 +100,13 @@ test("a failed answer alerts once, restores idle expressions and listening, and 
 }) => {
   await page.clock.install();
   await openIdle(page);
-  // Fail one content lookup at the answer boundary, without adding a production debug route.
   await page.evaluate(() => {
-    const find = Array.prototype.find;
-    Array.prototype.find = function (
-      predicate: Parameters<typeof find>[0],
-      thisArg?: unknown,
-    ) {
-      if (this[0]?.id === "dubbo-go-pixiu") {
-        Array.prototype.find = find;
-        throw new Error("Injected content lookup failure");
-      }
-      return find.call(this, predicate, thisArg);
-    };
+    window.__answers.failNext = 502;
   });
   await page.getByRole("button", { name: /^Projects/ }).click();
   await expect(svgOf(page)).toHaveAttribute("data-state", "alerting");
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Something went wrong",
+    "Could not finish this answer",
   );
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   const bot = page.getByRole("button", { name: "Play with Bot" });
@@ -132,7 +122,7 @@ test("a failed answer alerts once, restores idle expressions and listening, and 
   await input.blur();
   await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Something went wrong",
+    "Could not finish this answer",
   );
   await page.getByRole("button", { name: /^Notes/ }).click();
   await expect(svgOf(page)).toHaveAttribute("data-state", "writing");

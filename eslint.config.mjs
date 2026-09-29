@@ -59,8 +59,33 @@ export default defineConfig([
       },
     };
   }),
+  {
+    files: ["src/lib/answer/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": restrictions([
+        forbid(
+          "(^|/)(app|components)(/|$)",
+          "Answer services must not depend on routes or UI.",
+        ),
+      ]),
+    },
+  },
+  {
+    files: ["src/lib/answer/schema.ts"],
+    rules: {
+      "no-restricted-imports": restrictions([
+        forbid(
+          "\\.server(\\.[jt]sx?)?$|^(node:|@ai-sdk/)|(^|/)(app|components)(/|$)",
+          "Shared answer contracts must remain browser-safe.",
+        ),
+      ]),
+    },
+  },
   ...["projects", "writing"].map((domain) => {
-    const otherDomains = domains.filter((name) => name !== domain).join("|");
+    const otherDomains = [
+      ...domains.filter((name) => name !== domain),
+      "answer",
+    ].join("|");
     return {
       files: [`src/lib/${domain}/**/*.{ts,tsx}`],
       rules: {
@@ -84,7 +109,7 @@ export default defineConfig([
     rules: {
       "no-restricted-imports": restrictions([
         forbid(
-          "(^|/)(app|bot|projects|writing)(/|$)",
+          "(^|/)(app|bot|projects|writing|answer)(/|$)",
           "Shared UI, configuration and utilities must not depend on routes or domain modules.",
         ),
       ]),

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./answer-fixture";
 import { openIdle } from "./bot-page";
 
 for (const colorScheme of ["light", "dark"] as const) {

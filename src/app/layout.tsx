@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site/site-header";
 import { ThemeProvider } from "@/components/site/theme-provider";
-import { isAiEnabled } from "@/config/ai.server";
 import { site } from "@/config/site";
 import { projects } from "@/lib/projects/data";
 import { getArticleSummaries } from "@/lib/writing/content.server";
 import { ConversationProvider } from "@/app/_home/conversation-provider";
-import { validateCatalog } from "@/app/_home/answer-question";
+import { validateCatalog } from "@/app/_home/catalog";
 import "./globals.css";
 
 const sans = localFont({
@@ -51,7 +50,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <ThemeProvider>
-          <ConversationProvider catalog={catalog} aiEnabled={isAiEnabled()}>
+          <ConversationProvider catalog={catalog}>
             <SiteHeader />
             {children}
           </ConversationProvider>

@@ -13,9 +13,21 @@ function discover(directory) {
 
 const files = ["src", "tests"].flatMap(discover).sort();
 if (!files.length) throw new Error("No module tests found");
-const result = spawnSync(
-  process.execPath,
-  ["--conditions=react-server", "--import", "tsx", "--test", ...files],
-  { stdio: "inherit" },
-);
-process.exit(result.status ?? 1);
+for (const client of [false, true]) {
+  const selected = files.filter(
+    (file) => file.endsWith(".client.test.ts") === client,
+  );
+  if (!selected.length) continue;
+  const result = spawnSync(
+    process.execPath,
+    [
+      ...(client ? [] : ["--conditions=react-server"]),
+      "--import",
+      "tsx",
+      "--test",
+      ...selected,
+    ],
+    { stdio: "inherit" },
+  );
+  if (result.status !== 0) process.exit(result.status ?? 1);
+}

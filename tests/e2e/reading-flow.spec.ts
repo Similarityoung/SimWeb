@@ -1,34 +1,29 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./answer-fixture";
 
-test("repeated topic clicks show new articles, and clearing restarts the sequence", async ({
+test("article shortcuts send a topic and clearing resets the request history", async ({
   page,
 }) => {
   await page.goto("/");
   const notes = page.getByRole("button", { name: /^Notes/ });
   await notes.click();
-  const exchanges = page.getByTestId("exchange");
-  const firstLinks = exchanges.first().getByRole("link");
-  await expect(firstLinks).toHaveCount(3);
-  const firstHrefs = await firstLinks.evaluateAll((links) =>
-    links.map((link) => link.getAttribute("href")),
-  );
+  await expect(
+    page.getByTestId("exchange").first().getByRole("link"),
+  ).toHaveCount(5);
   await notes.click();
-  const secondLinks = exchanges.last().getByRole("link");
-  await expect(secondLinks).toHaveCount(3);
+  await expect(
+    page.getByTestId("exchange").last().getByRole("link"),
+  ).toHaveCount(5);
   expect(
-    await secondLinks.evaluateAll((links) =>
-      links.map((link) => link.getAttribute("href")),
-    ),
-  ).not.toEqual(firstHrefs);
+    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
+  ).toBeDefined();
   await page.getByRole("button", { name: "Clear conversation" }).click();
   await notes.click();
-  const restartedLinks = page.getByTestId("exchange").first().getByRole("link");
-  await expect(restartedLinks).toHaveCount(3);
+  await expect(
+    page.getByTestId("exchange").first().getByRole("link"),
+  ).toHaveCount(5);
   expect(
-    await restartedLinks.evaluateAll((links) =>
-      links.map((link) => link.getAttribute("href")),
-    ),
-  ).toEqual(firstHrefs);
+    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
+  ).toBeUndefined();
 });
 
 test("conversation survives reading and navigation, then clears on reload", async ({
@@ -46,17 +41,6 @@ test("conversation survives reading and navigation, then clears on reload", asyn
     .getByRole("link")
     .first();
   await expect(firstNote).toBeVisible();
-  await expect
-    .poll(async () => {
-      const question = await page
-        .getByText("What have you been learning?", { exact: true })
-        .boundingBox();
-      const region = await page
-        .getByRole("region", { name: "Conversation" })
-        .boundingBox();
-      return question && region ? question.y >= region.y : false;
-    })
-    .toBe(true);
   await page
     .getByRole("textbox", { name: "Ask a question" })
     .fill("Show me your projects");

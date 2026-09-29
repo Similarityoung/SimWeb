@@ -1,6 +1,5 @@
 import "server-only";
 import type { PublishedArticle } from "./catalog";
-import { getPublishedArticles } from "./content.server";
 
 const ignored = new Set([
   "a",
@@ -98,6 +97,6 @@ export function rankArticles(
     .map(({ article, excerpt }) => ({ article, excerpt }));
 }
 
-export function relevantArticles(query: string) {
-  return rankArticles(query, getPublishedArticles());
+export function articleExcerpt(body: string, query: string): string {
+  return bestExcerpt(body, queryTerms(query));
 }

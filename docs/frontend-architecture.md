@@ -8,7 +8,7 @@
 
 ## 目标与输入输出
 
-本次让首页会话、内容目录、正文阅读和 Bot 能各自迭代。输入为个人资料、项目条目、从 `Obisidian-Open` 同步的公开 Markdown 文章、预写回答，以及原型 Bot 引擎；输出为首页、三个内容目录、文章正文和 About Me 页面。文章原稿留在源仓库，本站仅缓存已发布内容。
+本次让首页会话、内容目录、正文阅读和 Bot 能各自迭代。输入为个人资料、项目条目、从 `Obisidian-Open` 同步的公开 Markdown 文章、模型回答，以及原型 Bot 引擎；输出为首页、三个内容目录、文章正文和 About Me 页面。文章原稿留在源仓库，本站仅缓存已发布内容。
 
 已有原型的 `main.jsx` 同时管理输入、会话、等待状态、定时器、滚动、Bot 反馈、导航与整页视图；`content.js` 同时混合主题导航、问答模板与内容链接。2.0 按这些职责实际变化的位置组织代码。
 
@@ -26,8 +26,9 @@ src/
       home-experience.tsx      首页交互区
       conversation-provider.tsx 共享布局中的会话宿主
       use-conversation.ts     消息、请求状态、提交与清空
-      answer-question.ts      预写回答与内容引用
-      answer-presentation.ts  文本和卡片展示时间线
+      conversation.ts         SDK Chat、成功判定及短历史投影
+      topics.ts               快捷入口元数据
+      catalog.ts              真实目录引用校验与解析
       components/             介绍区、主题入口、会话、输入框
     projects/page.tsx          项目完整目录
     notes/page.tsx             技术笔记目录
@@ -45,6 +46,7 @@ src/
     site/                      全站导航与主题
 
   lib/
+    answer/                    schema、服务端上下文与模型流服务
     projects/                  项目数据与公开类型
     writing/                   frontmatter 校验、服务端读取与公开类型
     utils.ts                   跨业务纯工具
@@ -65,15 +67,15 @@ tests/
 
 ## 模块职责与依赖
 
-| 位置 | 对外提供 | 不应承担 |
-| --- | --- | --- |
-| app 路由文件 | 路由、metadata、服务端取数、页面组装 | 关键词匹配、Markdown 解析实现、Bot 动画细节 |
-| app/_home | 首页交互、会话与回答函数 | 文件系统访问、文章正文解析、项目数据的第二份副本 |
-| components/projects | 项目卡片和目录 | 会话状态与项目事实数据 |
-| components/writing | 文章卡片、目录、正文 | 首页问答规则和文件读取 |
-| components/bot | 由表现状态驱动的角色 | 判断访客问题或读取业务内容 |
-| lib/projects、lib/writing | 事实数据、文章校验、服务端查询和公开类型 | React 视图与路由 |
-| components/ui | 通用基础控件 | 项目、文章、会话等业务判断 |
+| 位置                      | 对外提供                                 | 不应承担                                         |
+| ------------------------- | ---------------------------------------- | ------------------------------------------------ |
+| app 路由文件              | 路由、metadata、服务端取数、页面组装     | 关键词匹配、Markdown 解析实现、Bot 动画细节      |
+| app/_home                 | 首页交互、会话与回答函数                 | 文件系统访问、文章正文解析、项目数据的第二份副本 |
+| components/projects       | 项目卡片和目录                           | 会话状态与项目事实数据                           |
+| components/writing        | 文章卡片、目录、正文                     | 首页问答规则和文件读取                           |
+| components/bot            | 由表现状态驱动的角色                     | 判断访客问题或读取业务内容                       |
+| lib/projects、lib/writing | 事实数据、文章校验、服务端查询和公开类型 | React 视图与路由                                 |
+| components/ui             | 通用基础控件                             | 项目、文章、会话等业务判断                       |
 
 依赖方向：
 
@@ -90,27 +92,29 @@ lib ──> 不依赖 app 和 components
 
 ### 内容接口：同一条内容，只维护一次
 
-文章原稿位于 `Obisidian-Open`，本站 `content` 整个目录只缓存已发布 Markdown，同步时会被整体替换。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，正文只用于正文页。
+文章原稿位于 `Obisidian-Open`，本站 `content` 整个目录只缓存已发布 Markdown，同步时会被整体替换。每篇候选文章须有布尔 `draft`；公开文章须有 `title`、`type`、`date`、`summary`、`slug`。`type` 只能为 Notes / Thoughts；`categories` 和 `tags` 是可选字符串数组，`aliases` 不参与本站契约。`slug` 全局唯一且就是文章 ID，使用小写英文字母、数字和连字符。`catalog.ts` 是同步脚本与服务端查询共享的解析和校验入口；目录和首页只接收公开摘要，正文仅在服务端用于正文页和有界检索摘录。
 
 `content.server.ts` 从公开文章源路径生成双链目标索引，`wiki-links.ts` 在正文 Markdown 语法树中将双链转成站内链接；目标不存在时构建失败。目录卡片和首页不接收该索引，代码块保留原文。
 
-内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。回答生成前校验预写模板中的引用，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
+内容引用使用判别联合：`{ type: 'project', id } | { type: 'article', id }`。服务端校验模型引用属于本次提供的公开资料，展示时按类型在同一公开目录中解析；不存在的 ID 报错，不生成失效卡片或静默丢弃。文章 ID、分类内 slug 与项目 ID 必须唯一。
 
-项目数据集中在 `lib/projects/data.ts`。每项用可序列化的 `icon` 名称指定图标，卡片组件映射为静态导入的 Lucide 组件；`href` 可省略，无公开链接时渲染展示卡片，有链接时保留外链和跳转箭头。项目问答模板只引用项目 ID；Notes / Thoughts 的普通主题回答按首个 `categories` 值分组，分类内保留日期顺序，交错排列后每次展示最多三篇。会话 Hook 只保存两张主题卡各自的组号，清空时重置；组号轮完回到首组。源仓库文章增删不会留下静态文章 ID。首页回答与完整目录使用同一条目和同一个卡片组件，只有布局密度不同。
+项目数据集中在 `lib/projects/data.ts`。每项用可序列化的 `icon` 名称指定图标，卡片组件映射为静态导入的 Lucide 组件；`href` 可省略，无公开链接时渲染展示卡片，有链接时保留外链和跳转箭头。Projects 入口固定展示全部项目；Notes / Thoughts 入口在服务端按日期倒序取前三篇，再随机取剩余两篇。项目与文章只有一份事实源，首页与完整目录使用同一条目和卡片组件。
 
 ### 回答接口：页面只消费回答结果
 
-外部形状为 `answerQuestion(question, catalog, signal?, aiEnabled?): Promise<Answer>`。请求包含问题、可选的明确主题及当前组号，catalog 是共享的公开摘要，signal 用于取消请求；回答包含 kind（answer / unmatched）、简短文本和内容引用。回答函数负责分类与文章轮选，视图不通过提示文案猜测是否匹配。主题卡及一般主题问题直接使用预写回答；启用公开 AI 后，具体自由提问调用服务端 `/api/answer`。
+`POST /api/answer` 接受严格的 `question` 判别联合（topic 或 text）、可选的上一轮成功问答 `previous`，以及有序的 `lastShownReferences`。长度限制分别为当前问题 300、上一轮问题 300、回答 1,200 字符及最多五个引用；路由按实际流读取字节限制 16 KiB，并验证启用开关、JSON 和同源。
 
-`/api/answer` 使用 `lib/writing/search.server.ts` 检索已发布文章的标题、摘要、标签和正文，最多选三篇并截取短摘录；服务端才持有 DeepSeek 密钥。模型只生成简答，文章引用由服务端的检索结果确定和客户端公开目录验证。接口限制输入大小、问题长度、模型输出与请求时间，不存储 IP 或会话；主域名和 Vercel 直连地址分别由 Cloudflare 与 Vercel WAF 按 IP 限流，部署配置见 `docs/ai-answer-setup.md`。不建设 provider 插件体系、模型基类、向量数据库或后台配额系统。当前仍由既有展示时间线呈现完整答案，不引入网络流式协议。
+`lib/answer/schema.ts` 用 Zod 定义两端契约与标准入口问题。`context.server.ts` 在一次公开快照上完成最新加随机选择、关键词检索、指代定位和候选引用校验；个人简介与全部项目常驻上下文，普通正文最多三篇，每篇 900 字符。`writing/search.server.ts` 仍拥有排序和摘录算法。无文章命中不提前拒绝个人/项目问题。ID、唯一标题、明确序号及唯一对象指代可以定位；其他承接问题要求澄清。
 
-`use-conversation.ts` 仅负责消息、请求状态、提交与清空。匹配和内容引用属于回答函数；滚动、输入焦点和卡片排版属于视图；动作及动画生命周期属于 Bot。首版不增加全站状态库。
+`service.server.ts` 负责短提示词及一次 `streamText + Output.object`，使用 `@ai-sdk/deepseek` 直连，关闭推理、重试和自动续写。它把 SDK 已解析的部分对象映射为固定 ID 的 `data-answer`，不手写 SSE 或部分 JSON 解析。最终必须没有上游错误、finishReason 为 stop、schema 与候选引用均有效，才发 complete 与正常 finish；错误事件后出现合法 JSON/stop 仍失败。总超时 30 秒与 request.signal 共同传递给上游。路由只完成 HTTP 检查、调用服务和返回 SDK UI 流。
 
-会话由 `home` 内的 React Context Provider 管理，在所有站内页面共享的根布局中挂载。通过 Next Link 在同一标签页切换目录和正文后返回首页，会话仍在；完整刷新、关闭标签页或主动清空会重置会话。不使用 localStorage、sessionStorage 或服务端存储。请求处理中离开首页仍由共享宿主持有请求；清空或宿主卸载时取消当前请求，迟到的结果不得恢复已清空消息。
+`_home/conversation.ts` 创建 SDK Chat，使用 DefaultChatTransport 将完整消息投影成短请求。只有完整业务结果、正常 stop 且无 error/abort/disconnect 才确认成功；卡片从公开目录解析，未完成结果没有卡片，也不进入短历史。`use-conversation.ts` 在共享根布局 Provider 内使用 useChat 订阅这唯一消息源，视图消息是派生结果，不另存一份会话。清空停止并替换 Chat 实例，旧回调只能影响旧实例；卸载停止请求。
 
-预写回答的分块输出是首页的展示行为：`answer-presentation.ts` 从完整 Answer 生成提交、输出、逐张卡片和完成的时间线；`use-answer-presentation.ts` 是最新回答唯一的计时与取消宿主，记录挂载时已有的消息 ID，并向视图提供阶段、文字长度和卡片数量。`AnswerContent` 只渲染该进度，HomeExperience 将尚未完成的正常回答映射为 responding，未匹配回答为 unmatched，不逐阶段更换动作。`answer-chunks.ts` 生成本地模拟片段，不是模型 tokenizer 或网络协议实现。
+会话在同标签页站内导航中保留，刷新、关闭标签页或清空重置，不使用 localStorage、sessionStorage 或服务端持久化。请求处理中离开首页仍继续接收，返回显示真实进度。页面保留完整会话，每次只上传上一轮成功问答和最近非空卡片列表。客户端历史仅辅助理解，不是作者事实。
 
-完整 Answer 仍由回答函数一次返回，useConversation 不管理展示进度或动画计时。HomeExperience 根据请求状态与展示阶段阻止新问题提交，直到文字和全部卡片展示完成；输入框可提前起草，卡片可在出现后点击。清空或离开首页取消旧调度，导航返回直接显示历史内容。迟到的真实回答在数据就绪后开始输出，不将提交反馈重复播放。典型短回答及卡片约 4～6 秒完成；正常完成后向 Bot 传完成标记，在内容已可用且可提交下一问的同时播放一轮带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听。减少动态效果保留文本与卡片节奏，只停用装饰运动。
+`AnswerContent` 直接展示已到达的文字，卡片等待客户端确认正常结束后一次呈现。已删除预写回答、分类轮选、模拟分块、展示时间线和计时 Hook。HomeExperience 只在请求中禁止提交；起草、Bot、清空、阅读返回继续复用原交互。流更新不会强制抢回上滚位置，读屏不逐块重复全文。完成动作只对当前页面新完成的回答触发，返回历史不重播。
+
+回答模块可以依赖 projects、writing 和配置，资料模块不能反向依赖 answer；浏览器只能导入 answer/schema，不能导入服务端上下文/provider。没有新增向量库、工具循环、模型基类或全站状态库。依赖依据、选择边界与验收见[实施计划](personal-agent-plan.md)，部署设置见[AI 问答设置](ai-answer-setup.md)。
 
 ### Bot 接口：业务只传状态
 
@@ -146,7 +150,7 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 - 路由和正文默认在服务端执行；交互集中在首页体验和 Bot 等确有需要的客户端入口。
 - `content.server.ts` 使用 `server-only` 防止被客户端导入，文件读取和 Markdown 解析不会进入首页浏览器包。
-- 服务端给首页传递的是可序列化的公开摘要，不传正文、文件路径、未选中的文章或草稿。
+- 服务端给首页传递的是可序列化的公开摘要，不传正文、文件路径或草稿；模型只收到本次选中的文章资料。
 - `article-card.tsx` 只依赖公开数据类型、基础组件和链接组件，可供首页交互与服务端目录共同使用。
 - 文章打开动效由 `article-card-link.tsx` 的小型客户端入口与服务端 `article-reader.tsx` 的标题区共享 React ViewTransition 名称；只给实际点击的卡片命名，避免会话中重复文章冲突。正文解析仍在服务端，浏览器不支持视图过渡或用户要求减少动态效果时直接导航。依据 [Next.js 视图过渡指南](https://nextjs.org/docs/app/guides/view-transitions)。
 - 不用一个混合导出的 `index.ts` 同时暴露内容查询、正文解析与客户端卡片。服务端查询入口与浏览器可用入口保持明确分离。
@@ -156,17 +160,17 @@ Bot 内 `behavior.ts` 定义候选及生命周期：待机有五种完整表情�
 
 ## 修改与验证如何集中
 
-问题规范化、长度上限和两端回答契约统一在 `lib/answer.ts`，AI 开关统一在 `config/ai.server.ts`；正文两类路由共用 `app/_writing/article-route.tsx`，四个目录／介绍页面共用 `components/site/page-shell.tsx`。检索与页面查询从 `content.server.ts` 的同一入口读取当前公开内容。
+问题规范化、长度上限和两端回答契约统一在 `lib/answer/schema.ts`，AI 开关统一在 `config/ai.server.ts`；正文两类路由共用 `app/_writing/article-route.tsx`，四个目录／介绍页面共用 `components/site/page-shell.tsx`。检索与页面查询从 `content.server.ts` 的同一入口读取当前公开内容。
 
 `lib/browser-signals.ts` 使用 React useSyncExternalStore 统一动态效果偏好与页面可见性订阅。Character、场景 Hook、介绍布局和主题高亮全部消费该入口；引擎暂停、场景取消、布局变化仍各归其生命周期，不重建引擎。已安装 Motion 的 useReducedMotion 不会在偏好改变后更新组件，因此仅保留 Motion 的布局动画能力。CSS 媒体规则继续处理 CSS 动画。
 
-| 未来变更 | 主要修改位置 | 验证 |
-| --- | --- | --- |
-| 增加项目或改仓库链接 | lib/projects/data.ts | 目录与回答出现相同条目和目的地 |
-| 调整笔记卡片样式 | components/writing/article-card.tsx | 首页与两类目录同步变化 |
-| 新增或撤下文章 | 源仓库 frontmatter + 内容同步 | 元数据校验、目录与直接正文访问 |
-| 调整问答匹配或接入 AI | app/_home/answer-question.ts 及其内部实现 | 从问题得到正确回答和有效内容引用 |
-| 改 Bot 动作或更换引擎 | components/bot 内部 | 状态映射、卸载、键盘/减少动态效果 |
-| 调整顶部菜单 | config/site.ts + components/site | 顶部点击进入目录而非触发问答 |
+| 未来变更                 | 主要修改位置                           | 验证                               |
+| ------------------------ | -------------------------------------- | ---------------------------------- |
+| 增加项目或改仓库链接     | lib/projects/data.ts                   | 目录与回答出现相同条目和目的地     |
+| 调整笔记卡片样式         | components/writing/article-card.tsx    | 首页与两类目录同步变化             |
+| 新增或撤下文章           | 源仓库 frontmatter + 内容同步          | 元数据校验、目录与直接正文访问     |
+| 调整模型上下文或问答范围 | lib/answer/{context,service}.server.ts | 有界上下文、拒答、真实流与有效引用 |
+| 改 Bot 动作或更换引擎    | components/bot 内部                    | 状态映射、卸载、键盘/减少动态效果  |
+| 调整顶部菜单             | config/site.ts + components/site       | 顶部点击进入目录而非触发问答       |
 
-ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。架构测试验证别名与相对路径导入限制。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。
+ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。架构测试验证别名与相对路径导入限制。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试；`.client.test.ts` 使用普通 React 条件，其余保持 react-server 条件，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。

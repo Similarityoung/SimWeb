@@ -5,21 +5,12 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useHomeConversation } from "./conversation-provider";
-import { useAnswerPresentation } from "./use-answer-presentation";
 import type { BotMood } from "@/components/bot/bot";
-import type { PresentationPhase } from "./answer-presentation";
 import { Introduction } from "./components/introduction";
 import { TopicShortcuts } from "./components/topic-shortcuts";
 import { Transcript } from "./components/transcript";
 import { Composer } from "./components/composer";
 import type { Question } from "./types";
-
-const phaseMood: Partial<Record<PresentationPhase, BotMood>> = {
-  sending: "responding",
-  waiting: "responding",
-  streaming: "responding",
-  cards: "responding",
-};
 
 export function HomeExperience() {
   const {
@@ -34,25 +25,30 @@ export function HomeExperience() {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState("");
   const [hoveredTopic, setHoveredTopic] = useState<string>();
-  const presentation = useAnswerPresentation(messages);
+  const [settledOnMount] = useState(
+    () =>
+      new Set(messages.filter((m) => m.complete || m.error).map((m) => m.id)),
+  );
   const active = messages.length > 0;
   const latest = messages.at(-1);
-  const answerMood = presentation.frame && phaseMood[presentation.frame.phase];
-  const answerInProgress =
-    pending ||
-    (presentation.frame !== undefined &&
-      presentation.frame.phase !== "complete" &&
-      presentation.frame.phase !== "error");
-  const mood =
-    (answerMood === "responding" && latest?.answer?.kind === "unmatched"
+  const freshResult = latest && !settledOnMount.has(latest.id);
+  const answerInProgress = pending;
+  const answerMood: BotMood | undefined = pending
+    ? "responding"
+    : freshResult &&
+        latest?.answer?.kind === "unmatched" &&
+        !focused &&
+        !hoveredTopic
       ? "unmatched"
-      : answerMood) ?? (focused || hoveredTopic ? "listening" : "idle");
+      : undefined;
+  const mood: BotMood =
+    answerMood ?? (focused || hoveredTopic ? "listening" : "idle");
 
   function ask(question: Question) {
     if (answerInProgress) return;
     setDraft("");
     setHoveredTopic(undefined);
-    if (question.topic) setFocused(false);
+    if (question.type === "topic") setFocused(false);
     void submit(question);
   }
 
@@ -83,12 +79,11 @@ export function HomeExperience() {
         <Introduction
           compact={active}
           mood={mood}
-          activityKey={presentation.messageId}
-          completed={
-            presentation.frame?.phase === "complete" &&
-            latest?.answer?.kind === "answer"
-          }
-          failed={presentation.frame?.phase === "error"}
+          activityKey={latest?.id}
+          completed={Boolean(
+            freshResult && latest?.complete && latest.answer?.kind === "answer",
+          )}
+          failed={Boolean(freshResult && latest?.error)}
           arrival={arrival}
         />
         {active && (
@@ -108,7 +103,6 @@ export function HomeExperience() {
         <Transcript
           messages={messages}
           catalog={catalog}
-          presentation={presentation}
           scrollPositionRef={scrollPositionRef}
         />
       )}
@@ -137,11 +131,11 @@ export function HomeExperience() {
           submitDisabled={answerInProgress}
           value={draft}
           onChange={setDraft}
-          onSubmit={(text) => ask({ text })}
+          onSubmit={(text) => ask({ type: "text", text })}
         />
       </div>
       <p className="sr-only" role="status" aria-live="polite">
-        {latest?.answer?.text}
+        {pending ? "One moment…" : latest?.complete ? latest.answer?.text : ""}
       </p>
     </main>
   );

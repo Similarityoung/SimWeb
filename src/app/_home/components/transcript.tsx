@@ -3,42 +3,48 @@
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import { AnswerContent } from "./answer-content";
 import type { Message, PublicCatalog } from "../types";
-import type { AnswerPresentation } from "../answer-presentation";
 
 export function Transcript({
   messages,
   catalog,
-  presentation,
   scrollPositionRef,
 }: {
   messages: readonly Message[];
   catalog: PublicCatalog;
-  presentation: { messageId?: string; frame?: AnswerPresentation };
   scrollPositionRef: RefObject<{ messageId?: string; top: number }>;
 }) {
   const scrollArea = useRef<HTMLDivElement>(null);
   const latestExchange = useRef<HTMLElement>(null);
-  const previousMessagesRef = useRef<readonly Message[] | null>(null);
+  const previousMessageId = useRef<string | null>(null);
+  const followOutput = useRef(true);
   useLayoutEffect(() => {
     const area = scrollArea.current;
     if (!area) return;
     const messageId = messages.at(-1)?.id;
     if (
-      previousMessagesRef.current === null &&
+      previousMessageId.current === null &&
       scrollPositionRef.current.messageId === messageId
     ) {
       area.scrollTop = scrollPositionRef.current.top;
-    } else if (previousMessagesRef.current !== messages) {
+      followOutput.current =
+        area.scrollHeight - area.clientHeight - area.scrollTop < 48;
+    } else if (previousMessageId.current !== messageId) {
       area.scrollTop = latestExchange.current?.offsetTop ?? 0;
+      followOutput.current = true;
+    } else if (followOutput.current) {
+      area.scrollTop = area.scrollHeight;
     }
     scrollPositionRef.current = { messageId, top: area.scrollTop };
-    previousMessagesRef.current = messages;
+    previousMessageId.current = messageId ?? null;
   }, [messages, scrollPositionRef]);
   return (
     <section
       ref={scrollArea}
       onScroll={(event) => {
-        scrollPositionRef.current.top = event.currentTarget.scrollTop;
+        const area = event.currentTarget;
+        followOutput.current =
+          area.scrollHeight - area.clientHeight - area.scrollTop < 48;
+        scrollPositionRef.current.top = area.scrollTop;
       }}
       aria-label="Conversation"
       tabIndex={0}
@@ -55,28 +61,18 @@ export function Transcript({
             <p className="mb-6 ml-auto w-fit max-w-[85%] rounded-[16px] rounded-br-[4px] bg-muted px-[18px] py-3 text-sm leading-6">
               {message.question}
             </p>
-            {message.answer ? (
-              <AnswerContent
-                answer={message.answer}
-                catalog={catalog}
-                presentation={
-                  message.id === presentation.messageId
-                    ? presentation.frame
-                    : undefined
-                }
-              />
-            ) : message.error ? (
-              <p role="alert" className="text-sm text-accent">
+            {message.text && (
+              <AnswerContent message={message} catalog={catalog} />
+            )}
+            {message.error ? (
+              <p role="alert" className="mt-3 text-sm text-accent">
                 {message.error}
               </p>
-            ) : (
-              <p
-                role="status"
-                className="font-mono text-xs text-muted-foreground"
-              >
+            ) : !message.text ? (
+              <p className="font-mono text-xs text-muted-foreground">
                 One moment…
               </p>
-            )}
+            ) : null}
           </article>
         ))}
       </div>

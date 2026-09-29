@@ -2,7 +2,7 @@
 
 import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MAX_QUESTION_LENGTH, normalizeQuestion } from "@/lib/answer";
+import { MAX_QUESTION_LENGTH, normalizeQuestion } from "@/lib/answer/schema";
 import { Input } from "@/components/ui/input";
 
 export function Composer({

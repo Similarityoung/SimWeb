@@ -24,14 +24,12 @@ const ConversationContext = createContext<
 
 export function ConversationProvider({
   catalog,
-  aiEnabled,
   children,
 }: {
   catalog: PublicCatalog;
-  aiEnabled: boolean;
   children: ReactNode;
 }) {
-  const conversation = useConversation(catalog, aiEnabled);
+  const conversation = useConversation(catalog);
   const scrollPositionRef = useRef<{ messageId?: string; top: number }>({
     top: 0,
   });

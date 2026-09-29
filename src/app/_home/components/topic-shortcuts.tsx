@@ -9,7 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { topics } from "../presets";
+import { topics } from "../topics";
 import type { Question } from "../types";
 
 const icons = {
@@ -63,7 +63,7 @@ export function TopicShortcuts({
             onClick={() => {
               setHovered(undefined);
               setFocused(undefined);
-              onAsk({ text: topic.question, topic: topic.id });
+              onAsk({ type: "topic", topic: topic.id });
             }}
             onPointerEnter={(event) => {
               if (event.pointerType === "touch" || disabled) return;
