@@ -29,6 +29,22 @@ export const metadata: Metadata = {
     template: `%s · ${site.name}`,
   },
   description: site.bio,
+  icons: {
+    icon: [
+      {
+        url: "/icons/icon-light.svg",
+        type: "image/svg+xml",
+        sizes: "any",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icons/icon-dark.svg",
+        type: "image/svg+xml",
+        sizes: "any",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
