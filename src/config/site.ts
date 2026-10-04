@@ -14,20 +14,17 @@ export const site = {
   log: [
     {
       date: "2026.06",
-      type: "feat",
       text: "Became an Apache Dubbo committer",
       href: "https://community.apache.org/blog/2026_06_committers.html#dubbo",
     },
     {
       date: "2026.05",
-      type: "feat",
       text: "Joined Xianyu Agent Infra",
       detail:
         "Building observability and diagnostics for AI-driven development pipelines.",
     },
     {
       date: "2025.06",
-      type: "feat",
       text: "Joined OSPP on the Dubbo-go-Pixiu AI gateway",
       detail:
         "My work on Pixiu has since covered gRPC streaming, MCP integration, authorization, and service discovery.",

@@ -59,7 +59,6 @@ function Cell({
   );
 }
 
-// The scale speaks for itself: numbers at both ends, no caption.
 function Legend() {
   return (
     <div

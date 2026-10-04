@@ -1,8 +1,8 @@
 import type { ArticleSummary } from "./types";
 
-export type MonthKey = { year: number; month: number };
+type MonthKey = { year: number; month: number };
 
-export type ActivityYear = {
+type ActivityYear = {
   year: number;
   // Index 0 is January; null marks months before the first or after the latest article.
   months: readonly (number | null)[];

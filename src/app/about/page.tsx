@@ -9,11 +9,9 @@ import { WritingCalendar } from "./writing-calendar";
 import { WritingStats } from "./writing-stats";
 
 const TITLE = "About Me";
-const PROSE = "text-base leading-7 text-foreground/80 sm:leading-[30px]";
 
 export const metadata: Metadata = { title: TITLE };
 
-// Epigraph under the title: boxed and weighted so it reads as a motto, not body text.
 function Slogan() {
   return (
     <p className="mt-5 flex w-fit items-center gap-3 border-l-[3px] border-accent bg-muted px-4 py-2 text-base font-medium tracking-[0.04em] text-foreground">
@@ -62,7 +60,7 @@ export default function AboutPage() {
         <Slogan />
       </header>
 
-      <article className={`mt-8 max-w-3xl ${PROSE}`}>
+      <article className="mt-8 max-w-3xl text-base leading-7 text-foreground/80 sm:leading-[30px]">
         {site.about.map((paragraph) => (
           <LeadParagraph key={paragraph} text={paragraph} />
         ))}

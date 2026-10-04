@@ -1,11 +1,7 @@
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";
 
-export const TEXT_LINK =
-  "underline decoration-border underline-offset-4 transition-colors hover:text-accent hover:decoration-accent";
-
 // Experience drawn as a git graph: a rail with one commit dot per entry, newest at HEAD.
-// Each entry reads like a commit: date and subject on one line, an optional body below.
 export function ExperienceLog() {
   return (
     <ol aria-label="Experience">
@@ -31,14 +27,14 @@ export function ExperienceLog() {
             <div>
               <p className="text-[15px] text-pretty text-foreground">
                 <span className="mr-2 font-mono text-[13px] text-accent">
-                  {entry.type}:
+                  feat:
                 </span>
                 {"href" in entry ? (
                   <a
                     href={entry.href}
                     target="_blank"
                     rel="noreferrer"
-                    className={TEXT_LINK}
+                    className="underline decoration-border underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
                   >
                     {entry.text}
                   </a>
