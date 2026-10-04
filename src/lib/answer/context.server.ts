@@ -198,6 +198,13 @@ export function buildAnswerContext(
         role: site.role,
         bio: site.bio,
         about: site.about,
+        experience: site.log.map((entry) =>
+          "detail" in entry
+            ? `${entry.date} ${entry.text}. ${entry.detail}`
+            : `${entry.date} ${entry.text}`,
+        ),
+        thoughts: site.thoughts,
+        writing: site.writing,
         github: site.github,
       },
       projects: projects.map(({ id, title, role, summary }) => ({
