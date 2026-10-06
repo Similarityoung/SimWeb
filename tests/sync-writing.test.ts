@@ -29,6 +29,8 @@ test("sync replaces stale content with published source articles only", () => {
   try {
     mkdirSync(path.join(source, "Go"), { recursive: true });
     mkdirSync(target);
+    writeFileSync(path.join(source, "AGENTS.md"), "Repository guidelines");
+    writeFileSync(path.join(source, "Go", "AGENTS.md"), "Go guidelines");
     writeFileSync(path.join(source, "Go", "published.md"), published);
     writeFileSync(
       path.join(source, "Go", "draft.md"),
@@ -37,6 +39,8 @@ test("sync replaces stale content with published source articles only", () => {
     writeFileSync(path.join(target, "obsolete.md"), "old");
     assert.equal(syncWriting(source, target), 1);
     assert.equal(existsSync(path.join(target, "obsolete.md")), false);
+    assert.equal(existsSync(path.join(target, "AGENTS.md")), false);
+    assert.equal(existsSync(path.join(target, "Go", "AGENTS.md")), false);
     assert.equal(existsSync(path.join(target, "Go", "draft.md")), false);
     assert.equal(
       readFileSync(path.join(target, "Go", "published.md"), "utf8"),

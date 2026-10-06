@@ -12,6 +12,7 @@ function markdownFiles(directory: string, relative = ""): string[] {
       const file = path.join(relative, entry.name);
       if (entry.isDirectory()) return markdownFiles(directory, file);
       if (!entry.isFile() || !entry.name.endsWith(".md")) return [];
+      if (entry.name === "AGENTS.md") return [];
       return relative === "" && entry.name === "README.md" ? [] : [file];
     })
     .sort();
