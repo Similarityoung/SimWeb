@@ -86,6 +86,7 @@ export type AnswerMessage = UIMessage<
 >;
 
 export const answerErrors = {
+  verification: "Could not verify this request. Please try asking again.",
   unavailable:
     "AI answers are not available right now. You can still browse the collections in the menu.",
   limited: "Too many questions for now. Please wait a little and try again.",

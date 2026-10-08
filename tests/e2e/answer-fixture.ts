@@ -13,6 +13,7 @@ declare global {
   interface Window {
     __answers: {
       manual: boolean;
+      tokens: string[];
       requests: AnswerRequest[];
       pending: Array<() => boolean>;
       advance: (count?: number) => void;
@@ -81,10 +82,29 @@ export const test = base.extend<{ answerMock: void }>({
                 ),
         });
       }
+      await page.route(
+        "https://challenges.cloudflare.com/turnstile/v0/api.js*",
+        (route) =>
+          route.fulfill({
+            contentType: "application/javascript",
+            body: `
+          let counter = 0;
+          window.turnstile = {
+            render(container, options) {
+              const id = String(++counter);
+              queueMicrotask(() => options.callback("test-token-" + id));
+              return id;
+            },
+            remove() {}
+          };
+        `,
+          }),
+      );
       await page.addInitScript((payloads) => {
         const nativeFetch = window.fetch.bind(window);
         window.__answers = {
           manual: false,
+          tokens: [],
           requests: [],
           pending: [],
           advance(count = 1) {
@@ -106,6 +126,9 @@ export const test = base.extend<{ answerMock: void }>({
             return nativeFetch(input, init);
           const body = JSON.parse(String(init?.body)) as AnswerRequest;
           const control = window.__answers;
+          const token = new Headers(init?.headers).get("x-turnstile-token");
+          if (!token) throw new Error("Missing verification token");
+          control.tokens.push(token);
           control.requests.push(body);
           if (control.failNext) {
             const status = control.failNext;

@@ -59,6 +59,7 @@ export function shortRequest(
 
 export function createConversation(
   catalog: PublicCatalog,
+  getToken: (signal?: AbortSignal | null) => Promise<string>,
   fetcher: typeof fetch = fetch,
 ) {
   function mark(outcome: "success" | "failed", error?: string) {
@@ -81,16 +82,21 @@ export function createConversation(
         body: shortRequest(messages),
       }),
       fetch: async (url, init) => {
-        const response = await fetcher(url, init);
+        const headers = new Headers(init?.headers);
+        headers.set("x-turnstile-token", await getToken(init?.signal));
+        init?.signal?.throwIfAborted();
+        const response = await fetcher(url, { ...init, headers });
         if (!response.ok)
           throw new Error(
             response.status === 429
               ? answerErrors.limited
               : response.status === 503
                 ? answerErrors.unavailable
-                : response.status === 400
-                  ? answerErrors.invalid
-                  : answerErrors.failed,
+                : response.status === 403
+                  ? answerErrors.verification
+                  : response.status === 400
+                    ? answerErrors.invalid
+                    : answerErrors.failed,
           );
         return response;
       },

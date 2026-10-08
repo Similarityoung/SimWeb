@@ -10,8 +10,11 @@ import {
 import { createConversation, exchanges } from "./conversation";
 import type { PublicCatalog } from "./types";
 
-export function useConversation(catalog: PublicCatalog) {
-  const [chat, setChat] = useState(() => createConversation(catalog));
+export function useConversation(
+  catalog: PublicCatalog,
+  getToken: (signal?: AbortSignal | null) => Promise<string>,
+) {
+  const [chat, setChat] = useState(() => createConversation(catalog, getToken));
   const state = useChat({ chat });
   useEffect(
     () => () => {
@@ -40,8 +43,8 @@ export function useConversation(catalog: PublicCatalog) {
   const clear = useCallback(() => {
     void chat.stop();
     // Each session owns its Chat. Late callbacks only mutate the retired instance.
-    setChat(createConversation(catalog));
-  }, [catalog, chat]);
+    setChat(createConversation(catalog, getToken));
+  }, [catalog, chat, getToken]);
   return {
     messages,
     pending: state.status === "submitted" || state.status === "streaming",

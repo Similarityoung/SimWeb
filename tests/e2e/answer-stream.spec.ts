@@ -173,3 +173,23 @@ test("stream updates do not pull a reader away from earlier messages", async ({
   );
   expect(await region.evaluate((element) => element.scrollTop)).toBe(0);
 });
+
+test("topic and free-text submissions use fresh Turnstile tokens", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Projects/ }).click();
+  await expect(page.getByTestId("answer")).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  await page.getByRole("textbox").fill("Tell me more");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await expect(page.getByTestId("answer").last()).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  const tokens = await page.evaluate(() => window.__answers.tokens);
+  expect(tokens).toHaveLength(2);
+  expect(new Set(tokens).size).toBe(2);
+});

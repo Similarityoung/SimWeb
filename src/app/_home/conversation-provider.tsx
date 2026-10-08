@@ -11,6 +11,7 @@ import {
 import { usePathname } from "next/navigation";
 import { initialVisit, nextVisit, type HomeVisit } from "./home-visit";
 import { useConversation } from "./use-conversation";
+import { useTurnstile } from "./use-turnstile";
 import type { PublicCatalog } from "./types";
 
 const ConversationContext = createContext<
@@ -29,7 +30,8 @@ export function ConversationProvider({
   catalog: PublicCatalog;
   children: ReactNode;
 }) {
-  const conversation = useConversation(catalog);
+  const turnstile = useTurnstile();
+  const conversation = useConversation(catalog, turnstile.getToken);
   const scrollPositionRef = useRef<{ messageId?: string; top: number }>({
     top: 0,
   });
@@ -47,6 +49,7 @@ export function ConversationProvider({
       }}
     >
       {children}
+      {turnstile.widget}
     </ConversationContext>
   );
 }

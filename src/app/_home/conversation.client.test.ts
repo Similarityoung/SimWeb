@@ -59,12 +59,16 @@ const response = (value: Answer, finish = true) =>
 
 test("Chat consumes SDK UI protocol, retains transcript but sends only the bounded successful history", async () => {
   const requests: AnswerRequest[] = [];
-  const chat = createConversation(catalog, async (_url, init) => {
-    requests.push(answerRequestSchema.parse(JSON.parse(String(init?.body))));
-    return response(
-      requests.length === 1 ? answer : { ...answer, references: [] },
-    );
-  });
+  const chat = createConversation(
+    catalog,
+    async () => "test-token",
+    async (_url, init) => {
+      requests.push(answerRequestSchema.parse(JSON.parse(String(init?.body))));
+      return response(
+        requests.length === 1 ? answer : { ...answer, references: [] },
+      );
+    },
+  );
   for (const text of ["hello", "more", "again"])
     await chat.sendMessage({
       ...message,
@@ -90,7 +94,7 @@ for (const [label, fetcher] of [
   ["HTTP 429", async () => new Response("private", { status: 429 })],
 ] as const)
   test(`incomplete client messages cannot show cards or enter history: ${label}`, async () => {
-    const chat = createConversation(catalog, fetcher);
+    const chat = createConversation(catalog, async () => "test-token", fetcher);
     await chat.sendMessage(message);
     const exchange = exchanges(chat.messages)[0];
     assert.equal(exchange.complete, false);
@@ -101,33 +105,40 @@ for (const [label, fetcher] of [
 
 test("clearing into a new Chat isolates late callbacks from a cancelled session", async () => {
   let finish!: () => void;
-  const old = createConversation(catalog, async () =>
-    createUIMessageStreamResponse({
-      stream: createUIMessageStream<AnswerMessage>({
-        execute: async ({ writer }) => {
-          writer.write({ type: "start" });
-          writer.write({
-            type: "data-answer",
-            id: "answer",
-            data: { status: "streaming", text: "Old" },
-          });
-          await new Promise<void>((resolve) => {
-            finish = resolve;
-          });
-          writer.write({
-            type: "data-answer",
-            id: "answer",
-            data: { status: "complete", answer },
-          });
-          writer.write({ type: "finish", finishReason: "stop" });
-        },
+  const old = createConversation(
+    catalog,
+    async () => "test-token",
+    async () =>
+      createUIMessageStreamResponse({
+        stream: createUIMessageStream<AnswerMessage>({
+          execute: async ({ writer }) => {
+            writer.write({ type: "start" });
+            writer.write({
+              type: "data-answer",
+              id: "answer",
+              data: { status: "streaming", text: "Old" },
+            });
+            await new Promise<void>((resolve) => {
+              finish = resolve;
+            });
+            writer.write({
+              type: "data-answer",
+              id: "answer",
+              data: { status: "complete", answer },
+            });
+            writer.write({ type: "finish", finishReason: "stop" });
+          },
+        }),
       }),
-    }),
   );
   const sending = old.sendMessage(message);
   while (!finish) await new Promise((resolve) => setImmediate(resolve));
   await old.stop();
-  const fresh = createConversation(catalog, async () => response(answer));
+  const fresh = createConversation(
+    catalog,
+    async () => "test-token",
+    async () => response(answer),
+  );
   await fresh.sendMessage(message);
   finish();
   await sending;

@@ -65,7 +65,16 @@ test("the endpoint rejects cross-origin and oversized requests before retrieval"
   }
 });
 
-test("streamed body size and short history are checked before any model request", async () => {
+test("streamed body size and short history are checked before any model request", async (t) => {
+  const oldSecret = process.env.TURNSTILE_SECRET_KEY;
+  process.env.TURNSTILE_SECRET_KEY = "test-only";
+  t.after(() => {
+    if (oldSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+    else process.env.TURNSTILE_SECRET_KEY = oldSecret;
+  });
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json({ success: true, hostname: "example.com", action: "answer" }),
+  );
   const previousKey = process.env.DEEPSEEK_API_KEY;
   const previousEnabled = process.env.DEEPSEEK_PUBLIC_ENABLED;
   process.env.DEEPSEEK_API_KEY = "test-only";
@@ -107,7 +116,10 @@ test("streamed body size and short history are checked before any model request"
           await POST(
             new Request("https://example.com/api/answer", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "x-turnstile-token": "test-token",
+              },
               body: JSON.stringify(request),
             }),
           )
@@ -123,3 +135,85 @@ test("streamed body size and short history are checked before any model request"
     else process.env.DEEPSEEK_PUBLIC_ENABLED = previousEnabled;
   }
 });
+
+test("valid AI requests cannot bypass Turnstile without a token", async (t) => {
+  const { enable, restore } = enableAi();
+  enable();
+  const network = t.mock.method(globalThis, "fetch", () => {
+    throw new Error("Must not call Cloudflare or the model");
+  });
+  try {
+    const response = await POST(
+      makeRequest({
+        question: { type: "text", text: "hello" },
+        lastShownReferences: [],
+      }),
+    );
+    assert.equal(response.status, 403);
+    assert.equal(network.mock.callCount(), 0);
+  } finally {
+    restore();
+  }
+});
+
+test("failed verification stops at Siteverify before any model call", async (t) => {
+  const { enable, restore } = enableAi();
+  const oldSecret = process.env.TURNSTILE_SECRET_KEY;
+  enable();
+  process.env.TURNSTILE_SECRET_KEY = "test-only";
+  const network = t.mock.method(
+    globalThis,
+    "fetch",
+    async (url: string | URL | Request) => {
+      assert.equal(
+        String(url),
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      );
+      return Response.json({
+        success: false,
+        "error-codes": ["timeout-or-duplicate"],
+      });
+    },
+  );
+  try {
+    const response = await POST(
+      makeRequest(
+        {
+          question: { type: "topic", topic: "projects" },
+          lastShownReferences: [],
+        },
+        { "x-turnstile-token": "used-token" },
+      ),
+    );
+    assert.equal(response.status, 403);
+    assert.equal(network.mock.callCount(), 1);
+  } finally {
+    restore();
+    if (oldSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+    else process.env.TURNSTILE_SECRET_KEY = oldSecret;
+  }
+});
+
+function makeRequest(body: unknown, headers: Record<string, string> = {}) {
+  return new Request("https://www.simi.host/api/answer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+}
+function enableAi() {
+  const key = process.env.DEEPSEEK_API_KEY;
+  const enabled = process.env.DEEPSEEK_PUBLIC_ENABLED;
+  return {
+    enable() {
+      process.env.DEEPSEEK_API_KEY = "test-only";
+      process.env.DEEPSEEK_PUBLIC_ENABLED = "true";
+    },
+    restore() {
+      if (key === undefined) delete process.env.DEEPSEEK_API_KEY;
+      else process.env.DEEPSEEK_API_KEY = key;
+      if (enabled === undefined) delete process.env.DEEPSEEK_PUBLIC_ENABLED;
+      else process.env.DEEPSEEK_PUBLIC_ENABLED = enabled;
+    },
+  };
+}

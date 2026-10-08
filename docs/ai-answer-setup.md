@@ -30,3 +30,11 @@
 此次 Notes 卡片选择正确，但引导文字偏向概括项目经历，尚未逐项介绍所选笔记；这属于后续提示词效果调整项。About、Projects、闲鱼职责、通用编码和提示词注入尚未做真实模型专项验收；未采集 API usage，不能据此报告精确 token 或费用。没有修改线上 WAF 或部署。
 
 依据：[AI SDK DeepSeek](https://ai-sdk.dev/providers/ai-sdk-providers/deepseek)、[AI SDK UI 数据流](https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data)、[DeepSeek API](https://api-docs.deepseek.com/api/create-chat-completion/)、[Cloudflare 速率限制](https://developers.cloudflare.com/waf/rate-limiting-rules/)、[Vercel WAF 限流](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)。
+
+## Turnstile 请求验证
+
+快捷问题和自由提问共用同一验证入口。配置 `NEXT_PUBLIC_TURNSTILE_SITE_KEY`（公开站点密钥）和 `TURNSTILE_SECRET_KEY`（仅服务端）；二者都需配置到 Vercel 的目标环境后重新构建。生产组件允许 `simi.host`、`www.simi.host` 和 `sim-web.vercel.app`，本地使用 Cloudflare 官方测试密钥。
+
+每次提交创建新 challenge，令牌只通过 `x-turnstile-token` 请求头传给 `/api/answer`，不进入会话历史或模型上下文。接口在调用模型前执行 Siteverify，并验证 hostname 等于当前请求域名、action 为 `answer`。缺少/无效令牌返回 403，未配置密钥或验证服务不可用返回 503，验证请求上限 4 秒；失败时不调用模型。浏览器验证等待上限 30 秒，清空会话取消验证，站内导航保留验证过程。仅需要用户交互时显示组件。
+
+本地端到端测试在构建时设 `NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA`，测试夹具模拟第三方脚本及 AI 响应，不消耗模型额度。实际验证依据 [客户端文档](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/) 和 [服务端文档](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)。
