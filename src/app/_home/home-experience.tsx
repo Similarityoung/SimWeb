@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, textLanguage } from "@/lib/utils";
 import { useHomeConversation } from "./conversation-provider";
 import type { BotMood } from "@/components/bot/bot";
 import { Introduction } from "./components/introduction";
@@ -134,7 +134,12 @@ export function HomeExperience() {
           onSubmit={(text) => ask({ type: "text", text })}
         />
       </div>
-      <p className="sr-only" role="status" aria-live="polite">
+      <p
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        lang={textLanguage(pending ? "" : latest?.answer?.text)}
+      >
         {pending ? "One moment…" : latest?.complete ? latest.answer?.text : ""}
       </p>
     </main>

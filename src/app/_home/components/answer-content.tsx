@@ -2,6 +2,7 @@
 
 import { ProjectCard } from "@/components/projects/project-card";
 import { ArticleCard } from "@/components/writing/article-card";
+import { textLanguage } from "@/lib/utils";
 import { resolveReference } from "../catalog";
 import type { Message, PublicCatalog } from "../types";
 
@@ -23,7 +24,10 @@ export function AnswerContent({
       data-testid="answer"
       data-state={state}
     >
-      <p className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]">
+      <p
+        lang={textLanguage(message.text)}
+        className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]"
+      >
         <span
           data-testid={state === "streaming" ? "streaming-text" : undefined}
         >

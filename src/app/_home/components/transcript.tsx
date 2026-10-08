@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, type RefObject } from "react";
+import { textLanguage } from "@/lib/utils";
 import { AnswerContent } from "./answer-content";
 import type { Message, PublicCatalog } from "../types";
 
@@ -58,9 +59,12 @@ export function Transcript({
             className="min-w-0 animate-enter [overflow-wrap:anywhere]"
             data-testid="exchange"
           >
-            <p className="mb-6 ml-auto w-fit max-w-[85%] rounded-[16px] rounded-br-[4px] bg-muted px-[18px] py-3 text-sm leading-6">
+            <h2
+              lang={textLanguage(message.question)}
+              className="mb-6 ml-auto w-fit max-w-[85%] rounded-[16px] rounded-br-[4px] bg-muted px-[18px] py-3 text-sm leading-6"
+            >
               {message.question}
-            </p>
+            </h2>
             {message.text && (
               <AnswerContent message={message} catalog={catalog} />
             )}

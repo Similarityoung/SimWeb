@@ -1,20 +1,25 @@
 import "server-only";
 import path from "node:path";
+import { cache } from "react";
 import { readPublishedArticles, type PublishedArticle } from "./catalog";
 import type { ArticlePage, ArticleSummary, WritingKind } from "./types";
 
-export function getPublishedArticles(): PublishedArticle[] {
-  return readPublishedArticles(path.join(process.cwd(), "content"));
-}
+export const getPublishedArticles = cache((): PublishedArticle[] =>
+  readPublishedArticles(path.join(process.cwd(), "content")),
+);
+
+const getSummaries = cache((): ArticleSummary[] =>
+  getPublishedArticles().map(({ article: { body, ...summary } }) => {
+    void body;
+    return summary;
+  }),
+);
 
 export function getArticleSummaries(kind?: WritingKind): ArticleSummary[] {
-  return getPublishedArticles()
-    .map(({ article }) => article)
-    .filter((article) => !kind || article.kind === kind)
-    .map(({ body, ...summary }) => {
-      void body;
-      return summary;
-    });
+  const summaries = getSummaries();
+  return kind
+    ? summaries.filter((article) => article.kind === kind)
+    : summaries;
 }
 
 export function getArticle(

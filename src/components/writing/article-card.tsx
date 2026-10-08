@@ -17,6 +17,7 @@ export function ArticleCard({
   origin?: ReadingOrigin;
   layout?: "compact" | "directory";
 }) {
+  const Heading = layout === "directory" ? "h2" : "h3";
   const tags = [...new Set(article.tags)];
   const date = (
     <time
@@ -54,7 +55,7 @@ export function ArticleCard({
             />
           </div>
         )}
-        <h3
+        <Heading
           lang="zh-CN"
           className={cn(
             "leading-relaxed font-medium tracking-tight transition-colors group-hover:text-accent",
@@ -62,7 +63,7 @@ export function ArticleCard({
           )}
         >
           {article.title}
-        </h3>
+        </Heading>
         <p
           className={cn(
             "text-sm leading-7 text-muted-foreground",

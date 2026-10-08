@@ -39,23 +39,28 @@ function Cell({
 }) {
   if (count === null)
     return <span className={cn(CELL, "border border-border/50")} />;
+  const description = `${year}.${pad(month)} · ${count} ${count === 1 ? "post" : "posts"}`;
   return (
-    <span
-      className={cn(
-        CELL,
-        "group relative transition-shadow hover:ring-1 hover:ring-foreground/40",
-        SHADES[activityLevel(count)],
-      )}
-    >
-      <span
+    <details name="writing-month" className="group relative">
+      <summary
+        aria-label={description}
         className={cn(
-          "pointer-events-none absolute bottom-full z-10 mb-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] leading-4 whitespace-nowrap text-background opacity-0 transition-opacity group-hover:opacity-100",
-          tooltipAnchor(month),
+          CELL,
+          "block cursor-pointer list-none transition-shadow hover:ring-1 hover:ring-foreground/40 [&::-webkit-details-marker]:hidden",
+          SHADES[activityLevel(count)],
         )}
       >
-        {year}.{pad(month)} · {count} {count === 1 ? "post" : "posts"}
-      </span>
-    </span>
+        <span
+          aria-hidden
+          className={cn(
+            "invisible absolute bottom-full z-10 mb-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] leading-4 whitespace-nowrap text-background opacity-0 transition-opacity before:absolute before:inset-x-0 before:top-full before:h-1.5 group-hover:visible group-hover:opacity-100 group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100 group-open:visible group-open:opacity-100",
+            tooltipAnchor(month),
+          )}
+        >
+          {description}
+        </span>
+      </summary>
+    </details>
   );
 }
 
@@ -82,18 +87,18 @@ export function WritingCalendar({ activity }: { activity: MonthlyActivity }) {
   if (!first || !peak) return null;
   return (
     <div
-      role="img"
+      role="group"
       aria-label={`Posts per month: ${total} since ${first.year}.${pad(first.month)}, peaking at ${peak.count} in ${peak.year}.${pad(peak.month)}.`}
       className="grid grid-cols-[2.75rem_repeat(12,minmax(0,1fr))] items-center gap-1"
     >
       <span />
       {MONTHS.map((month) => (
-        <span key={month} aria-hidden className={cn(LABEL, "text-center")}>
+        <span key={month} className={cn(LABEL, "text-center")}>
           {month}
         </span>
       ))}
       {years.map(({ year, months }) => (
-        <div key={year} aria-hidden className="contents">
+        <div key={year} className="contents">
           <span className={LABEL}>{year}</span>
           {months.map((count, index) => (
             <Cell key={index} year={year} month={index + 1} count={count} />

@@ -55,6 +55,18 @@ export function ArticleReader({
             rehypeSlug,
           ]}
           components={{
+            img: ({ node, ...props }) => {
+              void node;
+              return (
+                // eslint-disable-next-line @next/next/no-img-element -- Remote Markdown images retain their natural size.
+                <img
+                  {...props}
+                  alt={props.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+              );
+            },
             h1: ({ children, node, ...props }) => {
               void node;
               return <h2 {...props}>{children}</h2>;

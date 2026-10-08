@@ -183,11 +183,24 @@ test("topic and free-text submissions use fresh Turnstile tokens", async ({
     "data-state",
     "complete",
   );
-  await page.getByRole("textbox").fill("Tell me more");
+  await page.getByRole("textbox").fill("再介绍一下");
   await page.getByRole("button", { name: "Send question" }).click();
   await expect(page.getByTestId("answer").last()).toHaveAttribute(
     "data-state",
     "complete",
+  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Similarityoung",
+  );
+  await expect(
+    page.getByTestId("exchange").last().getByRole("heading", { level: 2 }),
+  ).toHaveAttribute("lang", "zh-CN");
+  await expect(
+    page.getByTestId("answer").last().locator("p").first(),
+  ).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("main").getByRole("status")).toHaveAttribute(
+    "lang",
+    "en",
   );
   const tokens = await page.evaluate(() => window.__answers.tokens);
   expect(tokens).toHaveLength(2);

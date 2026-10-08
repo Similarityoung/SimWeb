@@ -88,15 +88,16 @@ export function Introduction({
             Hey, I’m
           </p>
         )}
-        {compact ? (
-          <p className="text-[19px] leading-tight font-bold tracking-tight sm:text-[21px]">
-            {site.name}
-          </p>
-        ) : (
-          <h1 className="text-[clamp(19px,5.5vw,23px)] leading-[1.05] font-bold tracking-[-0.04em] sm:text-[26px]">
-            {site.name}
-          </h1>
-        )}
+        <h1
+          className={cn(
+            "font-bold",
+            compact
+              ? "text-[19px] leading-tight tracking-tight sm:text-[21px]"
+              : "text-[clamp(19px,5.5vw,23px)] leading-[1.05] tracking-[-0.04em] sm:text-[26px]",
+          )}
+        >
+          {site.name}
+        </h1>
         {!compact && (
           <>
             <p className="mt-2 font-mono text-[11px] leading-[1.6] text-foreground-soft sm:text-[12.5px]">

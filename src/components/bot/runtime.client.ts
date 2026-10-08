@@ -18,13 +18,17 @@ let runtime: Promise<void> | undefined;
 
 export function loadRuntime(): Promise<void> {
   runtime ??= (async () => {
-    await import("./vendor/geometry-data.js");
-    await import("./vendor/src/math.js");
-    await import("./vendor/src/tables.js");
-    await import("./vendor/src/pose.js");
-    await import("./vendor/src/tricks.js");
-    await import("./vendor/src/fx.js");
-    await import("./vendor/src/eyes.js");
+    await Promise.all([
+      import("./vendor/geometry-data.js"),
+      import("./vendor/src/math.js"),
+      import("./vendor/src/tables.js"),
+    ]);
+    await Promise.all([
+      import("./vendor/src/pose.js"),
+      import("./vendor/src/tricks.js"),
+      import("./vendor/src/fx.js"),
+      import("./vendor/src/eyes.js"),
+    ]);
     await import("./vendor/src/character.js");
   })();
   return runtime;

@@ -42,7 +42,7 @@ test("ordinary browsing stays local and reading returns to the same page and art
   );
   await expect(results(page).getByRole("link")).toHaveCount(10);
   const firstPageTitles = await results(page)
-    .getByRole("heading", { level: 3 })
+    .getByRole("heading", { level: 2 })
     .allTextContents();
 
   await page
@@ -107,7 +107,7 @@ test("real full-text search finds a body-only term and survives a shared URL rel
   ).toBeVisible();
   await expect(page.getByRole("status")).toContainText("By relevance");
   const titles = await results(page)
-    .getByRole("heading", { level: 3 })
+    .getByRole("heading", { level: 2 })
     .allTextContents();
 
   await page.reload();
@@ -115,7 +115,7 @@ test("real full-text search finds a body-only term and survives a shared URL rel
     "singleflight",
   );
   await expect(page.getByRole("status")).toContainText("By relevance");
-  await expect(results(page).getByRole("heading", { level: 3 })).toHaveText(
+  await expect(results(page).getByRole("heading", { level: 2 })).toHaveText(
     titles,
   );
 });
@@ -272,7 +272,7 @@ test("a late real search fragment cannot replace the directory after clearing", 
     );
     await expect(results(page).getByRole("link")).toHaveCount(10);
     const titles = await results(page)
-      .getByRole("heading", { level: 3 })
+      .getByRole("heading", { level: 2 })
       .allTextContents();
 
     releaseFragments();
@@ -282,7 +282,7 @@ test("a late real search fragment cannot replace the directory after clearing", 
     await expect(page.getByRole("status")).toHaveText(
       `${notes.length} notes · Latest first`,
     );
-    await expect(results(page).getByRole("heading", { level: 3 })).toHaveText(
+    await expect(results(page).getByRole("heading", { level: 2 })).toHaveText(
       titles,
     );
   } finally {
@@ -406,7 +406,7 @@ test("full-text pages load only their results and restore a cold search after re
   await expect(results(page).getByRole("link")).toHaveCount(10);
   expect(fragments.size).toBe(10);
   const firstTitles = await results(page)
-    .getByRole("heading", { level: 3 })
+    .getByRole("heading", { level: 2 })
     .allTextContents();
   await page
     .getByRole("navigation", { name: "Notes pages" })
