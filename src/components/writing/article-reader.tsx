@@ -1,38 +1,15 @@
 import "server-only";
 import Link from "next/link";
-import {
-  Children,
-  isValidElement,
-  ViewTransition,
-  type ReactNode,
-} from "react";
+import { ViewTransition, type ReactNode } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
-import { renderMermaid } from "@/lib/writing/mermaid";
+import { PeleError, render } from "pele";
 import { remarkWikiLinks } from "@/lib/writing/wiki-links";
 import type { ArticlePage } from "@/lib/writing/types";
 import { BackLink } from "@/components/ui/back-link";
 import styles from "./article-reader.module.css";
-
-type CodeElementProps = { className?: string; children?: ReactNode };
-
-function textContent(node: ReactNode): string {
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(textContent).join("");
-  if (isValidElement<{ children?: ReactNode }>(node))
-    return textContent(node.props.children);
-  return "";
-}
-
-function mermaidSource(children: ReactNode): string | undefined {
-  const [code] = Children.toArray(children);
-  if (!isValidElement<CodeElementProps>(code)) return undefined;
-  if (!code.props.className?.split(/\s+/).includes("language-mermaid"))
-    return undefined;
-  return textContent(code.props.children);
-}
 
 export function ArticleReader({
   article,
@@ -41,8 +18,6 @@ export function ArticleReader({
   article: ArticlePage;
   backLink: ReactNode;
 }) {
-  let diagramIndex = 0;
-
   return (
     <article
       className={`${styles.article} mx-auto max-w-3xl px-6 pt-6 pb-24`}
@@ -77,36 +52,43 @@ export function ArticleReader({
             [remarkWikiLinks, article.wikiLinkTargets],
           ]}
           rehypePlugins={[
-            [rehypeHighlight, { ignoreMissing: true }],
+            [rehypeHighlight, { ignoreMissing: true, plainText: ["mermaid"] }],
             rehypeSlug,
           ]}
           components={{
             pre: ({ children, node, ...props }) => {
-              void node;
-              const source = mermaidSource(children);
-              if (source === undefined) return <pre {...props}>{children}</pre>;
+              const code = node?.children[0];
+              const source =
+                code?.type === "element" ? code.children[0] : undefined;
+              if (
+                code?.type !== "element" ||
+                !Array.isArray(code.properties.className) ||
+                !code.properties.className.includes("language-mermaid") ||
+                source?.type !== "text"
+              )
+                return <pre {...props}>{children}</pre>;
 
-              const result = renderMermaid(
-                source,
-                `${article.id}-mermaid-${++diagramIndex}`,
-              );
-              if (!result.ok)
+              try {
+                const { svg } = render(source.value, {
+                  idPrefix: `${article.id}-mermaid-${node?.position?.start.offset}`,
+                  links: false,
+                  images: false,
+                  responsive: false,
+                });
                 return (
-                  <div className={styles.mermaidError} role="alert">
-                    <strong>Mermaid 图表渲染失败</strong>
-                    <p>{result.error}</p>
-                    <pre>
-                      <code>{source}</code>
-                    </pre>
-                  </div>
+                  <div
+                    className={styles.mermaid}
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                  />
                 );
-
-              return (
-                <div
-                  className={styles.mermaid}
-                  dangerouslySetInnerHTML={{ __html: result.svg }}
-                />
-              );
+              } catch (error) {
+                if (!(error instanceof PeleError)) throw error;
+                return (
+                  <pre role="alert">
+                    <code>Mermaid 图表渲染失败：{error.message}</code>
+                  </pre>
+                );
+              }
             },
             img: ({ node, ...props }) => {
               void node;
