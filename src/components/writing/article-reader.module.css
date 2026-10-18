@@ -6,6 +6,53 @@
   --code-title: #7e5317;
 }
 
+.mermaid {
+  overflow-x: auto;
+  margin-block: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  padding: 1rem;
+  --pele-bg: var(--background);
+  --pele-fg: var(--foreground);
+  --pele-muted: var(--muted-foreground);
+  --pele-line: var(--border-strong);
+  --pele-surface: var(--muted);
+  --pele-surface-alt: var(--card);
+  --pele-border: var(--border);
+  --pele-accent: var(--accent);
+  --pele-font: var(--font-sans);
+  --pele-font-mono: var(--font-mono);
+  --pele-radius: var(--radius-md);
+}
+
+.mermaid :global(.pele) {
+  display: block;
+  max-width: none;
+  margin-inline: auto;
+}
+
+.mermaidError {
+  overflow: hidden;
+  margin-block: 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  padding: 1rem;
+  color: var(--foreground);
+}
+
+.mermaidError p {
+  margin-block: 0.5rem;
+  color: var(--muted-foreground);
+}
+
+.mermaidError pre {
+  overflow-x: auto;
+  margin: 0.75rem 0 0;
+  white-space: pre;
+}
+
 :global(.dark) .article {
   --code-keyword: #ed9478;
   --code-string: #a6bd82;
