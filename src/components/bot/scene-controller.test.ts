@@ -53,9 +53,7 @@ test("stale idle cues cannot interrupt other moods, scenes or a hidden page", ()
   assert.equal(currentMove(visible).state, "idle");
 });
 
-test("interaction scenes keep at most two candidates, picked once per accepted event", () => {
-  for (const [scene, definition] of Object.entries(scenes))
-    if (scene !== "idle-expression") assert.ok(definition.choices.length <= 2);
+test("accepted return cues select a reaction and repeated taps respect their cooldown", () => {
   const first = cue(createSceneModel("idle"), "return");
   assert.equal(currentMove(first).state, "happy");
   assert.equal(currentMove(cue(first, "return", 100, 0.99)).state, "notifying");

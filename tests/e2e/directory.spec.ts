@@ -243,6 +243,9 @@ test("Thoughts is a minimal timeline and ignores search and metadata parameters"
 test("a late real search fragment cannot replace the directory after clearing", async ({
   page,
 }) => {
+  await page.route("https://challenges.cloudflare.com/**", (route) =>
+    route.abort(),
+  );
   let releaseFragments!: () => void;
   const fragmentGate = new Promise<void>((resolve) => {
     releaseFragments = resolve;

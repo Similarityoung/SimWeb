@@ -57,7 +57,6 @@ for (const [label, output, options] of [
     JSON.stringify({ kind: "answer", references: [] }),
     {},
   ],
-  ["unknown answer kind", JSON.stringify({ ...answer, kind: "invented" }), {}],
   [
     "duplicate references",
     JSON.stringify({

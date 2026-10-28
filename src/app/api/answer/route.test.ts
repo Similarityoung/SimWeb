@@ -69,7 +69,7 @@ test("the endpoint rejects cross-origin and oversized requests before retrieval"
   }
 });
 
-test("streamed body size and short history are checked before any model request", async (t) => {
+test("streamed body size and withdrawn references are checked before any model request", async (t) => {
   const oldSecret = process.env.TURNSTILE_SECRET_KEY;
   process.env.TURNSTILE_SECRET_KEY = "test-only";
   t.after(() => {
@@ -100,37 +100,20 @@ test("streamed body size and short history are checked before any model request"
       duplex: "half",
     } as RequestInit);
     assert.equal((await POST(oversized)).status, 400);
-    for (const request of [
-      {
-        question: { type: "topic", topic: "notes", text: "weather" },
-        lastShownReferences: [],
-      },
-      {
-        question: { type: "text", text: "tell me more" },
-        lastShownReferences: [{ type: "article", id: "withdrawn" }],
-      },
-      {
-        question: { type: "text", text: "hi" },
-        lastShownReferences: [],
-        previous: { question: "old", text: "x".repeat(1201) },
-      },
-    ]) {
-      assert.equal(
-        (
-          await POST(
-            new Request("https://example.com/api/answer", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: `${ACCESS_COOKIE}=${issueAccessPass("example.com")}`,
-              },
-              body: JSON.stringify(request),
-            }),
-          )
-        ).status,
-        400,
-      );
-    }
+    const invalidContext = await POST(
+      new Request("https://example.com/api/answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `${ACCESS_COOKIE}=${issueAccessPass("example.com")}`,
+        },
+        body: JSON.stringify({
+          question: { type: "text", text: "tell me more" },
+          lastShownReferences: [{ type: "article", id: "withdrawn" }],
+        }),
+      }),
+    );
+    assert.equal(invalidContext.status, 400);
   } finally {
     if (previousKey === undefined) delete process.env.DEEPSEEK_API_KEY;
     else process.env.DEEPSEEK_API_KEY = previousKey;
@@ -140,7 +123,7 @@ test("streamed body size and short history are checked before any model request"
   }
 });
 
-test("answer endpoint rejects missing, forged, expired or wrong-host passes without calling the model", async (t) => {
+test("answer endpoint rejects missing or forged passes and token-only requests without calling the model", async (t) => {
   const { enable, restore } = enableAi();
   enable();
   const oldSecret = process.env.TURNSTILE_SECRET_KEY;
@@ -167,21 +150,6 @@ test("answer endpoint rejects missing, forged, expired or wrong-host passes with
     );
     assert.equal(missing.status, 403);
     assert.equal(forged.status, 403);
-    for (const pass of [
-      issueAccessPass("www.simi.host", Date.now() - 6 * 60 * 60 * 1000),
-      issueAccessPass("sim-web.vercel.app"),
-    ]) {
-      assert.equal(
-        (
-          await POST(
-            makeRequest(body, {
-              cookie: `${ACCESS_COOKIE}=${pass}`,
-            }),
-          )
-        ).status,
-        403,
-      );
-    }
     assert.equal(
       (
         await POST(

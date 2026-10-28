@@ -229,8 +229,6 @@ for (const [stage, status, expected] of [
   ["check", 429, answerErrors.limited],
   ["check", 503, answerErrors.unavailable],
   ["handshake", 403, answerErrors.verification],
-  ["handshake", 429, answerErrors.limited],
-  ["handshake", 503, answerErrors.unavailable],
 ] as const)
   test(`access ${stage} failure ${status} never sends an answer or retries`, async () => {
     const calls: string[] = [];

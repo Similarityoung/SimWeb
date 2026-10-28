@@ -201,4 +201,4 @@ URL 是已提交条件的事实源，草稿不覆盖历史导航。原生 Histor
 | 改 Bot 动作或更换引擎    | components/bot 内部                    | 状态映射、卸载、键盘/减少动态效果  |
 | 调整顶部菜单             | config/site.ts + components/site       | 顶部点击进入目录而非触发问答       |
 
-ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。架构测试验证别名与相对路径导入限制。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试；`.client.test.ts` 使用普通 React 条件，其余保持 react-server 条件，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。
+ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试；`.client.test.ts` 使用普通 React 条件，其余保持 react-server 条件，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。
