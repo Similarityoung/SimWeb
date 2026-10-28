@@ -34,10 +34,10 @@ export function ProjectCard({
           aria-hidden
         />
         <div className="min-w-0">
-          <h2 className="text-lg leading-7 font-medium tracking-tight [overflow-wrap:anywhere] transition-colors group-hover:text-accent group-focus-visible:text-accent sm:text-xl">
+          <h2 className="text-title font-medium tracking-tight [overflow-wrap:anywhere] transition-colors group-hover:text-accent group-focus-visible:text-accent">
             {project.title}
           </h2>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+          <p className="mt-0.5 text-footnote text-muted-foreground">
             {project.role}
           </p>
         </div>
@@ -49,11 +49,11 @@ export function ProjectCard({
           />
         )}
         <div className="col-span-full min-w-0 sm:col-start-2 sm:col-end-3">
-          <p className="max-w-[64ch] text-sm leading-7 text-foreground-soft">
+          <p className="max-w-[64ch] text-body text-foreground-soft">
             {project.summary}
           </p>
           <ul
-            className="mt-4 flex flex-wrap gap-1.5 font-mono text-[11px] leading-5 text-muted-foreground"
+            className="mt-4 flex flex-wrap gap-1.5 font-mono text-caption text-muted-foreground"
             aria-label="Technologies"
           >
             {project.tags.map((tag) => (
@@ -81,17 +81,17 @@ export function ProjectCard({
           )}
         </div>
         <div>
-          <p className="mb-2 font-mono text-[11px] text-muted-foreground">
+          <p className="mb-2 font-mono text-caption text-muted-foreground">
             {project.role}
           </p>
-          <h3 className="text-base font-medium tracking-tight">
+          <h3 className="text-card-title font-medium tracking-tight">
             {project.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-body text-muted-foreground">
             {project.summary}
           </p>
         </div>
-        <p className="mt-auto font-mono text-[11px] text-muted-foreground">
+        <p className="mt-auto font-mono text-caption text-muted-foreground">
           {project.tags.join(" / ")}
         </p>
       </Card>
