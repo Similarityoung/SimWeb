@@ -22,7 +22,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors hover:border-border-strong focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate",
+        "flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm text-foreground transition-colors hover:border-border-strong focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate",
         className,
       )}
       {...props}
@@ -80,8 +80,9 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      data-focus-ring="none"
       className={cn(
-        "relative flex min-h-11 cursor-pointer items-center rounded-md py-2 pr-9 pl-3 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-muted data-[state=checked]:text-accent [&>[data-slot=select-item-text]]:min-w-0 [&>[data-slot=select-item-text]]:flex-1",
+        "relative flex min-h-11 cursor-pointer items-center rounded-md py-2 pr-9 pl-3 text-sm select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-muted data-[state=checked]:text-accent [&>[data-slot=select-item-text]]:min-w-0 [&>[data-slot=select-item-text]]:flex-1",
         className,
       )}
       {...props}

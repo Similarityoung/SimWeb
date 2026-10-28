@@ -46,6 +46,15 @@
   --border: #e5e1d9;
   --border-strong: #cfc9bc;
   --accent: #c2431f;
+  --focus-ring-width: 2px;
+  --focus-ring-glow: 0 0 6px 1px
+    color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+@media (min-resolution: 2dppx) {
+  :root {
+    --focus-ring-width: 1.5px;
+  }
 }
 
 .dark {
@@ -65,6 +74,14 @@
   @apply mx-auto w-full max-w-4xl px-[18px] sm:px-7;
 }
 
+@utility focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--accent),
+    var(--focus-ring-glow);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -81,9 +98,6 @@
   a {
     cursor: pointer;
   }
-  :focus-visible {
-    @apply outline-2 outline-offset-4 outline-ring;
-  }
   ::selection {
     @apply bg-foreground text-background;
   }
@@ -97,6 +111,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Unlayered so the ring also wins over component shadow utilities. */
+:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--accent),
+    var(--focus-ring-glow);
+}
+
+:focus-visible[data-focus-ring="none"] {
+  outline: none;
+  box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  :focus-visible:not([data-focus-ring="none"]),
+  .focus-ring {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
   }
 }
 

@@ -1,20 +1,56 @@
 import { expect, test } from "@playwright/test";
 
-// VIS-05 baseline: Phase 1 migrates component-level focus styles. Until then
-// this stays fixme so the suite reports the gap instead of a false pass.
-test.fixme("focus ring uses the density-aware width and a visible outline", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const ring = await page.evaluate(() => {
-    const width = getComputedStyle(document.documentElement)
-      .getPropertyValue("--focus-ring-width")
-      .trim();
-    const link = document.querySelector("a");
-    if (!link) return { width, outline: "" };
-    link.focus();
-    return { width, outline: getComputedStyle(link).outlineStyle };
+for (const density of [1, 2] as const) {
+  test(`focus ring uses ${density === 1 ? "2px" : "1.5px"} at ${density}x`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      baseURL: "http://127.0.0.1:3100",
+      deviceScaleFactor: density,
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto("/");
+      const ringWidth = density === 1 ? "2px" : "1.5px";
+      expect(
+        await page.evaluate(() =>
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--focus-ring-width")
+            .trim(),
+        ),
+      ).toBe(ringWidth);
+
+      const textbox = page.getByRole("textbox", { name: "Ask a question" });
+      await textbox.focus();
+      const formRing = await page.locator("form").evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { shadow: style.boxShadow, style: style.outlineStyle };
+      });
+      expect(formRing.shadow).toContain(ringWidth);
+      expect(formRing.style).toBe("solid");
+
+      expect(
+        await textbox.evaluate(
+          (element) => getComputedStyle(element).boxShadow,
+        ),
+      ).not.toContain(ringWidth);
+
+      await textbox.fill("Hello");
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(250);
+      const buttonRing = await page.evaluate(() => {
+        const element = document.activeElement;
+        if (!(element instanceof HTMLElement)) return null;
+        return {
+          label: element.getAttribute("aria-label"),
+          shadow: getComputedStyle(element).boxShadow,
+        };
+      });
+      expect(buttonRing?.label).toBe("Send question");
+      expect(buttonRing?.shadow).toContain(ringWidth);
+    } finally {
+      await context.close();
+    }
   });
-  expect(ring.width).not.toBe("");
-  expect(ring.outline).not.toBe("none");
-});
+}

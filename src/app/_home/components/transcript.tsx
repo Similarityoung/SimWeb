@@ -49,7 +49,7 @@ export function Transcript({
       }}
       aria-label="Conversation"
       tabIndex={0}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-6 [scrollbar-width:none] focus-visible:outline-1 focus-visible:outline-offset-0 focus-visible:outline-border-strong sm:py-8"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-6 [scrollbar-width:none] sm:py-8"
     >
       <div className="relative space-y-9">
         {messages.map((message, index) => (

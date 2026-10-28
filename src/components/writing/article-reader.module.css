@@ -44,6 +44,10 @@
   overflow-wrap: normal;
 }
 
+.article :global(a:focus-visible) {
+  text-decoration: underline;
+}
+
 .article :global(.hljs-comment),
 .article :global(.hljs-quote) {
   color: var(--muted-foreground);

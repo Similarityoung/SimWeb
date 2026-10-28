@@ -23,7 +23,7 @@
 | VIS-02  | 默认 1px 低对比 alpha 边框；高分屏 0.5px 发丝线；同一容器不套第二层边框                                                  | CDS 01 §1.4                       | 评审 + `check:design` | 采用                                                                     |
 | VIS-03  | 单一强调色 + base / hover / soft 三态；只用于交互、焦点、关键信息                                                        | CDS 01 §1.2                       | 令牌                  | 采用结构，色值用 `#c2431f` / `#ed9478`                                   |
 | VIS-04  | 圆角按控件尺寸分级；嵌套圆角 = 外圆角 − 内边距                                                                           | CDS 01 §1.3                       | 令牌 + 评审           | **直接采用原值**：2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24px，见 §5.1 |
-| VIS-05  | 焦点必须可见；1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；焦点环对比 ≥3:1；按组件实现，不靠一条全局规则                     | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | axe + `test:ui`       | **调整后采用**，见 §5.2                                                  |
+| VIS-05  | 焦点必须可见；1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；焦点环对比 ≥3:1；全局 ring + 容器例外                             | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | axe + `test:ui`       | **调整后采用**，见 §5.2                                                  |
 | TYPE-01 | 7 阶字号阶梯 + 卡片标题例外；字号照搬，CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24；正文不用 mono，meta 用 mono | CDS 01 §1.5 + CJK 阅读            | 令牌 + 评审           | **调整后采用**，见 §5.3                                                  |
 | TYPE-02 | 间距由行高推导：段落 0.75×、条目 0.5×、区块 2–3×；禁止零散 magic number                                                  | CDS 03 §3.1                       | 令牌 + 评审           | 采用公式；会话区输出 18px / 12px，区块仍用 2–3×                          |
 
@@ -104,7 +104,9 @@ Claude 的三层配方：
   0 0 6px 1px rgba(217, 119, 87, 0.25);
 ```
 
-网页端背景不固定，`inset` 垫片会依赖父级表面色；用 `outline-offset: 1px` 得到同样的“1px 隔离 + 环 + 柔光”，且在任何卡片上都成立。环宽按像素密度调整：2x 及以上用 1.5px，1x 用 2px。原因是 1.5px 在 1x 屏上常被舍入成不稳定结果，而 2px 在 2x 屏上又偏重；这是对 WCAG 2.4.13 与手册 1.5/2.0 两种说法的折中。
+网页端背景不固定，`inset` 垫片会依赖父级表面色，因此不做 1px 隔离，环从边框外缘起算。环宽按像素密度调整：2x 及以上用 1.5px，1x 用 2px。原因是 1.5px 在 1x 屏上常被舍入成不稳定结果，而 2px 在 2x 屏上又偏重；这是对 WCAG 2.4.13 与手册 1.5/2.0 两种说法的折中。
+
+环必须用 `box-shadow` 的 spread 绘制，不能用 `outline`：Chromium 会把 `outline-width: 1.5px` 舍入成 1 CSS px，在 2x 屏只有 2 设备像素；同样 1.5px 的 `box-shadow` spread 会渲染为 3 设备像素，才符合“2x 屏 1.5px”的意图。`outline` 只保留为 forced-colors 回退。
 
 ```css
 :root {
@@ -120,22 +122,39 @@ Claude 的三层配方：
 }
 
 :focus-visible {
-  outline: var(--focus-ring-width) solid var(--accent);
-  outline-offset: 1px;
-  box-shadow: var(--focus-ring-glow);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--accent),
+    var(--focus-ring-glow);
+}
+
+:focus-visible[data-focus-ring="none"] {
+  outline: none;
+  box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  :focus-visible:not([data-focus-ring="none"]),
+  .focus-ring {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
+  }
 }
 ```
 
+焦点规则放在 cascade layer 外，否则组件的 `shadow-*` / `ring-*` utility 在 utilities 层会压过它。需要把焦点交给容器的控件标记 `data-focus-ring="none"`，避免内外两个环。
+
 这不是一条全局规则就能完成的事：
 
-- 删除旧的全局 `outline-2 outline-offset-4`，以及 Button / Input / Select 的 `outline-none`、旧 `ring-*`、`shadow-*`；它们在 utilities 层会压过 `@layer base`。
+- 删除旧的全局 `outline-2 outline-offset-4`，以及 Button / Input / Select 的 `outline-none`、旧 `ring-*`；它们会压掉新的环。
 - 逐组件补焦点：Button、Input、Select、Textarea、链接卡片、导航链接、Mermaid 控件。
-- Composer 用 `:has(:focus-visible)` 让整个输入容器响应内部输入框的焦点。
-- Select 用 `data-highlighted` 处理键盘高亮，不要复用 `:focus-visible`。
+- Composer 用 `has-[input:focus-visible]:focus-ring` 让整个输入容器响应内部输入框的焦点，输入框本身 `data-focus-ring="none"`。
+- Select 用 `data-highlighted` 处理键盘高亮，不要复用 `:focus-visible`；`SelectItem` 标记 `data-focus-ring="none"`。
 - 行内链接因跨行，额外加 `text-decoration: underline`，保证环不可见时仍有焦点提示。
 - 不使用 `:focus`，只用 `:focus-visible`，避免鼠标点击出现焦点环。
 - 焦点元素不要放在 `overflow: hidden` 容器里；必要时给父级留 2px 内边距。
-- 已有阴影的浮层把光晕追加到 `box-shadow` 列表，不要覆盖原阴影。
+- 焦点时环会替换组件自身的 `box-shadow`；需要同时保留阴影的浮层把环追加到原 `box-shadow` 列表。
 
 ### 5.3 字号与行高
 
@@ -190,7 +209,7 @@ Claude 的三层配方：
 
 - `tailwind-merge` 已扩展 `theme.text` / `theme.radius`；`cn("text-body", "text-muted-foreground")` 与 `cn("rounded-md", "rounded-panel")` 有单测锁定。
 - `npm run check:design`：扫描 `src` 的裸色值与未定义 CSS 变量，输出 `ENG-01`；注释、局部自定义属性、vendor 目录不误报。
-- `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态；VIS-05 以 `test.fixme` 记录，等 Phase 1 焦点审计后转正。
+- `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态、VIS-05 的 1x / 2x 焦点环宽度。
 - `.github/workflows/ui.yml`：PR / push 到 main 跑 `design` 与 `ui` 两个 job；UI job 注入 Turnstile 测试键，失败上传 `playwright-report` 与 `test-results`。
 
 仍需人工完成：
@@ -206,7 +225,7 @@ Claude 的三层配方：
 | 决策                           | 采用                                                                | 依据                              | 与 Claude 的差异                                                                        |
 | ------------------------------ | ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
 | 圆角                           | 直接照搬 2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24                | CDS 01 §1.3                       | 无                                                                                      |
-| 焦点环                         | 1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；按组件实现                 | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | 厚度按分辨率调整；改实现方式，不改色相                                                  |
+| 焦点环                         | 1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；全局 ring + 容器例外       | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | 厚度按分辨率调整；改实现方式，不改色相                                                  |
 | 字号                           | 照搬 7 阶字号；CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24 | CDS 01 §1.5 + CJK 阅读            | 行高与 Claude 不同；页面 H1 36px；文章 H1 30/36（sm 以上 36/40）；不启用 16/17 光学缩放 |
 | 输入框移动端                   | `<640px` 保底 16px                                                  | iOS Safari 聚焦缩放               | 手册矩阵的移动端地板，补上漏项                                                          |
 | 表面与强调色                   | 采用层级语法；色值保留本站暖色                                      | CDS 01 §1.2                       | 色值不同                                                                                |
@@ -222,6 +241,6 @@ Claude 的三层配方：
 3. `MOT-04`：`prefers-reduced-motion` 下等待与流式内容可见（已接入 `test:ui`）；
 4. `A11Y-01`：交互元素有可访问名称（已接入 axe）；
 5. `STATE-01`：空 / 加载 / 流式 / 错 / 完成五态 fixture（已接入 `test:ui`）；
-6. `VIS-05`：`:focus-visible` 的计算样式（`test:ui` 中以 `test.fixme` 记录，Phase 1 后转正）。
+6. `VIS-05`：`:focus-visible` 在 1x / 2x 下的环宽与容器例外（已接入 `test:ui`）。
 
 `test:ui` 与 `check:design` 已接入 `.github/workflows/ui.yml`；在 GitHub 分支保护里设 required 之前，先保持 advisory。其余规则先进评审清单，稳定后再升级为 CI。

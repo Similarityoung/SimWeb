@@ -35,7 +35,7 @@ export function Bot({
       aria-disabled={scene.disabled}
       title="Click to bounce"
       data-scene={scene.scene}
-      className="block rounded-full p-0 select-none outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+      className="block rounded-full p-0 select-none"
       onClick={() => {
         if (!scene.disabled) scene.cue("tap");
       }}
