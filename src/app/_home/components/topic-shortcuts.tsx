@@ -106,14 +106,14 @@ export function TopicShortcuts({
             <span
               className={cn(
                 "block font-medium",
-                compact ? "text-[11px] sm:text-xs" : "text-sm",
+                compact ? "text-caption sm:text-footnote" : "text-body",
               )}
             >
               {topic.label}
             </span>
             {!compact && (
               <>
-                <span className="mt-1 block text-xs text-muted-foreground">
+                <span className="mt-1 block text-footnote text-muted-foreground">
                   {topic.description}
                 </span>
                 <ArrowUpRight

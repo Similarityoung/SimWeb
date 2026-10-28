@@ -80,7 +80,7 @@ export function Introduction({
       </motion.div>
       <div ref={copy} className={cn("min-w-0", !compact && "max-w-[480px]")}>
         {!compact && (
-          <p className="mb-1.5 font-mono text-[11.5px] tracking-[0.01em] text-muted-foreground sm:text-[12.5px]">
+          <p className="mb-1.5 font-mono text-caption tracking-[0.01em] text-muted-foreground sm:text-footnote">
             <span
               className="mr-2 -mt-0.5 inline-block h-3.5 w-[7px] rounded-xs bg-accent align-middle"
               aria-hidden
@@ -100,10 +100,10 @@ export function Introduction({
         </h1>
         {!compact && (
           <>
-            <p className="mt-2 font-mono text-[11px] leading-[1.6] text-foreground-soft sm:text-[12.5px]">
+            <p className="mt-2 font-mono text-caption text-foreground-soft sm:text-footnote">
               {site.role}
             </p>
-            <p className="mt-2.5 max-w-[46ch] text-[13px] leading-[1.6] text-muted-foreground sm:text-sm">
+            <p className="mt-2.5 max-w-[46ch] text-body text-muted-foreground">
               {site.bio}
             </p>
           </>
