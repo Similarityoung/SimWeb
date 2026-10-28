@@ -3,7 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 export type Violation = {
-  rule: "ENG-01";
+  rule: "ENG-01" | "VIS-04" | "MOT-01" | "MOT-02";
   file: string;
   line: number;
   message: string;
@@ -81,6 +81,46 @@ export function findBareColors(file: string, content: string): Violation[] {
   });
 }
 
+function arbitraryValues(line: string, prefix: RegExp) {
+  return [...line.matchAll(prefix)].filter(
+    (match) => !match[0].slice(match[0].indexOf("[")).includes("var(--"),
+  );
+}
+
+export function findArbitraryDesignValues(
+  file: string,
+  content: string,
+): Violation[] {
+  return content.split("\n").flatMap((line, lineIndex) => {
+    const source = stripComments(line, file);
+    const violations: Violation[] = [];
+    const radius =
+      /\brounded(?:-(?:t|r|b|l|s|e|tl|tr|br|bl|ss|se|es|ee))?-\[[^\]]+\]/g;
+    for (const match of arbitraryValues(source, radius))
+      violations.push({
+        rule: "VIS-04",
+        file,
+        line: lineIndex + 1,
+        message: `任意圆角值 ${match[0]}；改用 radius 令牌`,
+      });
+    for (const match of arbitraryValues(source, /\bduration-\[[^\]]+\]/g))
+      violations.push({
+        rule: "MOT-01",
+        file,
+        line: lineIndex + 1,
+        message: `任意时长 ${match[0]}；改用动效令牌`,
+      });
+    for (const match of arbitraryValues(source, /\bease-\[[^\]]+\]/g))
+      violations.push({
+        rule: "MOT-02",
+        file,
+        line: lineIndex + 1,
+        message: `任意缓动 ${match[0]}；改用动效令牌`,
+      });
+    return violations;
+  });
+}
+
 export function collectDefinitions(files: readonly SourceFile[]): Set<string> {
   const defined = new Set<string>();
   for (const { content } of files) {
@@ -125,6 +165,9 @@ export function scanProject(root: string): Violation[] {
     .map((file) => ({ file, content: readFileSync(file, "utf8") }));
   return [
     ...files.flatMap(({ file, content }) => findBareColors(file, content)),
+    ...files.flatMap(({ file, content }) =>
+      findArbitraryDesignValues(file, content),
+    ),
     ...findUndefinedVars(files),
   ].sort(
     (left, right) =>

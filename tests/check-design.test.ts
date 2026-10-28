@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  findArbitraryDesignValues,
   findBareColors,
   findUndefinedVars,
   scanProject,
@@ -57,6 +58,27 @@ test("reports undefined variables but allows runtime-provided ones", () => {
   ]);
   assert.equal(violations.length, 1);
   assert.match(violations[0].message, /--missing/);
+});
+
+test("flags arbitrary radius and motion values", () => {
+  const violations = findArbitraryDesignValues(
+    "src/example.tsx",
+    'className="rounded-[10px] duration-[180ms] ease-[cubic-bezier(.2,.8,.2,1)]"',
+  );
+  assert.deepEqual(
+    violations.map(({ rule }) => rule),
+    ["VIS-04", "MOT-01", "MOT-02"],
+  );
+});
+
+test("allows arbitrary values that reference tokens", () => {
+  assert.deepEqual(
+    findArbitraryDesignValues(
+      "src/example.tsx",
+      'className="rounded-[var(--radius-panel)] duration-[var(--motion-base)] ease-[var(--ease-enter)]"',
+    ),
+    [],
+  );
 });
 
 test("current source passes the design check", () => {
