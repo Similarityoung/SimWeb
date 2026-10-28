@@ -1,36 +1,27 @@
 import { expect, test } from "./answer-fixture";
 import { openIdle, svgOf, setRandom } from "./bot-page";
 
-for (const [random, returning] of [
-  [0, "happy"],
-  [0.99, "notifying"],
-] as const) {
-  test(`cards and input share listening, reading return uses ${returning}`, async ({
-    page,
-  }) => {
-    await setRandom(page, random);
-    await openIdle(page);
-    const topic = page.getByRole("button", { name: /^Notes/ });
-    await topic.focus();
-    await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
-    await page.getByRole("textbox").focus();
-    await expect(svgOf(page)).toHaveAttribute("data-state", "listening");
-    await topic.click();
-    await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
-    await expect(page.getByTestId("answer")).toHaveAttribute(
-      "data-state",
-      "complete",
-    );
-    await page.getByTestId("answer").getByRole("link").first().click();
-    await page.getByRole("link", { name: "Back to conversation" }).click();
-    await expect(svgOf(page)).toHaveAttribute("data-state", returning);
-    await expect(page.getByTestId("answer")).toHaveAttribute(
-      "data-state",
-      "complete",
-    );
-    await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
-  });
-}
+test("reading return welcomes without replaying the completed answer", async ({
+  page,
+}) => {
+  await setRandom(page, 0);
+  await openIdle(page);
+  const topic = page.getByRole("button", { name: /^Notes/ });
+  await topic.click();
+  await expect(svgOf(page)).toHaveAttribute("data-state", "writing");
+  await expect(page.getByTestId("answer")).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  await page.getByTestId("answer").getByRole("link").first().click();
+  await page.getByRole("link", { name: "Back to conversation" }).click();
+  await expect(svgOf(page)).toHaveAttribute("data-state", "happy");
+  await expect(page.getByTestId("answer")).toHaveAttribute(
+    "data-state",
+    "complete",
+  );
+  await expect(svgOf(page)).toHaveAttribute("data-state", "idle");
+});
 
 test("theme and clicks never interrupt writing or queue a surprise after completion", async ({
   page,

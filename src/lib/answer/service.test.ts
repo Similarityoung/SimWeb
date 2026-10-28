@@ -52,6 +52,24 @@ for (const [label, output, options] of [
     {},
   ],
   ["invalid JSON", '{"text":"unfinished', {}],
+  [
+    "missing answer text",
+    JSON.stringify({ kind: "answer", references: [] }),
+    {},
+  ],
+  [
+    "duplicate references",
+    JSON.stringify({
+      ...answer,
+      references: [...answer.references, ...answer.references],
+    }),
+    {},
+  ],
+  [
+    "unmatched with references",
+    JSON.stringify({ ...answer, kind: "unmatched" }),
+    {},
+  ],
   ["rate limited", "", { status: 429 }],
 ] as const)
   test(`failed streams never declare completion: ${label}`, async () => {

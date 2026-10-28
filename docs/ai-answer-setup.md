@@ -31,10 +31,29 @@
 
 依据：[AI SDK DeepSeek](https://ai-sdk.dev/providers/ai-sdk-providers/deepseek)、[AI SDK UI 数据流](https://ai-sdk.dev/docs/ai-sdk-ui/streaming-data)、[DeepSeek API](https://api-docs.deepseek.com/api/create-chat-completion/)、[Cloudflare 速率限制](https://developers.cloudflare.com/waf/rate-limiting-rules/)、[Vercel WAF 限流](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)。
 
-## Turnstile 请求验证
+## Turnstile 与访问资格
 
-快捷问题和自由提问共用同一验证入口。配置 `NEXT_PUBLIC_TURNSTILE_SITE_KEY`（公开站点密钥）和 `TURNSTILE_SECRET_KEY`（仅服务端）；二者都需配置到 Vercel 的目标环境后重新构建。生产组件允许 `simi.host`、`www.simi.host` 和 `sim-web.vercel.app`，本地使用 Cloudflare 官方测试密钥。
+快捷问题和自由提问共用访问资格。首次提交先请求 `/api/answer/access`：有效资格直接继续；缺失或过期时，浏览器才创建 Turnstile challenge，并把单次 token 仅交给握手 POST。服务端调用 Siteverify，要求成功、当前 hostname 和 `answer` action 一致，随后设置短期签名 Cookie。接着浏览器才发送 `/api/answer`；该问答路由只验证 Cookie，不接受或复用 Turnstile token。验证完成前不会启动模型。
 
-每次提交创建新 challenge，令牌只通过 `x-turnstile-token` 请求头传给 `/api/answer`，不进入会话历史或模型上下文。接口在调用模型前执行 Siteverify，并验证 hostname 等于当前请求域名、action 为 `answer`。缺少/无效令牌返回 403，未配置密钥或验证服务不可用返回 503，验证请求上限 4 秒；失败时不调用模型。浏览器验证等待上限 30 秒，清空会话取消验证，站内导航保留验证过程。仅需要用户交互时显示组件。
+凭据为固定 6 小时有效的 HMAC-SHA256 签名声明，包含版本、请求 hostname 和过期时间。使用现有 `TURNSTILE_SECRET_KEY` 签名，无额外存储或基础设施；缺少密钥时失败关闭。Cookie 为 host-only、`HttpOnly`、`SameSite=Lax`、`Path=/api`，HTTPS 加 `Secure`。不滑动续期，不存储在会话历史；到期后下次提交需重新验证。清空会话只取消当前浏览器/上游请求，不撤销 Cookie；站内导航与同一浏览器其他标签页共享该域 Cookie。两个域名分别持有 host-only Cookie。
 
-本地端到端测试在构建时设 `NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA`，测试夹具模拟第三方脚本及 AI 响应，不消耗模型额度。实际验证依据 [客户端文档](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/) 和 [服务端文档](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)。
+签名 Cookie 是可转移的 bearer 凭据：持有人可在有效期内复制并使用，服务端无状态设计不能即时撤销或实现精确可扣减次数额度。Cookie 不是用户身份或一人一份的配额；滥用仍依赖 `/api/answer` 上的边缘限流和模型供应商控制。通用网络/模型错误不自动重试；只有明确资格缺失时才执行握手，不会重发问答或追加消息。
+
+本地 E2E 先用 `NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build` 构建，再运行 `npm run test:e2e`。测试 fixture 控制 challenge 与模型流，模块测试也使用受控 Siteverify 响应，不需要生产密钥、不产生 DeepSeek 费用。需要真实测试 widget 时，使用官方测试站点密钥及对应测试 secret；测试响应的固定 hostname/action 不能用于生产，也不能因此放宽生产校验。官方依据：[客户端渲染](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/)、[服务端验证](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)（token 300 秒且单次使用）、[测试密钥](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)、[Turnstile Free](https://developers.cloudflare.com/turnstile/plans/)；Vercel [WAF 限流](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) 在 Hobby 可用，但计数按区域追踪、允许请求按量收费。
+
+部署检查（尚未在线核验或变更）：逐一检查 `www.simi.host` Cloudflare 与 `sim-web.vercel.app` Vercel 上实际 `/api/answer` WAF 条件、计数方式、窗口及动作。历史记录的 Cloudflare 每 IP 十秒一次和 Vercel 十分钟六次不是已核验现状；确认首次验证握手（`/api/answer/access`）不会被错误纳入 answer 规则，且有效 Cookie 的连续问答仍受限流。不要将公开可达的握手路由列为模型调用依据；`/api/answer` 无有效资格始终拒绝。记录两入口验收结果后再发布生产变更。
+
+性能测量边界：分别记录用户点击、资格查询、必要时 challenge 完成、握手结束、问答请求发出、首个流数据到达和首字显示。首次请求的验证时间与之后的模型首段等待分开统计；本地受控 fixture 仅验证事件顺序和重复调用，不代表线上性能 SLA，也不能用于声称模型延迟改善。
+
+2026-10-28 本地 production 构建浏览器验收：官方测试 widget 实际生成 token，Siteverify 与 DeepSeek 使用仓库外测试脚本注入的受控响应，真实路由负责签发和校验 Cookie。以下均为相对点击的毫秒数，每种场景仅一次样本；流首段是 SDK start 事件，首字需要等上游 JSON 解析到 text 字段。
+
+| 阶段                 | 首次无资格 | 有效资格追问 |
+| -------------------- | ---------: | -----------: |
+| 资格查询完成         |         23 |           74 |
+| Turnstile token 完成 |      3,651 |       不需要 |
+| 握手完成             |      3,664 |       不需要 |
+| 问答请求发出         |      3,664 |           74 |
+| 首段流数据           |      3,694 |          140 |
+| 首字显示             |      4,027 |          472 |
+
+本地确认：首次只握手一次，追问不再触发 challenge/Siteverify；清空和刷新重置消息但保留资格，同域另一标签页可直接提问；320px 页面无整页横向滚动。模块测试覆盖固定到期、伪造、缺失及错误 hostname 凭据，客户端测试覆盖握手失败和取消时迟到 token。桌面/小屏 E2E 覆盖流中禁止重复提交、清空取消与导航保留请求。真实模型延迟、生产 WAF 命中和生产 HTTPS Cookie 仍需部署前验收，不能将这些本地结果视为线上全流程通过。

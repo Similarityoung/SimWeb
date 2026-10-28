@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import {
-  questionSchema,
-  questionTextOf,
-  type Question,
-} from "@/lib/answer/schema";
+import { questionTextOf, type Question } from "@/lib/answer/schema";
 import { createConversation, exchanges } from "./conversation";
 import type { PublicCatalog } from "./types";
 
@@ -25,17 +21,11 @@ export function useConversation(
   const messages = useMemo(() => exchanges(state.messages), [state.messages]);
   const submit = useCallback(
     (question: Question) => {
-      const parsed = questionSchema.safeParse(question);
-      if (
-        !parsed.success ||
-        chat.status === "submitted" ||
-        chat.status === "streaming"
-      )
-        return;
+      if (chat.status === "submitted" || chat.status === "streaming") return;
       void chat.sendMessage({
         role: "user",
-        parts: [{ type: "text", text: questionTextOf(parsed.data) }],
-        metadata: { question: parsed.data },
+        parts: [{ type: "text", text: questionTextOf(question) }],
+        metadata: { question },
       });
     },
     [chat],

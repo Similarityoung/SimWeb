@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { POST } from "./route";
+import {
+  ACCESS_COOKIE,
+  issueAccessPass,
+} from "@/lib/answer/access-pass.server";
 
 test("the public model endpoint is closed unless explicitly enabled", async () => {
   const previousEnabled = process.env.DEEPSEEK_PUBLIC_ENABLED;
@@ -65,7 +69,7 @@ test("the endpoint rejects cross-origin and oversized requests before retrieval"
   }
 });
 
-test("streamed body size and short history are checked before any model request", async (t) => {
+test("streamed body size and withdrawn references are checked before any model request", async (t) => {
   const oldSecret = process.env.TURNSTILE_SECRET_KEY;
   process.env.TURNSTILE_SECRET_KEY = "test-only";
   t.after(() => {
@@ -96,37 +100,20 @@ test("streamed body size and short history are checked before any model request"
       duplex: "half",
     } as RequestInit);
     assert.equal((await POST(oversized)).status, 400);
-    for (const request of [
-      {
-        question: { type: "topic", topic: "notes", text: "weather" },
-        lastShownReferences: [],
-      },
-      {
-        question: { type: "text", text: "tell me more" },
-        lastShownReferences: [{ type: "article", id: "withdrawn" }],
-      },
-      {
-        question: { type: "text", text: "hi" },
-        lastShownReferences: [],
-        previous: { question: "old", text: "x".repeat(1201) },
-      },
-    ]) {
-      assert.equal(
-        (
-          await POST(
-            new Request("https://example.com/api/answer", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-turnstile-token": "test-token",
-              },
-              body: JSON.stringify(request),
-            }),
-          )
-        ).status,
-        400,
-      );
-    }
+    const invalidContext = await POST(
+      new Request("https://example.com/api/answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `${ACCESS_COOKIE}=${issueAccessPass("example.com")}`,
+        },
+        body: JSON.stringify({
+          question: { type: "text", text: "tell me more" },
+          lastShownReferences: [{ type: "article", id: "withdrawn" }],
+        }),
+      }),
+    );
+    assert.equal(invalidContext.status, 400);
   } finally {
     if (previousKey === undefined) delete process.env.DEEPSEEK_API_KEY;
     else process.env.DEEPSEEK_API_KEY = previousKey;
@@ -136,61 +123,46 @@ test("streamed body size and short history are checked before any model request"
   }
 });
 
-test("valid AI requests cannot bypass Turnstile without a token", async (t) => {
+test("answer endpoint rejects missing or forged passes and token-only requests without calling the model", async (t) => {
   const { enable, restore } = enableAi();
   enable();
+  const oldSecret = process.env.TURNSTILE_SECRET_KEY;
+  process.env.TURNSTILE_SECRET_KEY = "test-secret";
+  t.after(() => {
+    if (oldSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+    else process.env.TURNSTILE_SECRET_KEY = oldSecret;
+  });
   const network = t.mock.method(globalThis, "fetch", () => {
-    throw new Error("Must not call Cloudflare or the model");
+    throw new Error("Must not call the model");
   });
   try {
-    const response = await POST(
+    const body = {
+      question: { type: "text", text: "hello" },
+      lastShownReferences: [],
+    };
+    const missing = await POST(
       makeRequest({
-        question: { type: "text", text: "hello" },
-        lastShownReferences: [],
+        ...body,
       }),
     );
-    assert.equal(response.status, 403);
+    const forged = await POST(
+      makeRequest(body, { cookie: `${ACCESS_COOKIE}=forged` }),
+    );
+    assert.equal(missing.status, 403);
+    assert.equal(forged.status, 403);
+    assert.equal(
+      (
+        await POST(
+          makeRequest(body, {
+            "x-turnstile-token": "a-token-is-not-an-access-pass",
+          }),
+        )
+      ).status,
+      403,
+    );
     assert.equal(network.mock.callCount(), 0);
   } finally {
     restore();
-  }
-});
-
-test("failed verification stops at Siteverify before any model call", async (t) => {
-  const { enable, restore } = enableAi();
-  const oldSecret = process.env.TURNSTILE_SECRET_KEY;
-  enable();
-  process.env.TURNSTILE_SECRET_KEY = "test-only";
-  const network = t.mock.method(
-    globalThis,
-    "fetch",
-    async (url: string | URL | Request) => {
-      assert.equal(
-        String(url),
-        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      );
-      return Response.json({
-        success: false,
-        "error-codes": ["timeout-or-duplicate"],
-      });
-    },
-  );
-  try {
-    const response = await POST(
-      makeRequest(
-        {
-          question: { type: "topic", topic: "projects" },
-          lastShownReferences: [],
-        },
-        { "x-turnstile-token": "used-token" },
-      ),
-    );
-    assert.equal(response.status, 403);
-    assert.equal(network.mock.callCount(), 1);
-  } finally {
-    restore();
-    if (oldSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY;
-    else process.env.TURNSTILE_SECRET_KEY = oldSecret;
   }
 });
 

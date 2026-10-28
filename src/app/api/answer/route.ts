@@ -7,7 +7,11 @@ import {
 import { InvalidContextError } from "@/lib/answer/context.server";
 import { createAnswerStream } from "@/lib/answer/service.server";
 import { isAiEnabled } from "@/config/ai.server";
-import { verifyTurnstile } from "@/lib/answer/turnstile.server";
+import {
+  ACCESS_COOKIE,
+  readCookie,
+  verifyAccessPass,
+} from "@/lib/answer/access-pass.server";
 
 export const maxDuration = 35;
 
@@ -61,10 +65,13 @@ export async function POST(request: Request): Promise<Response> {
   }
   const parsed = answerRequestSchema.safeParse(body);
   if (!parsed.success) return error(400, answerErrors.invalid);
-  const verification = await verifyTurnstile(request);
-  if (verification === "invalid") return error(403, answerErrors.verification);
-  if (verification === "unavailable")
-    return error(503, answerErrors.unavailable);
+  if (
+    !verifyAccessPass(
+      readCookie(request, ACCESS_COOKIE),
+      new URL(request.url).hostname,
+    )
+  )
+    return error(403, answerErrors.verification);
   try {
     return createUIMessageStreamResponse({
       stream: createAnswerStream(parsed.data, request.signal),

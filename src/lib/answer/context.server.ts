@@ -5,7 +5,6 @@ import type { PublishedArticle } from "@/lib/writing/catalog";
 import { getPublishedArticles } from "@/lib/writing/content.server";
 import { articleExcerpt, rankArticles } from "@/lib/writing/search.server";
 import {
-  answerSchema,
   questionTextOf,
   referenceKey,
   type Answer,
@@ -230,18 +229,17 @@ export function validateAnswer(
   answer: Answer,
   context: ReturnType<typeof buildAnswerContext>,
 ): Answer {
-  const parsed = answerSchema.parse(answer);
   if (
-    parsed.references.some((ref) => !context.candidates.has(referenceKey(ref)))
+    answer.references.some((ref) => !context.candidates.has(referenceKey(ref)))
   )
     throw new Error("Reference outside supplied context");
-  if (context.clarify && parsed.references.length)
+  if (context.clarify && answer.references.length)
     throw new Error("Ambiguous answer references");
   return {
-    ...parsed,
+    ...answer,
     references:
-      parsed.kind === "unmatched"
+      answer.kind === "unmatched"
         ? []
-        : (context.fixedReferences ?? parsed.references),
+        : (context.fixedReferences ?? answer.references),
   };
 }

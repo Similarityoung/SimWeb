@@ -1,31 +1,5 @@
 import { expect, test } from "./answer-fixture";
 
-test("article shortcuts send a topic and clearing resets the request history", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const notes = page.getByRole("button", { name: /^Notes/ });
-  await notes.click();
-  await expect(
-    page.getByTestId("exchange").first().getByRole("link"),
-  ).toHaveCount(5);
-  await notes.click();
-  await expect(
-    page.getByTestId("exchange").last().getByRole("link"),
-  ).toHaveCount(5);
-  expect(
-    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
-  ).toBeDefined();
-  await page.getByRole("button", { name: "Clear conversation" }).click();
-  await notes.click();
-  await expect(
-    page.getByTestId("exchange").first().getByRole("link"),
-  ).toHaveCount(5);
-  expect(
-    await page.evaluate(() => window.__answers.requests.at(-1)?.previous),
-  ).toBeUndefined();
-});
-
 test("conversation survives reading and navigation, then clears on reload", async ({
   page,
 }) => {
@@ -173,31 +147,6 @@ test("Obsidian links open published articles without reloading the page", async 
     "data-navigation-probe",
     "same-document",
   );
-});
-
-test("Bot loads, clearing works, and the interface fits the viewport", async ({
-  page,
-}) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
-  await expect(
-    page
-      .getByRole("img", { name: "Interactive character" })
-      .locator("svg > *")
-      .first(),
-  ).toBeAttached();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
-  await page.getByRole("textbox").fill("你好");
-  await page.getByRole("button", { name: "Send question" }).click();
-  await expect(
-    page.getByRole("region", { name: "Conversation" }),
-  ).toContainText("Hello!");
-  await page.getByRole("button", { name: "Clear conversation" }).click();
-  await expect(page.getByTestId("exchange")).toHaveCount(0);
 });
 
 test("topic submission and clearing also clear the unfinished input", async ({

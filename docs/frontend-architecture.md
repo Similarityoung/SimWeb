@@ -110,7 +110,11 @@ Projects 目录由 `ProjectDirectory` 用单列列表装配 `ProjectCard` 的 `d
 
 `service.server.ts` 负责短提示词及一次 `streamText + Output.object`，使用 `@ai-sdk/deepseek` 直连，关闭推理、重试和自动续写。它把 SDK 已解析的部分对象映射为固定 ID 的 `data-answer`，不手写 SSE 或部分 JSON 解析。最终必须没有上游错误、finishReason 为 stop、schema 与候选引用均有效，才发 complete 与正常 finish；错误事件后出现合法 JSON/stop 仍失败。总超时 30 秒与 request.signal 共同传递给上游。路由只完成 HTTP 检查、调用服务和返回 SDK UI 流。
 
+访问资格由 `/api/answer/access` 握手路由负责：缺少资格时单独进行 Turnstile Siteverify，成功后签发固定六小时、hostname 绑定的 HMAC Cookie；`/api/answer` 只校验签名及过期时间，再决定是否建立模型流。Cookie 固定到期、不滑动续期、不使用共享存储；无效或缺失时返回 403，模型调用数为零。HMAC 使用现有 Turnstile secret，轮换 secret 会使已有资格失效。Cookie 是可复制 bearer 凭据，不能提供即时撤销、身份绑定或精确共享额度；仍依赖边缘限流防止费用滥用。握手路由与模型路由分离，避免首次验证和验证后的问答重发被同一 `/api/answer` 规则混淆。线上 Cloudflare 与 Vercel 规则仍须在部署前核验，文档中的历史值不视为当前事实。依据 [Cloudflare Siteverify](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/) 与 [Vercel WAF 限流](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)。
+
 `_home/conversation.ts` 创建 SDK Chat，使用 DefaultChatTransport 将完整消息投影成短请求。只有完整业务结果、正常 stop 且无 error/abort/disconnect 才确认成功；卡片从公开目录解析，未完成结果没有卡片，也不进入短历史。`use-conversation.ts` 在共享根布局 Provider 内使用 useChat 订阅这唯一消息源，视图消息是派生结果，不另存一份会话。清空停止并替换 Chat 实例，旧回调只能影响旧实例；卸载停止请求。
+
+校验归数据入口：Composer 规范化自由输入，主题入口构造固定枚举，提交 Hook 与短请求投影直接使用 `Question`；服务端 HTTP 路由仍独立校验不可信请求。模型最终结构由 SDK 的 `Output.object({ schema: answerSchema })` 校验，`validateAnswer` 只检查本轮候选引用和澄清规则。浏览器流入口使用同一个 `answerDataSchema`；当前 AI SDK 7 的类型键是 `answer`、运行时查找键是 `data-answer`，配置两个键指向同一 schema，确保入口校验实际执行。浏览器目录可能落后于服务端，引用存在性仍在客户端成功判定时检查。资格 Cookie 在验签前检查格式和签名，验签后信任本站签发的声明结构，只判断协议版本、hostname 与到期时间；资格查询和问答是独立请求，各自鉴权。同步提交门禁保证一个 Chat 只提交一轮，资格流程按顺序执行，不维护共享 Promise；各异步阶段的取消边界继续保留。
 
 会话在同标签页站内导航中保留，刷新、关闭标签页或清空重置，不使用 localStorage、sessionStorage 或服务端持久化。请求处理中离开首页仍继续接收，返回显示真实进度。页面保留完整会话，每次只上传上一轮成功问答和最近非空卡片列表。客户端历史仅辅助理解，不是作者事实。
 
@@ -197,4 +201,4 @@ URL 是已提交条件的事实源，草稿不覆盖历史导航。原生 Histor
 | 改 Bot 动作或更换引擎    | components/bot 内部                    | 状态映射、卸载、键盘/减少动态效果  |
 | 调整顶部菜单             | config/site.ts + components/site       | 顶部点击进入目录而非触发问答       |
 
-ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。架构测试验证别名与相对路径导入限制。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试；`.client.test.ts` 使用普通 React 条件，其余保持 react-server 条件，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。
+ESLint 的 `no-restricted-imports` 已固化关键依赖方向，并以 `server-only` 检查服务端模块误用。测试命令递归发现 `src` 内的模块测试及根 `tests` 中的工具测试；`.client.test.ts` 使用普通 React 条件，其余保持 react-server 条件，端到端测试独立运行。模块测试围绕对外行为编写；端到端测试验证“首页提问 → 笔记卡片 → 正文 → 返回首页”，以及会话累积、刷新清空和移动端。

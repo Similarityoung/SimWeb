@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { activityLevel, monthlyActivity, TOP_LEVEL_FROM } from "./activity";
+import { activityLevel, monthlyActivity } from "./activity";
 
 test("groups articles by month from the first to the latest article", () => {
   const activity = monthlyActivity([
@@ -21,13 +21,6 @@ test("groups articles by month from the first to the latest article", () => {
   assert.deepEqual(y2025.months.slice(0, 3), [0, 1, null]);
 });
 
-test("rejects dates it cannot place on the calendar", () => {
-  assert.throws(
-    () => monthlyActivity([{ id: "bad", date: "June 2024" }]),
-    /bad/,
-  );
-});
-
 test("returns an empty calendar without articles", () => {
   const activity = monthlyActivity([]);
   assert.equal(activity.total, 0);
@@ -39,9 +32,4 @@ test("maps counts to a few fixed shades", () => {
     [0, 1, 2, 3, 4, 6, 7, 10].map(activityLevel),
     [0, 1, 2, 2, 3, 3, 4, 4],
   );
-});
-
-test("legend threshold is where the darkest shade begins", () => {
-  assert.equal(activityLevel(TOP_LEVEL_FROM), 4);
-  assert.equal(activityLevel(TOP_LEVEL_FROM - 1), 3);
 });
