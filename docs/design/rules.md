@@ -1,6 +1,6 @@
 # 个人站设计规则
 
-状态：v0.4（2026-10-28）。Phase 0 守卫、Phase 1 原子控件、Phase 2 字号阶梯、Phase 3 CI 加固已落地；分支保护与视觉回归仍需外部配置或后续迭代。
+状态：v0.5（2026-10-28）。Phase 0 守卫、Phase 1 原子控件、Phase 2 字号阶梯、Phase 3 CI 加固、v0.5 交互层（卡片浮空、输入焦点、滚动渐隐、骨架扫光、筛选滑块）已落地；分支保护与视觉回归仍需外部配置或后续迭代。
 
 本表是规则 ID 的唯一登记处：规则从这里派生；令牌值以 [globals.css](../../src/app/globals.css) 为准，行为以 [frontend-refactor-spec.md](../frontend-refactor-spec.md) 为准，结构以 [frontend-architecture.md](../frontend-architecture.md) 为准。
 
@@ -23,7 +23,9 @@
 | VIS-02  | 默认 1px 低对比 alpha 边框；高分屏 0.5px 发丝线；同一容器不套第二层边框                                                  | CDS 01 §1.4                       | 评审 + `check:design` | 采用                                                                     |
 | VIS-03  | 单一强调色 + base / hover / soft 三态；只用于交互、焦点、关键信息                                                        | CDS 01 §1.2                       | 令牌                  | 采用结构，色值用 `#c2431f` / `#ed9478`                                   |
 | VIS-04  | 圆角按控件尺寸分级；嵌套圆角 = 外圆角 − 内边距                                                                           | CDS 01 §1.3                       | 令牌 + 评审           | **直接采用原值**：2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24px，见 §5.1 |
-| VIS-05  | 焦点必须可见；1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；焦点环对比 ≥3:1；全局 ring + 容器例外                             | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | axe + `test:ui`       | **调整后采用**，见 §5.2                                                  |
+| VIS-05  | 焦点必须可见；1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；焦点环对比 ≥3:1；全局 ring + 容器例外                             | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | axe + `test:ui`       | **调整后采用**，见 §5.2 / §5.2b                                          |
+| VIS-06  | 卡片悬停上浮 1.5% Y / 0.5% X，叠加底部径向微光；只在不减动态且有 hover 的设备生效；键盘焦点同态                          | CDS 02 §2.6                       | 评审 + `test:ui`      | **调整后采用**：暖色微光，不用 3D 透视                                   |
+| VIS-07  | 筛选列表的活动项用共享 `layoutId` 滑动胶囊；200ms 内完成位移；减动态直接切换                                             | CDS 01 §2.2                       | 评审                  | 采用；仅用于 Categories / Tags 这类短列表                                |
 | TYPE-01 | 7 阶字号阶梯 + 卡片标题例外；字号照搬，CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24；正文不用 mono，meta 用 mono | CDS 01 §1.5 + CJK 阅读            | 令牌 + `test:ui`      | **调整后采用**，见 §5.3                                                  |
 | TYPE-02 | 间距由行高推导：段落 0.75×、条目 0.5×、区块 2–3×；禁止零散 magic number                                                  | CDS 03 §3.1                       | 令牌 + 评审           | 采用公式；会话区输出 18px / 12px，区块仍用 2–3×                          |
 
@@ -37,19 +39,20 @@
 | MOT-04   | 减动态下内容与状态含义保留，只停装饰；每个无限动画有静态回退                        | WCAG + CDS 04     | `test:ui`             | 采用                                                          |
 | STATE-01 | 空 / 加载 / 流式 / 错 / 完成五态成套，各有文案、视觉、aria                          | CDS 03            | e2e fixture + 评审    | 采用；现有 loading / streaming / error / complete，空会话待补 |
 | STATE-02 | 等待态安静、非进度型；三点 1.9s（延迟 0.15 / 0.3s）；不显示百分比或进度环           | CDS 03 §3.2.1     | 评审 + `test:ui`      | 直接采用原值                                                  |
+| STATE-03 | 骨架屏 105° 非线性扫光 1.6s；减动态隐藏扫光，保留静态占位块                         | CDS v2 §3.5       | `test:ui` + 评审      | 采用                                                          |
 
 候选：**STATE-03** 复制/保存反馈 2.5s 衰减，同一操作不重复播报；可直接并进 STATE-02。
 
 ## 三、输入、滚动与可访问性
 
-| ID      | 规则                                                                                                       | 依据                   | 执行             | 决定             |
-| ------- | ---------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------- | ---------------- |
-| INT-01  | 输入法守卫：`isComposing` / `keyCode 229` / `compositionend` 后 500ms 假回车；Enter 提交，Shift+Enter 换行 | CDS 03 §3.3.2          | 单测 + 评审      | 直接采用原值     |
-| INT-02  | 自动跟随：40px 容差 + 150ms 用户滚动冷却；用户上滚后不抢视口                                               | CDS 06 §6.4            | 单测 / e2e       | 直接采用原值     |
-| INT-03  | 可滚动方向 28px、7 档非线性渐隐；不可滚动时不显示                                                          | CDS 04 §4.3            | `test:ui` + 评审 | 直接采用原值     |
-| INT-04  | 正文 / 代码 / 表格各自内部滚动；320px 无整页横向滚动；长链接与行内代码可换行                               | 需求约定 + CDS 06 §6.5 | `test:ui`        | 采用（已有部分） |
-| A11Y-01 | 所有交互元素有可访问名称与可见焦点；图标按钮必须有 `aria-label`；键盘顺序 = 视觉顺序                       | WCAG + CDS 08          | axe + e2e        | 采用             |
-| A11Y-02 | 正文 4.5:1，大字/图形 3:1；暗色不用纯黑/纯白；颜色不是唯一信息载体                                         | WCAG                   | axe + 评审       | 采用             |
+| ID      | 规则                                                                                                       | 依据                   | 执行             | 决定                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------- | ---------------------------------------------------- |
+| INT-01  | 输入法守卫：`isComposing` / `keyCode 229` / `compositionend` 后 500ms 假回车；Enter 提交，Shift+Enter 换行 | CDS 03 §3.3.2          | 单测 + 评审      | 直接采用原值                                         |
+| INT-02  | 自动跟随：40px 容差 + 150ms 用户滚动冷却；用户上滚后不抢视口                                               | CDS 06 §6.4            | 单测 / e2e       | 直接采用原值                                         |
+| INT-03  | 可滚动方向 28px、7 档非线性渐隐；不可滚动时不显示                                                          | CDS 04 §4.3            | `test:ui` + 评审 | 直接采用原值；用背景色叠层实现，避免 mask 裁掉焦点环 |
+| INT-04  | 正文 / 代码 / 表格各自内部滚动；320px 无整页横向滚动；长链接与行内代码可换行                               | 需求约定 + CDS 06 §6.5 | `test:ui`        | 采用（已有部分）                                     |
+| A11Y-01 | 所有交互元素有可访问名称与可见焦点；图标按钮必须有 `aria-label`；键盘顺序 = 视觉顺序                       | WCAG + CDS 08          | axe + e2e        | 采用                                                 |
+| A11Y-02 | 正文 4.5:1，大字/图形 3:1；暗色不用纯黑/纯白；颜色不是唯一信息载体                                         | WCAG                   | axe + 评审       | 采用                                                 |
 
 候选：**INT-05** 网格方向键漫游 + Home/End；先作为 A11Y-01 的子项，主题卡改动时升级为正式规则。
 
@@ -149,12 +152,43 @@ Claude 的三层配方：
 
 - 删除旧的全局 `outline-2 outline-offset-4`，以及 Button / Input / Select 的 `outline-none`、旧 `ring-*`；它们会压掉新的环。
 - 逐组件补焦点：Button、Input、Select、Textarea、链接卡片、导航链接、Mermaid 控件。
-- Composer 用 `has-[input:focus-visible]:focus-ring` 让整个输入容器响应内部输入框的焦点，输入框本身 `data-focus-ring="none"`。
+- Composer 不再给整个容器加硬环：输入框标记 `data-focus-ring="none"`，容器用 `.composer-shell` 做表面焦点（见 §5.2b）；其他控件仍走全局 `:focus-visible`。
 - Select 用 `data-highlighted` 处理键盘高亮，不要复用 `:focus-visible`；`SelectItem` 标记 `data-focus-ring="none"`。
 - 行内链接因跨行，额外加 `text-decoration: underline`，保证环不可见时仍有焦点提示。
 - 不使用 `:focus`，只用 `:focus-visible`，避免鼠标点击出现焦点环。
 - 焦点元素不要放在 `overflow: hidden` 容器里；必要时给父级留 2px 内边距。
 - 焦点时环会替换组件自身的 `box-shadow`；需要同时保留阴影的浮层把环追加到原 `box-shadow` 列表。
+
+### 5.2b Composer 表面焦点
+
+文本输入框是持续键盘交互的容器，点击即触发 `:focus-visible`，再套一个外部强调色硬环会与周围的卡片悬停语言冲突。v0.5 把 Composer 改为“表面焦点”：焦点仍可见、可度量，但使用与卡片一致的边框 / 背景过渡。
+
+```css
+.composer-shell {
+  border: 1px solid var(--border-strong);
+  background-color: var(--background);
+  box-shadow:
+    inset 0 0 0 1px transparent,
+    0 0 0 0 transparent;
+  transition:
+    border-color var(--duration-base) var(--ease-cds-out),
+    background-color var(--duration-base) var(--ease-cds-out),
+    box-shadow var(--duration-base) var(--ease-cds-out);
+}
+
+.composer-shell:focus-within {
+  border-color: var(--foreground);
+  background-color: color-mix(in srgb, var(--muted) 58%, var(--background));
+  box-shadow:
+    inset 0 0 0 1px var(--foreground),
+    0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+```
+
+- 1px 边框 + 1px `inset` 前景色组成 2px 有效焦点指示，避免改变边框宽度引发布局跳动；前景色与画布对比 > 3:1。
+- 4px 强调色柔光只作辅助，不承担对比度；悬停与焦点都用 200ms `--ease-cds-out`，从当前值过渡。
+- 输入框本身仍是 `data-focus-ring="none"`，避免内外双环；发送按钮保留全局 `:focus-visible` 环。
+- `tests/ui/focus.spec.ts` 锁定焦点前后的边框色变化、`inset` 阴影与 200ms 过渡。
 
 ### 5.3 字号与行高
 
@@ -200,6 +234,10 @@ Claude 的三层配方：
 | 时长角色 | press 60ms / snap 120ms / base 200ms / sheet 300ms / settle 450ms                                           |
 | 缓动     | enter `.22,1,.36,1`；out `.165,.84,.44,1`；snap `.32,.72,0,1`；overshoot `.34,1.3,.64,1`；pulse `.4,0,.2,1` |
 | 滚动渐隐 | 28px；7 档 alpha：.15 / .30 / .45 / .60 / .75 / .87 / 1.0                                                   |
+| 卡片悬停 | `scaleY(1.015) scaleX(1.005)`；底部径向微光；200ms `--ease-cds-out`；减动态与触屏不位移                     |
+| 筛选滑块 | 共享 `layoutId`；200ms `easeOut`；减动态时长 0                                                              |
+| 骨架扫光 | 105°；1.6s 循环；减动态隐藏                                                                                 |
+| 输入焦点 | 1px 边框 + 1px inset；4px 强调色 16% 柔光；200ms                                                            |
 | 等待点   | 1.9s 循环；延迟 0.15s / 0.3s；点径 3px；间距 3.5px                                                          |
 | 滚动跟随 | 40px 容差；150ms 冷却                                                                                       |
 | 输入法   | 合成结束后 500ms 内的 Enter 丢弃                                                                            |
@@ -225,6 +263,19 @@ Claude 的三层配方：
 - `sync-writing` 用 `GITHUB_TOKEN` 直推 main，不会触发新的 workflow；给该 workflow 配 bypass，或改成 PR。
 - 视觉回归、间距规则、多浏览器矩阵暂未接入。
 
+### 5.6 v0.5 交互层映射
+
+| 规则     | 实现                                                       | 覆盖范围                                                        |
+| -------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| VIS-05   | `.composer-shell` + `data-focus-ring="none"`               | 首页 Composer；`tests/ui/focus.spec.ts`                         |
+| VIS-06   | `.card-lift`（`::after` 底部径向微光）                     | ArticleCard、ProjectCard；`group-hover` / `group-focus-visible` |
+| VIS-07   | `FilterActivePill`（`motion` 共享 `layoutId`）             | Notes 桌面端 Categories / Tags                                  |
+| INT-03   | `.scroll-fade` 上下叠层 + `ResizeObserver` / `scroll` 同步 | 会话滚动区；`tests/ui/scroll-fade.spec.ts`                      |
+| STATE-02 | `.waiting-dots` / `.waiting-dot` / `.stream-caret`         | 等待态与流式光标；减动态静态回退                                |
+| STATE-03 | `.skeleton-sweep`                                          | Notes 搜索骨架；减动态隐藏扫光                                  |
+
+动效令牌：`--ease-cds-enter / out / snap / overshoot / pulse` 与 `--duration-press / snap / base / sheet / settle` 定义在 `globals.css`；组件不再手写新的三次贝塞尔或时长。
+
 ---
 
 ## 六、决策台账
@@ -233,6 +284,11 @@ Claude 的三层配方：
 | ------------------------------ | ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
 | 圆角                           | 直接照搬 2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24                | CDS 01 §1.3                       | 无                                                                                      |
 | 焦点环                         | 1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；全局 ring + 容器例外       | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | 厚度按分辨率调整；改实现方式，不改色相                                                  |
+| Composer 焦点                  | 表面焦点：边框 + inset 共 2px 前景色，4px 强调色柔光；200ms 过渡    | CDS 02 §2.6 + 用户反馈            | 点击输入框不再出现硬环；焦点仍可度量，其他控件保留全局环                                |
+| 卡片悬停                       | 1.5% / 0.5% 上浮 + 底部暖色微光；键盘焦点同态                       | CDS v2 §2.6                       | 不采用 3D 透视与冷色底色；触屏与减动态不位移                                            |
+| 滚动渐隐                       | 28px 7 档叠层，仅在可滚动方向出现                                   | CDS 04 §4.3                       | 用背景叠层替代 mask，防止裁掉滚动区焦点环                                               |
+| 筛选滑块                       | 共享 `layoutId` 的活动胶囊，200ms                                   | CDS 01 §2.2                       | 只用于短筛选列表；长列表与移动端 Select 不套用                                          |
+| 骨架扫光                       | 105°、1.6s；减动态静态占位                                          | CDS v2 §3.5                       | 不采用双模 Wave/Lockstep 全套，先上单模                                                 |
 | 字号                           | 照搬 7 阶字号；CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24 | CDS 01 §1.5 + CJK 阅读            | 行高与 Claude 不同；页面 H1 36px；文章 H1 30/36（sm 以上 36/40）；不启用 16/17 光学缩放 |
 | 输入框移动端                   | `<640px` 保底 16px                                                  | iOS Safari 聚焦缩放               | 手册矩阵的移动端地板，补上漏项                                                          |
 | 表面与强调色                   | 采用层级语法；色值保留本站暖色                                      | CDS 01 §1.2                       | 色值不同                                                                                |
@@ -250,5 +306,6 @@ Claude 的三层配方：
 5. `STATE-01`：空 / 加载 / 流式 / 错 / 完成五态 fixture（已接入 `test:ui`）；
 6. `VIS-05`：`:focus-visible` 在 1x / 2x 下的环宽与容器例外（已接入 `test:ui`）；
 7. `TYPE-01`：会话、卡片、文章的关键字号 / 行高（已接入 `test:ui`）。
+8. v0.5：`VIS-05` Composer 表面焦点、`INT-03` 滚动渐隐、`VIS-06` 卡片浮空类、`STATE-02/03` 等待点与骨架扫光减动态回退（均已接入 `test:ui` 或评审清单）。
 
 `test:ui` 与 `check:design` 已接入 `.github/workflows/ui.yml`；在 GitHub 分支保护里设 required 之前，先保持 advisory。其余规则先进评审清单，稳定后再升级为 CI。
