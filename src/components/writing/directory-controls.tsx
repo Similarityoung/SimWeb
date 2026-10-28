@@ -81,6 +81,7 @@ export function DirectorySearch({
   onSubmit,
   onCompositionStart,
   onCompositionEnd,
+  onClear,
 }: {
   kind: WritingKind;
   value: string;
@@ -89,8 +90,10 @@ export function DirectorySearch({
   onSubmit?: FormEventHandler<HTMLFormElement>;
   onCompositionStart?: () => void;
   onCompositionEnd?: CompositionEventHandler<HTMLInputElement>;
+  onClear?: () => void;
 }) {
   const label = `Search ${kind === "notes" ? "Notes" : "Thoughts"}`;
+  const showClear = Boolean(onClear && value);
   return (
     <form role="search" action={`/${kind}`} onSubmit={onSubmit} lang="en">
       <label htmlFor={`${kind}-search`} className="sr-only">
@@ -114,9 +117,23 @@ export function DirectorySearch({
           onCompositionEnd={onCompositionEnd}
           placeholder={`Search ${kind}…`}
           data-focus-ring="none"
-          className="field-shell h-11 rounded-lg pr-4 pl-10"
+          className="field-shell h-11 rounded-lg pr-11 pl-10"
           autoComplete="off"
         />
+        {showClear && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={(event) => {
+              const input = event.currentTarget.previousElementSibling;
+              onClear?.();
+              if (input instanceof HTMLInputElement) input.focus();
+            }}
+            className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/10 hover:text-accent"
+          >
+            <X className="size-4" strokeWidth={1.5} aria-hidden />
+          </button>
+        )}
       </div>
     </form>
   );

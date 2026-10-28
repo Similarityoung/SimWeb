@@ -41,7 +41,7 @@
 | STATE-02 | 等待态安静、非进度型；三点 1.9s（延迟 0.15 / 0.3s）；不显示百分比或进度环           | CDS 03 §3.2.1     | 评审 + `test:ui`      | 直接采用原值                                                  |
 | STATE-03 | 骨架屏 105° 非线性扫光 1.6s；减动态隐藏扫光，保留静态占位块                         | CDS v2 §3.5       | `test:ui` + 评审      | 采用                                                          |
 
-候选：**STATE-03** 复制/保存反馈 2.5s 衰减，同一操作不重复播报；可直接并进 STATE-02。
+候选：**STATE-04** 复制/保存反馈 2.5s 衰减，同一操作不重复播报；可直接并进 STATE-02。
 
 ## 三、输入、滚动与可访问性
 
@@ -51,6 +51,7 @@
 | INT-02  | 自动跟随：40px 容差 + 150ms 用户滚动冷却；用户上滚后不抢视口                                               | CDS 06 §6.4            | 单测 / e2e       | 直接采用原值                                         |
 | INT-03  | 可滚动方向 28px、7 档非线性渐隐；不可滚动时不显示                                                          | CDS 04 §4.3            | `test:ui` + 评审 | 直接采用原值；用背景色叠层实现，避免 mask 裁掉焦点环 |
 | INT-04  | 正文 / 代码 / 表格各自内部滚动；320px 无整页横向滚动；长链接与行内代码可换行                               | 需求约定 + CDS 06 §6.5 | `test:ui`        | 采用（已有部分）                                     |
+| INT-06  | 搜索框清除用站内图标按钮，有可访问名称，点击后焦点回到输入框；隐藏浏览器原生 search cancel                 | 用户反馈               | `test:ui`        | 采用                                                 |
 | A11Y-01 | 所有交互元素有可访问名称与可见焦点；图标按钮必须有 `aria-label`；键盘顺序 = 视觉顺序                       | WCAG + CDS 08          | axe + e2e        | 采用                                                 |
 | A11Y-02 | 正文 4.5:1，大字/图形 3:1；暗色不用纯黑/纯白；颜色不是唯一信息载体                                         | WCAG                   | axe + 评审       | 采用                                                 |
 
@@ -263,14 +264,15 @@ Claude 的三层配方：
 
 ### 5.6 v0.5 交互层映射
 
-| 规则     | 实现                                                       | 覆盖范围                                                        |
-| -------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| VIS-05   | `.field-shell` + `data-focus-ring="none"`                  | Composer、Notes 搜索框；`tests/ui/focus.spec.ts`                |
-| VIS-06   | `.card-lift`（纯上浮，无光晕）                             | ArticleCard、ProjectCard；`group-hover` / `group-focus-visible` |
-| VIS-07   | `FilterActivePill`（`motion` 共享 `layoutId`）             | Notes 桌面端 Categories / Tags                                  |
-| INT-03   | `.scroll-fade` 上下叠层 + `ResizeObserver` / `scroll` 同步 | 会话滚动区；`tests/ui/scroll-fade.spec.ts`                      |
-| STATE-02 | `.waiting-dots` / `.waiting-dot` / `.stream-caret`         | 等待态与流式光标；减动态静态回退                                |
-| STATE-03 | `.skeleton-sweep`                                          | Notes 搜索骨架；减动态隐藏扫光                                  |
+| 规则     | 实现                                                                     | 覆盖范围                                                        |
+| -------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| VIS-05   | `.field-shell` + `data-focus-ring="none"`                                | Composer、Notes 搜索框；`tests/ui/focus.spec.ts`                |
+| VIS-06   | `.card-lift`（纯上浮，无光晕）                                           | ArticleCard、ProjectCard；`group-hover` / `group-focus-visible` |
+| VIS-07   | `FilterActivePill`（`motion` 共享 `layoutId`）                           | Notes 桌面端 Categories / Tags                                  |
+| INT-03   | `.scroll-fade` 上下叠层 + `ResizeObserver` / `scroll` 同步               | 会话滚动区；`tests/ui/scroll-fade.spec.ts`                      |
+| STATE-02 | `.waiting-dots` / `.waiting-dot` / `.stream-caret`                       | 等待态与流式光标；减动态静态回退                                |
+| STATE-03 | `.skeleton-sweep`                                                        | Notes 搜索骨架；减动态隐藏扫光                                  |
+| INT-06   | `DirectorySearch` 自定义清除按钮 + 隐藏 `::-webkit-search-cancel-button` | Notes / Thoughts 搜索；点击后回焦输入框                         |
 
 动效令牌：`--ease-cds-enter / out / snap / overshoot / pulse` 与 `--duration-press / snap / base / sheet / settle` 定义在 `globals.css`；组件不再手写新的三次贝塞尔或时长。
 
@@ -286,6 +288,7 @@ Claude 的三层配方：
 | 卡片悬停                       | 1.5% / 0.5% 上浮；键盘焦点同态                                      | CDS v2 §2.6                       | 去掉底部暖色微光；不采用 3D 透视与冷色底色；触屏与减动态不位移                          |
 | 滚动渐隐                       | 28px 7 档叠层，仅在可滚动方向出现                                   | CDS 04 §4.3                       | 用背景叠层替代 mask，防止裁掉滚动区焦点环                                               |
 | 筛选滑块                       | 共享 `layoutId` 的活动胶囊，200ms                                   | CDS 01 §2.2                       | 只用于短筛选列表；长列表与移动端 Select 不套用                                          |
+| 搜索清除                       | 站内 X 图标按钮；隐藏浏览器原生蓝色 cancel                          | 用户反馈                          | 清除只清搜索词，保留分类 / 标签；点击后回焦输入框                                       |
 | 骨架扫光                       | 105°、1.6s；减动态静态占位                                          | CDS v2 §3.5                       | 不采用双模 Wave/Lockstep 全套，先上单模                                                 |
 | 字号                           | 照搬 7 阶字号；CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24 | CDS 01 §1.5 + CJK 阅读            | 行高与 Claude 不同；页面 H1 36px；文章 H1 30/36（sm 以上 36/40）；不启用 16/17 光学缩放 |
 | 输入框移动端                   | `<640px` 保底 16px                                                  | iOS Safari 聚焦缩放               | 手册矩阵的移动端地板，补上漏项                                                          |
@@ -305,5 +308,6 @@ Claude 的三层配方：
 6. `VIS-05`：`:focus-visible` 在 1x / 2x 下的环宽与容器例外（已接入 `test:ui`）；
 7. `TYPE-01`：会话、卡片、文章的关键字号 / 行高（已接入 `test:ui`）。
 8. v0.5：`VIS-05` Composer / Notes 搜索框表面焦点、`INT-03` 滚动渐隐、`VIS-06` 卡片上浮、`STATE-02/03` 等待点与骨架扫光减动态回退（均已接入 `test:ui` 或评审清单）。
+9. `INT-06`：搜索框清除按钮的可访问名称、清空值与回焦（已接入 `test:ui`）。
 
 `test:ui` 与 `check:design` 已接入 `.github/workflows/ui.yml`；在 GitHub 分支保护里设 required 之前，先保持 advisory。其余规则先进评审清单，稳定后再升级为 CI。

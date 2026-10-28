@@ -98,3 +98,18 @@ test("notes search uses the shared surface focus", async ({ page }) => {
   expect(after.shadow).not.toBe(before.shadow);
   expect(after.outline).toBe("none");
 });
+
+test("notes search clears from its own button", async ({ page }) => {
+  await page.goto("/notes");
+  const search = page.getByRole("searchbox", { name: "Search Notes" });
+  const clear = page.getByRole("button", { name: "Clear search" });
+  await expect(clear).toHaveCount(0);
+
+  await search.fill("agent");
+  await expect(clear).toBeVisible();
+  await clear.click();
+
+  await expect(search).toHaveValue("");
+  await expect(clear).toHaveCount(0);
+  await expect(search).toBeFocused();
+});

@@ -267,6 +267,10 @@ export function DirectoryClient({
             event.preventDefault();
             if (!composing.current) submitText(draft);
           }}
+          onClear={() => {
+            composing.current = false;
+            submitText("");
+          }}
           onCompositionStart={() => {
             composing.current = true;
             cancelInput();
