@@ -113,7 +113,8 @@ export function DirectorySearch({
           onCompositionStart={onCompositionStart}
           onCompositionEnd={onCompositionEnd}
           placeholder={`Search ${kind}…`}
-          className="h-11 rounded-lg bg-transparent pr-4 pl-10 shadow-none dark:bg-transparent"
+          data-focus-ring="none"
+          className="field-shell h-11 rounded-lg pr-4 pl-10"
           autoComplete="off"
         />
       </div>

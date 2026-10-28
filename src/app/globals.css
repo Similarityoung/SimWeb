@@ -70,6 +70,8 @@
   --focus-ring-width: 2px;
   --focus-ring-glow: 0 0 6px 1px
     color-mix(in srgb, var(--accent) 25%, transparent);
+  --field-focus-shadow: 0 2px 8px
+    color-mix(in srgb, var(--foreground) 5%, transparent);
   --duration-press: 60ms;
   --duration-snap: 120ms;
   --duration-base: 200ms;
@@ -140,8 +142,8 @@
   }
 }
 
-/* Container focus for the composer: a card-like surface shift, not a ring. */
-.composer-shell {
+/* Shared surface focus for text fields: a card-like shift, not a ring. */
+.field-shell {
   border: 1px solid var(--border-strong);
   background-color: var(--background);
   box-shadow: 0 1px 2px transparent;
@@ -152,61 +154,40 @@
 }
 
 @media (hover: hover) {
-  .composer-shell:hover {
+  .field-shell:hover {
     border-color: color-mix(in srgb, var(--foreground) 26%, transparent);
     background-color: color-mix(in srgb, var(--muted) 38%, var(--background));
   }
 }
 
-.composer-shell:focus-within {
+.field-shell:focus,
+.field-shell:focus-within {
   border-color: color-mix(in srgb, var(--foreground) 50%, transparent);
   background-color: color-mix(in srgb, var(--muted) 52%, var(--background));
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--foreground) 5%, transparent);
+  box-shadow: var(--field-focus-shadow);
 }
 
-.composer-shell input {
+.field-shell,
+.field-shell input {
   caret-color: var(--accent);
 }
 
-/* Card hover: 1.5% vertical lift and a bottom radial glow. */
+/* Card hover: a 1.5% lift, with no glow or extra surface. */
 .card-lift {
-  position: relative;
-  isolation: isolate;
   transition:
     transform var(--duration-base) var(--ease-cds-out),
     border-color var(--duration-base) var(--ease-cds-out),
     background-color var(--duration-base) var(--ease-cds-out);
 }
 
-.card-lift::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: -1;
-  height: 55%;
-  border-radius: inherit;
-  background: radial-gradient(
-    120% 100% at 50% 100%,
-    color-mix(in srgb, var(--accent) 10%, transparent) 0%,
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-cds-out);
-  pointer-events: none;
-  content: "";
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .group:hover .card-lift,
-  .group:focus-visible .card-lift {
+  .group:hover .card-lift {
     transform: scaleY(1.015) scaleX(1.005);
   }
+}
 
-  .group:hover .card-lift::after,
-  .group:focus-visible .card-lift::after {
-    opacity: 1;
-  }
+.group:focus-visible .card-lift {
+  transform: scaleY(1.015) scaleX(1.005);
 }
 
 .scroll-fade {
@@ -372,10 +353,15 @@
   box-shadow: none;
 }
 
+:focus-visible[data-focus-ring="none"].field-shell {
+  box-shadow: var(--field-focus-shadow);
+}
+
 @media (forced-colors: active) {
   :focus-visible:not([data-focus-ring="none"]),
   .focus-ring,
-  .composer-shell:focus-within {
+  .field-shell:focus,
+  .field-shell:focus-within {
     outline: 2px solid CanvasText;
     box-shadow: none;
   }

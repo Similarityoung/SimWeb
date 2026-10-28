@@ -72,3 +72,29 @@ for (const density of [1, 2] as const) {
     }
   });
 }
+
+test("notes search uses the shared surface focus", async ({ page }) => {
+  await page.goto("/notes");
+  const search = page.getByRole("searchbox", { name: "Search Notes" });
+  const before = await search.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      border: style.borderTopColor,
+      shadow: style.boxShadow,
+      outline: style.outlineStyle,
+    };
+  });
+  await search.focus();
+  await page.waitForTimeout(250);
+  const after = await search.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      border: style.borderTopColor,
+      shadow: style.boxShadow,
+      outline: style.outlineStyle,
+    };
+  });
+  expect(after.border).not.toBe(before.border);
+  expect(after.shadow).not.toBe(before.shadow);
+  expect(after.outline).toBe("none");
+});
