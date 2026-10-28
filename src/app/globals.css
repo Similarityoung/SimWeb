@@ -129,6 +129,11 @@
   ::selection {
     @apply bg-foreground text-background;
   }
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
 
 @keyframes enter {
