@@ -26,7 +26,7 @@ export function SiteHeader() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "inline-flex min-h-11 items-center rounded-md px-[3px] font-mono text-[10px] whitespace-nowrap transition-colors hover:bg-muted hover:text-foreground min-[380px]:px-[7px] min-[380px]:text-[11px] sm:px-[9px] sm:text-xs",
+                "inline-flex min-h-11 items-center rounded-md px-[3px] font-mono text-[10px] whitespace-nowrap transition-colors hover:bg-muted hover:text-foreground min-[380px]:px-[7px] min-[380px]:text-caption sm:px-[9px]",
                 active ? "text-accent" : "text-muted-foreground",
               )}
             >

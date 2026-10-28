@@ -8,7 +8,7 @@ const KINDS = [
   { kind: "thoughts", label: "thoughts", href: "/thoughts" },
 ] as const;
 
-const LABEL = "font-mono text-xs leading-4 text-muted-foreground";
+const LABEL = "font-mono text-caption text-muted-foreground";
 export function WritingStats({
   articles,
 }: {
@@ -28,7 +28,7 @@ export function WritingStats({
             href={href}
             className="group flex min-w-0 flex-col gap-1 rounded-md py-1 text-foreground/80 transition-colors duration-200 hover:text-accent focus-visible:text-accent motion-reduce:transition-none md:flex-row md:items-baseline md:gap-2 md:py-0.5"
           >
-            <span className="text-base font-medium leading-7 tabular-nums">
+            <span className="text-card-title font-medium tabular-nums">
               {articles.filter((article) => article.kind === kind).length}
             </span>
             <span

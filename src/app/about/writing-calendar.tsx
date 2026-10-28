@@ -17,7 +17,7 @@ const SHADES = [
 ] as const;
 // Cells stretch to the column but stay square, so the grid reads as a heatmap.
 const CELL = "aspect-square rounded-xs";
-const LABEL = "font-mono text-xs text-muted-foreground";
+const LABEL = "font-mono text-caption text-muted-foreground";
 
 const pad = (month: number) => String(month).padStart(2, "0");
 
@@ -53,7 +53,7 @@ function Cell({
         <span
           aria-hidden
           className={cn(
-            "invisible absolute bottom-full z-10 mb-1.5 rounded-md bg-foreground px-2 py-1 text-[11px] leading-4 whitespace-nowrap text-background opacity-0 transition-opacity before:absolute before:inset-x-0 before:top-full before:h-1.5 group-hover:visible group-hover:opacity-100 group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100 group-open:visible group-open:opacity-100",
+            "invisible absolute bottom-full z-10 mb-1.5 rounded-md bg-foreground px-2 py-1 text-caption whitespace-nowrap text-background opacity-0 transition-opacity before:absolute before:inset-x-0 before:top-full before:h-1.5 group-hover:visible group-hover:opacity-100 group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100 group-open:visible group-open:opacity-100",
             tooltipAnchor(month),
           )}
         >

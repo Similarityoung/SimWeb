@@ -10,7 +10,7 @@ export function PageFrame({ children }: { children: ReactNode }) {
 
 export function PageTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="text-4xl font-semibold leading-tight tracking-[-0.045em]">
+    <h1 className="text-4xl leading-10 font-semibold tracking-[-0.045em]">
       {children}
       <span className="text-accent">.</span>
     </h1>
@@ -31,9 +31,7 @@ export function PageShell({
       <header className="mb-10 max-w-xl sm:mb-12">
         <PageTitle>{title}</PageTitle>
         {description && (
-          <p className="mt-5 text-[15px] leading-7 text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-5 text-body text-muted-foreground">{description}</p>
         )}
       </header>
       {children}

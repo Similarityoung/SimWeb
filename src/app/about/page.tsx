@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: TITLE };
 
 function Slogan() {
   return (
-    <p className="mt-5 flex w-fit items-center gap-3 border-l-[3px] border-accent bg-muted px-4 py-2 text-base font-medium tracking-[0.04em] text-foreground">
+    <p className="mt-5 flex w-fit items-center gap-3 border-l-[3px] border-accent bg-muted px-4 py-2 text-card-title font-medium tracking-[0.04em] text-foreground">
       {site.slogan.map((phrase, index) => (
         <Fragment key={phrase}>
           {index > 0 && (
@@ -60,7 +60,7 @@ export default function AboutPage() {
         <Slogan />
       </header>
 
-      <article className="mt-8 max-w-3xl text-base leading-7 text-foreground/80 sm:leading-[30px]">
+      <article className="mt-8 max-w-3xl text-prose text-foreground/80">
         {site.about.map((paragraph) => (
           <LeadParagraph key={paragraph} text={paragraph} />
         ))}
