@@ -15,7 +15,7 @@ export function WritingStats({
   articles: readonly Pick<ArticleSummary, "kind">[];
 }) {
   return (
-    <ul className="grid min-w-0 grid-cols-3 items-end gap-2 rounded-lg border border-border bg-muted/40 p-3 md:grid-cols-1 md:items-stretch md:gap-1 md:px-4">
+    <ul className="grid min-w-0 grid-cols-3 items-end gap-2 rounded-panel border border-border bg-muted/40 p-3 md:grid-cols-1 md:items-stretch md:gap-1 md:px-4">
       <li className="flex min-w-0 flex-col gap-1">
         <span className="text-4xl font-medium leading-10 tabular-nums tracking-[-0.04em] text-foreground">
           {articles.length}

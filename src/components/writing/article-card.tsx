@@ -77,7 +77,7 @@ export function ArticleCard({
           <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 text-[11px] text-muted-foreground">
             <div className="flex flex-wrap items-center gap-1.5" lang="zh-CN">
               {tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="rounded bg-muted px-1.5 py-0.5">
+                <span key={tag} className="rounded-sm bg-muted px-1.5 py-0.5">
                   {tag}
                 </span>
               ))}

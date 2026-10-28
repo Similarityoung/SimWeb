@@ -324,7 +324,7 @@ export function DirectoryClient({
               : `${page?.total ?? 0} ${page?.total === 1 ? kind.slice(0, -1) : kind}${query.q ? " · By relevance" : " · Latest first"}`}
         </p>
         {failed ? (
-          <div role="alert" className="rounded-lg border p-6">
+          <div role="alert" className="rounded-panel border p-6">
             <h2 className="font-medium">Search couldn’t load</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Refresh the page to load the search index again.

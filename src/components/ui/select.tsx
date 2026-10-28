@@ -53,7 +53,7 @@ function SelectContent({
         sideOffset={6}
         collisionPadding={12}
         className={cn(
-          "relative z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border bg-card text-foreground shadow-lg shadow-foreground/5",
+          "relative z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-panel border bg-card text-foreground shadow-lg shadow-foreground/5",
           className,
         )}
         {...props}

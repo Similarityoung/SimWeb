@@ -19,7 +19,7 @@ export function Composer({
   const text = normalizeQuestion(value);
   return (
     <form
-      className="mt-3.5 flex min-h-14 items-center gap-3 rounded-[15px] border border-border-strong bg-background p-2 pl-4 transition-colors focus-within:border-foreground sm:min-h-[60px] sm:rounded-[16px] sm:px-2.5 sm:pl-5"
+      className="mt-3.5 flex min-h-14 items-center gap-3 rounded-composer border border-border-strong bg-background p-2 pl-4 transition-colors focus-within:border-foreground sm:min-h-[60px] sm:px-2.5 sm:pl-5"
       onSubmit={(event) => {
         event.preventDefault();
         if (!text || submitDisabled) return;

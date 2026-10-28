@@ -96,11 +96,11 @@ export function ArticleDirectorySkeleton() {
           key={item}
           className="rounded-xl border p-5 motion-safe:animate-pulse sm:px-6"
         >
-          <div className="h-7 w-1/2 rounded bg-muted" />
-          <div className="mt-2 h-7 w-full rounded bg-muted" />
+          <div className="h-7 w-1/2 rounded-sm bg-muted" />
+          <div className="mt-2 h-7 w-full rounded-sm bg-muted" />
           <div className="mt-4 flex justify-between">
-            <div className="h-5 w-16 rounded bg-muted" />
-            <div className="h-5 w-24 rounded bg-muted" />
+            <div className="h-5 w-16 rounded-sm bg-muted" />
+            <div className="h-5 w-24 rounded-sm bg-muted" />
           </div>
         </div>
       ))}

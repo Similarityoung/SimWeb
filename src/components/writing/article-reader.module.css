@@ -10,7 +10,7 @@
   overflow-x: auto;
   margin-block: 1.5rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--background);
   padding: 1rem;
   --pele-bg: var(--background);

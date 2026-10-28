@@ -42,7 +42,7 @@ export function ExperienceLog() {
                   entry.text
                 )}
                 {index === 0 && (
-                  <span className="ml-2 inline-block rounded bg-foreground px-1.5 align-[1px] font-mono text-[11px] leading-5 text-background">
+                  <span className="ml-2 inline-block rounded-sm bg-foreground px-1.5 align-[1px] font-mono text-[11px] leading-5 text-background">
                     HEAD
                   </span>
                 )}

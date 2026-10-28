@@ -82,7 +82,7 @@ export function Introduction({
         {!compact && (
           <p className="mb-1.5 font-mono text-[11.5px] tracking-[0.01em] text-muted-foreground sm:text-[12.5px]">
             <span
-              className="mr-2 -mt-0.5 inline-block h-3.5 w-[7px] rounded-[2px] bg-accent align-middle"
+              className="mr-2 -mt-0.5 inline-block h-3.5 w-[7px] rounded-xs bg-accent align-middle"
               aria-hidden
             />
             Hey, I’m

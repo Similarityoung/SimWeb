@@ -57,7 +57,7 @@ export function ProjectCard({
             aria-label="Technologies"
           >
             {project.tags.map((tag) => (
-              <li key={tag} className="rounded bg-muted px-1.5 py-0.5">
+              <li key={tag} className="rounded-sm bg-muted px-1.5 py-0.5">
                 {tag}
               </li>
             ))}

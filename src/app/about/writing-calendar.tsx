@@ -16,7 +16,7 @@ const SHADES = [
   "bg-accent",
 ] as const;
 // Cells stretch to the column but stay square, so the grid reads as a heatmap.
-const CELL = "aspect-square rounded-[3px]";
+const CELL = "aspect-square rounded-xs";
 const LABEL = "font-mono text-xs text-muted-foreground";
 
 const pad = (month: number) => String(month).padStart(2, "0");

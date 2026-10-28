@@ -61,7 +61,7 @@ export function Transcript({
           >
             <h2
               lang={textLanguage(message.question)}
-              className="mb-6 ml-auto w-fit max-w-[85%] rounded-[16px] rounded-br-[4px] bg-muted px-[18px] py-3 text-sm leading-6"
+              className="mb-6 ml-auto w-fit max-w-[85%] rounded-bubble rounded-br-sm bg-muted px-[18px] py-3 text-sm leading-6"
             >
               {message.question}
             </h2>
