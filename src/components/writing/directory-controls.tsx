@@ -148,7 +148,7 @@ export function DirectoryFilters({
           <div key={field} className="min-w-0">
             <label
               htmlFor={`${kind}-${field}`}
-              className="mb-2 block text-xs text-muted-foreground"
+              className="mb-2 block text-footnote text-muted-foreground"
             >
               {title}
             </label>
@@ -174,7 +174,7 @@ export function DirectoryFilters({
                 <SelectItem value="all" textValue="All">
                   <span className="flex items-center justify-between gap-4">
                     <span>All</span>{" "}
-                    <span className="font-mono text-[11px] text-muted-foreground">
+                    <span className="font-mono text-caption text-muted-foreground">
                       {total}
                     </span>
                   </span>
@@ -196,7 +196,7 @@ export function DirectoryFilters({
                   >
                     <span className="flex items-center justify-between gap-4">
                       <span>{value}</span>{" "}
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="font-mono text-caption text-muted-foreground">
                         {count}
                       </span>
                     </span>
@@ -210,7 +210,9 @@ export function DirectoryFilters({
       <div className="hidden space-y-6 md:block">
         {groups.map(({ field, title, values }) => (
           <nav key={field} aria-label={title}>
-            <h2 className="mb-2 px-2 text-xs text-muted-foreground">{title}</h2>
+            <h2 className="mb-2 px-2 text-footnote text-muted-foreground">
+              {title}
+            </h2>
             <ul>
               {[{ value: undefined, count: total }, ...values].map(
                 ({ value, count }) => (
@@ -233,7 +235,7 @@ export function DirectoryFilters({
                           : undefined
                       }
                       className={cn(
-                        "flex min-h-8 items-center justify-between gap-3 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted hover:text-foreground",
+                        "flex min-h-8 items-center justify-between gap-3 rounded-md px-2 py-1.5 text-footnote transition-colors hover:bg-muted hover:text-foreground",
                         query[field] === value
                           ? "bg-muted font-medium text-accent"
                           : "text-muted-foreground",
@@ -242,7 +244,7 @@ export function DirectoryFilters({
                       <span className="min-w-0 break-words">
                         {value ?? "All"}
                       </span>
-                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                      <span className="shrink-0 font-mono text-caption text-muted-foreground">
                         {count}
                       </span>
                     </a>
@@ -252,7 +254,7 @@ export function DirectoryFilters({
             </ul>
             {query[field] &&
               !values.some(({ value }) => value === query[field]) && (
-                <p className="mt-2 px-2 text-xs leading-6 text-muted-foreground">
+                <p className="mt-2 px-2 text-footnote text-muted-foreground">
                   No articles in “{query[field]}”. Select All to clear it.
                 </p>
               )}
@@ -272,7 +274,10 @@ export function DirectoryActiveFilters({
 }) {
   if (!query.q && !query.category && !query.tag) return null;
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2 text-xs" lang="en">
+    <div
+      className="mb-5 flex flex-wrap items-center gap-2 text-footnote"
+      lang="en"
+    >
       {query.q && (
         <span className="mr-1 break-all text-muted-foreground">
           Search: “{query.q}”
@@ -370,14 +375,14 @@ export function DirectoryPagination({
       )}
       lang="en"
     >
-      <p className="shrink-0 text-xs text-muted-foreground">
+      <p className="shrink-0 text-footnote text-muted-foreground">
         {(current - 1) * DIRECTORY_PAGE_SIZE + 1}–
         {Math.min(current * DIRECTORY_PAGE_SIZE, page.total)} of {page.total}
       </p>
       <ul className="flex items-center justify-between gap-1 sm:justify-end">
         {controls.map((control) => {
           const className = cn(
-            "inline-flex min-h-11 min-w-8 items-center justify-center rounded-md px-2 text-xs sm:min-h-9",
+            "inline-flex min-h-11 min-w-8 items-center justify-center rounded-md px-2 text-footnote sm:min-h-9",
             control.current && "bg-foreground font-medium text-background",
             !control.current && "text-muted-foreground",
             !(disabled || control.disabled) &&

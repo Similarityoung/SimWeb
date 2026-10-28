@@ -313,7 +313,7 @@ export function DirectoryClient({
           aria-atomic="true"
           className={
             kind === "notes"
-              ? "mb-4 min-h-5 text-xs text-muted-foreground"
+              ? "mb-4 min-h-5 text-footnote text-muted-foreground"
               : "sr-only"
           }
         >
@@ -325,8 +325,8 @@ export function DirectoryClient({
         </p>
         {failed ? (
           <div role="alert" className="rounded-panel border p-6">
-            <h2 className="font-medium">Search couldn’t load</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <h2 className="text-heading font-medium">Search couldn’t load</h2>
+            <p className="mt-2 text-body text-muted-foreground">
               Refresh the page to load the search index again.
             </p>
             <Button
