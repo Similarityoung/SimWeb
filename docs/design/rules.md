@@ -217,7 +217,7 @@ Claude 的三层配方：
 - `tailwind-merge` 已扩展 `theme.text` / `theme.radius`；`cn("text-body", "text-muted-foreground")` 与 `cn("rounded-md", "rounded-panel")` 有单测锁定。
 - `npm run check:design`：扫描 `src` 的裸色值与未定义 CSS 变量（`ENG-01`），以及任意圆角 / 时长 / 缓动值（`VIS-04` / `MOT-01` / `MOT-02`）；引用 `var(--…)` 的任意值放行，注释、局部自定义属性、vendor 目录不误报。
 - `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态、VIS-05 的 1x / 2x 焦点环宽度、TYPE-01 的会话 / 卡片 / 文章字号与行高。
-- `.github/workflows/ui.yml`：PR / push 到 main 跑 `design` 与 `ui` 两个 job；UI job 注入 Turnstile 测试键、安装 Chromium，失败上传 `playwright-report` 与 `test-results`。
+- `.github/workflows/ui.yml`：PR / push 到 main 跑 `design` 与 `ui` 两个 job；design job 含 `check:design`、Prettier、ESLint、类型与单测；UI job 注入 Turnstile 测试键、安装 Chromium，失败上传 `playwright-report` 与 `test-results`。
 
 仍需人工完成：
 
