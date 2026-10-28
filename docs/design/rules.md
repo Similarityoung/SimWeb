@@ -31,15 +31,15 @@
 
 ## 二、动效与状态
 
-| ID       | 规则                                                                                | 依据              | 执行                  | 决定                                                          |
-| -------- | ----------------------------------------------------------------------------------- | ----------------- | --------------------- | ------------------------------------------------------------- |
-| MOT-01   | press 60ms / snap 120ms / base 200ms / sheet 300ms / settle 450ms；同类交互同一角色 | CDS 04 / 08       | 令牌 + 评审           | 直接采用原值                                                  |
-| MOT-02   | 固定 5–6 条缓动曲线（enter / out / snap / overshoot / pulse）；禁止手写新曲线       | CDS 04            | 令牌 + `check:design` | 直接采用原值                                                  |
-| MOT-03   | 动效可打断；状态切换从当前值出发；新事件抢占旧动画，不排队重播                      | CDS 04 + Bot 规则 | 评审 + 单测           | 采用                                                          |
-| MOT-04   | 减动态下内容与状态含义保留，只停装饰；每个无限动画有静态回退                        | WCAG + CDS 04     | `test:ui`             | 采用                                                          |
-| STATE-01 | 空 / 加载 / 流式 / 错 / 完成五态成套，各有文案、视觉、aria                          | CDS 03            | e2e fixture + 评审    | 采用；现有 loading / streaming / error / complete，空会话待补 |
-| STATE-02 | 等待态安静、非进度型；三点 1.9s（延迟 0.15 / 0.3s）；不显示百分比或进度环           | CDS 03 §3.2.1     | 评审 + `test:ui`      | 直接采用原值                                                  |
-| STATE-03 | 骨架屏 105° 非线性扫光 1.6s；减动态隐藏扫光，保留静态占位块                         | CDS v2 §3.5       | `test:ui` + 评审      | 采用                                                          |
+| ID       | 规则                                                                                                                    | 依据              | 执行                  | 决定                                                          |
+| -------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------- | ------------------------------------------------------------- |
+| MOT-01   | snap 120ms / base 200ms / sheet 300ms / settle 450ms；循环骨架 1600ms / 等待 1900ms / 流式光标 1400ms；同类交互同一角色 | CDS 04 / 08       | `check:design` + 评审 | 直接采用原值                                                  |
+| MOT-02   | 固定 5–6 条缓动曲线（enter / out / snap / overshoot / pulse）；禁止手写新曲线                                           | CDS 04            | 令牌 + `check:design` | 直接采用原值                                                  |
+| MOT-03   | 动效可打断；状态切换从当前值出发；新事件抢占旧动画，不排队重播                                                          | CDS 04 + Bot 规则 | 评审 + 单测           | 采用                                                          |
+| MOT-04   | 减动态下内容与状态含义保留，只停装饰；每个无限动画有静态回退                                                            | WCAG + CDS 04     | `test:ui`             | 采用                                                          |
+| STATE-01 | 空 / 加载 / 流式 / 错 / 完成五态成套，各有文案、视觉、aria                                                              | CDS 03            | e2e fixture + 评审    | 采用；现有 loading / streaming / error / complete，空会话待补 |
+| STATE-02 | 等待态安静、非进度型；三点 1.9s（延迟 0.15 / 0.3s）；不显示百分比或进度环                                               | CDS 03 §3.2.1     | 评审 + `test:ui`      | 直接采用原值                                                  |
+| STATE-03 | 骨架屏 105° 非线性扫光 1.6s；减动态隐藏扫光，保留静态占位块                                                             | CDS v2 §3.5       | `test:ui` + 评审      | 采用                                                          |
 
 候选：**STATE-04** 复制/保存反馈 2.5s 衰减，同一操作不重复播报；可直接并进 STATE-02。
 
@@ -59,9 +59,9 @@
 
 ## 四、工程
 
-| ID     | 规则                                                                     | 依据             | 执行                    | 决定                                               |
-| ------ | ------------------------------------------------------------------------ | ---------------- | ----------------------- | -------------------------------------------------- |
-| ENG-01 | 颜色 / 间距 / 圆角 / 时长只能来自语义令牌；每条规则有 ID，CI 失败引用 ID | CDS 07/08 + 架构 | `check:design` + ESLint | 采用；颜色与未定义变量已自动化，间距/圆角/时长待补 |
+| ID     | 规则                                                                     | 依据             | 执行                    | 决定                                                                  |
+| ------ | ------------------------------------------------------------------------ | ---------------- | ----------------------- | --------------------------------------------------------------------- |
+| ENG-01 | 颜色 / 间距 / 圆角 / 时长只能来自语义令牌；每条规则有 ID，CI 失败引用 ID | CDS 07/08 + 架构 | `check:design` + ESLint | 采用；颜色、未定义变量、任意圆角及任意/裸时长与缓动已自动化，间距待补 |
 
 ---
 
@@ -226,20 +226,21 @@ Claude 的三层配方：
 
 ### 5.4 动效与交互常量
 
-| 常量     | 值                                                                        |
-| -------- | ------------------------------------------------------------------------- |
-| 时长角色 | snap 120ms / base 200ms / sheet 300ms / settle 450ms                      |
-| 缓动     | enter `.22,1,.36,1`；out `.165,.84,.44,1`；pulse `.4,0,.2,1`              |
-| 滚动渐隐 | 28px；7 档 alpha：.15 / .30 / .45 / .60 / .75 / .87 / 1.0                 |
-| 卡片悬停 | `scaleY(1.015) scaleX(1.005)`；200ms `--ease-cds-out`；减动态与触屏不位移 |
-| 筛选滑块 | 共享 `layoutId`；200ms `--ease-cds-out`；减动态时长 0                     |
-| 骨架扫光 | 105°；1.6s 循环；减动态隐藏                                               |
-| 输入焦点 | 1px 前景色 50% 边框 + 表面提亮 + 5% 软阴影；200ms                         |
-| 等待点   | 1.9s 循环；延迟 0.15s / 0.3s；点径 3px；间距 3.5px                        |
-| 滚动跟随 | 40px 容差；150ms 冷却                                                     |
-| 输入法   | 合成结束后 500ms 内的 Enter 丢弃                                          |
-| 复制反馈 | 2.5s 衰减                                                                 |
-| 发丝线   | 2x 屏 0.5px；3x 屏 1/3px                                                  |
+| 常量     | 值                                                                                            |
+| -------- | --------------------------------------------------------------------------------------------- |
+| 时长角色 | snap 120ms / base 200ms / sheet 300ms / settle 450ms；骨架 1600ms / 等待 1900ms / 光标 1400ms |
+| 缓动     | enter `.22,1,.36,1`；out `.165,.84,.44,1`；pulse `.4,0,.2,1`                                  |
+| 延迟     | 等待点 150ms / 300ms；文章标题 80ms                                                           |
+| 滚动渐隐 | `--scroll-fade-size` 28px；7 档 alpha：.15 / .30 / .45 / .60 / .75 / .87 / 1.0                |
+| 卡片悬停 | `scaleY(1.015) scaleX(1.005)`；200ms `--ease-cds-out`；减动态与触屏不位移                     |
+| 筛选滑块 | 共享 `layoutId`；200ms `--ease-cds-out`；减动态时长 0                                         |
+| 骨架扫光 | `--skeleton-angle` 105°；`--duration-skeleton` 1.6s 循环；减动态隐藏                          |
+| 输入焦点 | 1px 前景色 50% 边框 + 表面提亮 + 5% 软阴影；200ms                                             |
+| 等待点   | `--duration-waiting` 1.9s 循环；延迟 0.15s / 0.3s；点径 3px；间距 3.5px                       |
+| 滚动跟随 | 40px 容差；150ms 冷却                                                                         |
+| 输入法   | 合成结束后 500ms 内的 Enter 丢弃                                                              |
+| 复制反馈 | 2.5s 衰减                                                                                     |
+| 发丝线   | 2x 屏 0.5px；3x 屏 1/3px                                                                      |
 
 弹簧：只采用 `320 / 28` 作为 settle 类交互；`600 / 30` 是语音/麦克风按钮的高频微弹，不用在通用 UI；Bot 的弹跳可以单独使用，因为它属于角色表达。
 
@@ -250,7 +251,7 @@ Claude 的三层配方：
 已接入：
 
 - `tailwind-merge` 已扩展 `theme.text` / `theme.radius`；`cn("text-body", "text-muted-foreground")` 与 `cn("rounded-md", "rounded-panel")` 有单测锁定。
-- `npm run check:design`：扫描 `src` 的裸色值与未定义 CSS 变量（`ENG-01`），以及任意圆角 / 时长 / 缓动值（`VIS-04` / `MOT-01` / `MOT-02`）；引用 `var(--…)` 的任意值放行，注释、局部自定义属性、vendor 目录不误报。
+- `npm run check:design`：扫描 `src` 的裸色值与未定义 CSS 变量（`ENG-01`），以及任意圆角 / 时长 / 缓动值（`VIS-04` / `MOT-01` / `MOT-02`）；同时拦截 CSS 里的裸时长、裸 `ease-*` / `cubic-bezier()`，以及 `duration-200` 这类未走令牌的 utility；令牌定义与减动态归零值放行，注释、局部自定义属性、vendor 目录不误报。
 - `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态、VIS-05 的 1x / 2x 焦点环宽度、TYPE-01 的会话 / 卡片 / 文章字号与行高。
 - `.github/workflows/ui.yml`：PR / push 到 main 跑 `design` 与 `ui` 两个 job；design job 含 `check:design`、Prettier、ESLint、类型与单测；UI job 注入 Turnstile 测试键、安装 Chromium，失败上传 `playwright-report` 与 `test-results`。
 
@@ -272,7 +273,7 @@ Claude 的三层配方：
 | STATE-03 | `.skeleton-sweep`                                                        | Notes 搜索骨架；减动态隐藏扫光                                  |
 | INT-06   | `DirectorySearch` 自定义清除按钮 + 隐藏 `::-webkit-search-cancel-button` | Notes / Thoughts 搜索；点击后回焦输入框                         |
 
-动效令牌：`--ease-cds-enter / out / pulse` 与 `--duration-snap / base / sheet / settle` 定义在 `globals.css`，均有实际消费方；未使用的 press 时长与 snap / overshoot 曲线已移除。Motion 组件需要的 JS 参数统一放在 `src/lib/motion.ts`（`LAYOUT_TRANSITION`、`HIGHLIGHT_TRANSITION`），经 `respectReducedMotion` 归零；Introduction、TopicShortcuts、FilterActivePill 不再内联时长或贝塞尔。
+动效令牌：`--ease-cds-enter / out / pulse`、`--duration-snap / base / sheet / settle`，以及组件级循环/尺寸 `--duration-skeleton / waiting / caret`、`--delay-*`、`--scroll-fade-size`、`--skeleton-angle`、`--waiting-dot-*` 均定义在 `globals.css`，都有实际消费方；未使用的 press 时长与 snap / overshoot 曲线已移除。Motion 组件需要的 JS 参数统一放在 `src/lib/motion.ts`（`LAYOUT_TRANSITION`、`HIGHLIGHT_TRANSITION`），经 `respectReducedMotion` 归零；Introduction、TopicShortcuts、FilterActivePill 不再内联时长或贝塞尔。渐变停靠百分比、关键帧位移与透明度属于组件几何，不提升为全局令牌。
 
 ---
 
@@ -298,7 +299,7 @@ Claude 的三层配方：
 
 对应 GitHub Actions 的第一版，只上这 7 条：
 
-1. `ENG-01`：令牌外裸色值、未定义 `var(--token)`（已接入 `check:design`）；`VIS-04` / `MOT-01` / `MOT-02` 的任意圆角、时长、缓动已接入；禁用依赖与间距规则尚未自动化；
+1. `ENG-01`：令牌外裸色值、未定义 `var(--token)`（已接入 `check:design`）；`VIS-04` / `MOT-01` / `MOT-02` 的任意圆角、任意/裸时长、任意/裸缓动已接入；禁用依赖与间距规则尚未自动化；
 2. `INT-04`：320px 无整页横向滚动，文章代码块保持在视口内（已接入 `test:ui`）；
 3. `MOT-04`：`prefers-reduced-motion` 下等待与流式内容可见（已接入 `test:ui`）；
 4. `A11Y-01`：交互元素有可访问名称（已接入 axe）；

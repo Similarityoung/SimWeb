@@ -26,7 +26,7 @@ export function WritingStats({
         <li key={kind} className="min-w-0">
           <Link
             href={href}
-            className="group flex min-w-0 flex-col gap-1 rounded-md py-1 text-foreground/80 transition-colors duration-200 hover:text-accent focus-visible:text-accent motion-reduce:transition-none md:flex-row md:items-baseline md:gap-2 md:py-0.5"
+            className="group flex min-w-0 flex-col gap-1 rounded-md py-1 text-foreground/80 transition-colors duration-[var(--duration-base)] hover:text-accent focus-visible:text-accent motion-reduce:transition-none md:flex-row md:items-baseline md:gap-2 md:py-0.5"
           >
             <span className="text-card-title font-medium tabular-nums">
               {articles.filter((article) => article.kind === kind).length}
@@ -41,7 +41,7 @@ export function WritingStats({
               <ArrowRight
                 aria-hidden
                 strokeWidth={1.5}
-                className="size-3 shrink-0 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 motion-safe:group-focus-visible:translate-x-0.5 motion-safe:group-active:translate-x-0 motion-reduce:transition-none md:ml-auto"
+                className="size-3 shrink-0 transition-transform duration-[var(--duration-base)] motion-safe:group-hover:translate-x-0.5 motion-safe:group-focus-visible:translate-x-0.5 motion-safe:group-active:translate-x-0 motion-reduce:transition-none md:ml-auto"
               />
             </span>
           </Link>

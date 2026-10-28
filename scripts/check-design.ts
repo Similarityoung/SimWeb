@@ -117,6 +117,45 @@ export function findArbitraryDesignValues(
         line: lineIndex + 1,
         message: `任意缓动 ${match[0]}；改用动效令牌`,
       });
+    for (const match of source.matchAll(/\bduration-\d+\b/g))
+      violations.push({
+        rule: "MOT-01",
+        file,
+        line: lineIndex + 1,
+        message: `裸时长 ${match[0]}；改用 duration-[var(--duration-*)]`,
+      });
+    if (file.endsWith(".css")) {
+      for (const match of source.matchAll(
+        /(?<![\w-])((?:\d*\.)?\d+)(?:ms|s)\b/g,
+      )) {
+        if (isTokenDefinition(source, match.index ?? 0)) continue;
+        if (Number(match[1]) === 0 || match[0] === "0.01ms") continue;
+        violations.push({
+          rule: "MOT-01",
+          file,
+          line: lineIndex + 1,
+          message: `裸时长 ${match[0]}；改用 --duration-* 令牌`,
+        });
+      }
+      for (const match of source.matchAll(/(?<![\w-])cubic-bezier\([^)]*\)/g)) {
+        if (isTokenDefinition(source, match.index ?? 0)) continue;
+        violations.push({
+          rule: "MOT-02",
+          file,
+          line: lineIndex + 1,
+          message: `裸缓动 ${match[0]}；改用 --ease-* 令牌`,
+        });
+      }
+    }
+    for (const match of source.matchAll(/\bease-(?:in|out|in-out)\b/g)) {
+      if (isTokenDefinition(source, match.index ?? 0)) continue;
+      violations.push({
+        rule: "MOT-02",
+        file,
+        line: lineIndex + 1,
+        message: `裸缓动 ${match[0]}；改用 --ease-* 令牌`,
+      });
+    }
     return violations;
   });
 }

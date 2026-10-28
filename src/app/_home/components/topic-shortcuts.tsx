@@ -118,7 +118,7 @@ export function TopicShortcuts({
                   {topic.description}
                 </span>
                 <ArrowUpRight
-                  className="absolute top-[13px] right-[13px] size-[15px] -translate-x-[3px] translate-y-[3px] text-accent opacity-0 transition-[opacity,translate] duration-200 group-data-[highlighted=true]:translate-0 group-data-[highlighted=true]:opacity-100 sm:top-[15px] sm:right-[15px]"
+                  className="absolute top-[13px] right-[13px] size-[15px] -translate-x-[3px] translate-y-[3px] text-accent opacity-0 transition-[opacity,translate] duration-[var(--duration-base)] group-data-[highlighted=true]:translate-0 group-data-[highlighted=true]:opacity-100 sm:top-[15px] sm:right-[15px]"
                   aria-hidden
                 />
               </>

@@ -81,6 +81,36 @@ test("allows arbitrary values that reference tokens", () => {
   );
 });
 
+test("flags raw CSS durations and easing outside token definitions", () => {
+  const violations = findArbitraryDesignValues(
+    "src/example.css",
+    ":root { --duration-x: 120ms; --ease-x: cubic-bezier(0.1, 0, 0.2, 1); }\n.x { animation: pulse 1.6s ease-out; }",
+  );
+  assert.deepEqual(
+    violations.map(({ rule }) => rule),
+    ["MOT-01", "MOT-02"],
+  );
+  assert.match(violations[0].message, /1\.6s/);
+  assert.match(violations[1].message, /ease-out/);
+});
+
+test("flags raw duration utilities but allows reduced-motion resets", () => {
+  assert.deepEqual(
+    findArbitraryDesignValues(
+      "src/example.tsx",
+      'className="transition-colors duration-200 ease-out"',
+    ).map(({ rule }) => rule),
+    ["MOT-01", "MOT-02"],
+  );
+  assert.deepEqual(
+    findArbitraryDesignValues(
+      "src/example.css",
+      "@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0s !important; } }",
+    ),
+    [],
+  );
+});
+
 test("current source passes the design check", () => {
   assert.deepEqual(scanProject(process.cwd()), []);
 });
