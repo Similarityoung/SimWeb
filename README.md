@@ -2,78 +2,38 @@
 
 羡青山有思，白鹤忘机。
 
-个人站 2.0：Next.js App Router、React、TypeScript、Tailwind CSS 和 shadcn/ui。首页用预写问答引导访客浏览项目与文章；公开 AI 问答默认关闭，按[上线条件](docs/ai-answer-setup.md)配置后可启用。
+个人站 2.0，记录我做的项目、写的技术笔记（Notes）与随笔（Thoughts）。首页有互动 Bot，也可启用基于公开资料的 AI 问答。
 
-## 本地运行
+访问：[simi.host](https://simi.host)。
 
-使用 Node.js 22 或更高版本：
+核心技术栈：Next.js App Router、React、TypeScript、Tailwind CSS、shadcn/ui；全文搜索使用 Pagefind，可选问答使用 AI SDK 与 DeepSeek。
+
+## 快速开始
+
+使用 Node.js 22 或更高版本，在仓库根目录运行：
 
 ```sh
 npm ci
 npm run dev
 ```
 
-打开 http://localhost:3000。生产预览使用 `npm run build` 后运行 `npm start`。
+打开 [http://localhost:3000](http://localhost:3000)。基础站点运行与构建无需环境变量；项目、文章目录、正文及 Notes 搜索不依赖 AI 配置。
 
-`dev` 和 `build` 会先自动生成公开文章的 Pagefind 全文索引，也可单独运行 `npm run index:writing`。同步或修改文章后，重启开发服务并刷新浏览器；索引输出在 `public/pagefind`，由脚本管理且不提交。搜索不需要额外服务或模型密钥。
+## 可选 AI 问答
 
-## 代码位置
+启用后，首页四个快捷入口和自由提问均调用 DeepSeek，文字真实流式返回，正常完成并通过校验后展示卡片；没有预写回答或本地回退。
 
-| 内容 | 位置 |
-| --- | --- |
-| 路由、共享布局、首页会话与预写回答 | `src/app`、`src/app/_home` |
-| 项目、文章和 Bot 界面 | `src/components` |
-| 项目数据、文章校验与服务端读取 | `src/lib/projects`、`src/lib/writing` |
-| 已发布 Markdown 的同步缓存 | `content` |
-| shadcn 基础组件、全站导航 | `src/components/ui`、`src/components/site` |
-| 个人资料与菜单 | `src/config/site.ts` |
+参照 [.env.example](.env.example)，在未跟踪的 `.env.local` 中配置：
 
-完整职责与依赖约束见 [架构文档](docs/frontend-architecture.md)。ESLint 限制跨模块导入，服务端正文入口使用 `server-only`。
+- AI：`DEEPSEEK_API_KEY`、`DEEPSEEK_PUBLIC_ENABLED=true`。
+- 请求验证：`NEXT_PUBLIC_TURNSTILE_SITE_KEY`、`TURNSTILE_SECRET_KEY`。
 
-## 修改内容
+配置后重启开发服务；生产环境需重新构建。完整步骤、Turnstile 本地测试说明及公开启用前的限流与费用检查见 [AI 问答设置](docs/ai-answer-setup.md)。未配置时问答不可用，不影响目录阅读；不要提交密钥。
 
-- 项目编辑 `src/lib/projects/data.ts`，卡片直达配置的 GitHub 或官网。
-- 文章原稿以 [Obisidian-Open](https://github.com/Similarityoung/Obisidian-Open) 为准；`content` 整个目录是已发布文章的同步缓存，不在其中手工维护其他文件。每篇候选文章须明确 `draft: true|false`；公开文章须提供 `title`、`type: notes|thoughts`、`date`、`summary`、全局唯一的英文小写连字符 `slug`。`categories` 表示 Go、Dubbo 等主题，`tags` 可选；两者均使用字符串数组。根目录 README 与 `_Templates` 不参与同步，`aliases` 不再使用。
-- 本站只缓存源仓库中 `draft: false` 的文章。Notes/Thoughts 首页卡片按分类交错轮选公开文章，每次最多 3 篇，重复点击可逐组浏览；不维护人工选稿清单。项目引用仍通过 ID 校验。回答接口为 `answerQuestion(question, catalog, signal?, aiEnabled?)`；启用 AI 后，具体自由提问从公开文章摘录中生成简答与对应卡片。
-- 正文中的 `[[目录/文章]]` 与 `[[目录/文章|显示文字]]` 按公开文章的源路径解析为站内链接；目标未公开或不存在会使构建失败，代码块中的双链保持原文。
-- 手动检查源仓库：`npm run sync:writing -- /path/to/Obisidian-Open`，然后运行 `npm run check`。脚本先校验全部候选文章；任何缺失字段或重复 slug 都会阻止替换当前缓存。
+## 文档导航
 
-同一标签页内通过站内链接进入目录或正文再返回首页，会话保留；刷新或主动清空会重置。不写入浏览器存储。文章目录与会话复用相同摘要和卡片。
+- [维护指南](docs/maintenance.md)：修改资料、同步文章、更新索引、验证与部署。
+- [架构设计](docs/frontend-architecture.md)：目录职责、文章字段与链接校验、搜索索引、回答接口与会话边界。
+- [需求约定](docs/frontend-refactor-spec.md)：目录与阅读流程、Bot 互动、开发预览与主题行为。
 
-Notes 使用单栏卡片，Thoughts 使用时间归档；两者支持全文搜索、来自 Markdown 的 Category / Tag 单选组合筛选和固定每页 10 条。URL 保存查询条件及页码；从文章返回会恢复原条目。无关键词时只使用摘要，有关键词时按需加载公开搜索索引。
-
-新回答按提交、文本分块、逐张完整卡片的顺序展示；典型短回答及卡片约 4～6 秒完成。Bot 正常回答固定书写，未匹配问题显示困惑，持续到全部内容展示完；正常回答完成后播放约 2.4 秒的带彩带转身、单次跳跃与落地粒子，再恢复待机／倾听，不显示进度环。卡片出现即可点击。快速追问会补全旧回答，导航返回时历史回答不重播；减少动态效果时仍保留分块输出。展示动效独立于回答来源，目前不是实时模型 token 流；回答函数明确返回是否匹配的分类。
-
-主题默认跟随系统，页头太阳/月亮按钮可切换明暗。手动选择以 `simweb-theme` 保存到 localStorage，刷新和站内跳转会保留；会话仍仅保存在内存。主题变量位于 `src/app/globals.css`，Provider 与按钮位于 `src/components/site`。
-
-## 首页 Bot 互动
-
-- 首次进入生成；主题卡片悬停／聚焦和输入框聚焦共用倾听反馈，进入时轻点头一次，随后保持安静的眼型与视线，仅保留轻微呼吸和眨眼。卡片之间或卡片与输入框之间连续切换不重播点头，离开所有关注目标后恢复待机。
-- Bot 不跟随鼠标位置；待机表情、卡片悬停与输入框聚焦反馈继续保留。
-- 正常回答固定书写；未覆盖问题困惑，真正失败短暂警报。
-- 阅读正文后返回开心／通知，换主题惊讶；嗡鸣仅保留在开发预览，不自动触发。
-- 连续 60 秒无鼠标、键盘、触摸或滚轮活动时睡着；活动后聚拢苏醒约 2 秒再恢复待机／倾听。回答会立即接管，连续活动不重播醒来；后台不累计时间，返回重新计时。
-- 点击 Bot 只会弹跳，键盘 Enter / Space 同样可激活；无三击、拖动、长按或手动休眠手势。
-- 正常回答与卡片完成后播放约 2.4 秒完成动画：带着彩带转一圈、轻跳一次，落地后散出少量彩色粒子。待机平静 20～30 秒后随机呈现开心／好奇／害羞／得意／俏皮中的一种约 2.5 秒，眼睛与轻微姿态一起变化，再回到平静；交互会立即接管。
-- 回答优先，彩蛋不插队、不积压；减少动态效果保留文字节奏，角色静止。
-
-## Bot 动作预览
-
-开发服务器运行时访问 `/dev/bot`，试播 24 种动作（含平静、五种待机表情、睡着／醒来与完成动画）及 192 / 54 / 43px 尺寸；从预览页返回首页可测试完整流程。生产环境该路由返回 404。动作候选及睡眠时长在 `src/components/bot/behavior.ts`，展示节奏在 `src/app/_home/answer-presentation.ts`；引擎内已排除用户指定的眼型 7、8。
-
-## 验证
-
-```sh
-npm run check
-npx playwright install chromium
-npm run test:e2e
-npm run format:check
-```
-
-`check` 执行 lint、类型检查、模块及架构测试、生产构建。模块测试就近放在 `src`，测试脚本也递归查找 `tests`；端到端测试独立运行，需要先完成构建，覆盖桌面与手机的提问、阅读、返回、刷新和清空。
-
-## Vercel
-
-仓库已提供 Next.js 的 `vercel.json`，安装命令为 `npm ci`，构建命令为 `npm run build`。当前没有必需环境变量。`.github/workflows/sync-writing.yml` 在默认分支每天北京时间 10:17 及手动触发时检出两个公开仓库，校验、构建并仅在内容变化时提交到 SimWeb `main`。Vercel Git 集成以 `main` 为生产分支，内容提交会触发部署。2.0 已在 `main`；旧 Hugo 版由 `v1.0` 标签留档。
-
-原型 Bot 的来源声明见 [vendor/README.md](src/components/bot/vendor/README.md)。
+Bot 素材的来源、权利声明与本站适配见 [引擎说明](src/components/bot/vendor/README.md)。
