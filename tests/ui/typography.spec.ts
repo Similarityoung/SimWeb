@@ -48,3 +48,28 @@ test("cards follow the card-title and title scale", async ({ page }) => {
     lineHeight: "24px",
   });
 });
+
+test("article copy follows the prose scale", async ({ page }) => {
+  await page.goto("/notes");
+  const href = await page
+    .locator("a[aria-label]")
+    .filter({ has: page.locator("h2") })
+    .first()
+    .getAttribute("href");
+  expect(href).toBeTruthy();
+  await page.goto(href!);
+
+  expect(await textMetrics(page.locator("article h1"))).toEqual(
+    test.info().project.name === "mobile"
+      ? { fontSize: "30px", lineHeight: "36px" }
+      : { fontSize: "36px", lineHeight: "40px" },
+  );
+  expect(await textMetrics(page.locator("article header p"))).toEqual({
+    fontSize: "16px",
+    lineHeight: "28px",
+  });
+  expect(await textMetrics(page.locator(".prose p").first())).toEqual({
+    fontSize: "16px",
+    lineHeight: "28px",
+  });
+});
