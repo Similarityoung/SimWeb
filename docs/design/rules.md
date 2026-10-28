@@ -1,6 +1,6 @@
 # 个人站设计规则
 
-状态：v0.2（2026-10-28）。已确定行高与焦点环两项取舍；Phase 0 的守卫（`tailwind-merge`、`check:design`、`test:ui`、UI workflow）已接入，下一步进入 Phase 1 原子控件迁移。
+状态：v0.3（2026-10-28）。Phase 0 守卫、Phase 1 原子控件、Phase 2 字号阶梯已落地；下一步做 Phase 3 的 CI 加固与视觉回归。
 
 本表是规则 ID 的唯一登记处：规则从这里派生；令牌值以 [globals.css](../../src/app/globals.css) 为准，行为以 [frontend-refactor-spec.md](../frontend-refactor-spec.md) 为准，结构以 [frontend-architecture.md](../frontend-architecture.md) 为准。
 
@@ -24,7 +24,7 @@
 | VIS-03  | 单一强调色 + base / hover / soft 三态；只用于交互、焦点、关键信息                                                        | CDS 01 §1.2                       | 令牌                  | 采用结构，色值用 `#c2431f` / `#ed9478`                                   |
 | VIS-04  | 圆角按控件尺寸分级；嵌套圆角 = 外圆角 − 内边距                                                                           | CDS 01 §1.3                       | 令牌 + 评审           | **直接采用原值**：2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24px，见 §5.1 |
 | VIS-05  | 焦点必须可见；1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；焦点环对比 ≥3:1；全局 ring + 容器例外                             | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | axe + `test:ui`       | **调整后采用**，见 §5.2                                                  |
-| TYPE-01 | 7 阶字号阶梯 + 卡片标题例外；字号照搬，CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24；正文不用 mono，meta 用 mono | CDS 01 §1.5 + CJK 阅读            | 令牌 + 评审           | **调整后采用**，见 §5.3                                                  |
+| TYPE-01 | 7 阶字号阶梯 + 卡片标题例外；字号照搬，CJK 行高例外：会话 14/24、文章 16/28、卡片标题 16/24；正文不用 mono，meta 用 mono | CDS 01 §1.5 + CJK 阅读            | 令牌 + `test:ui`      | **调整后采用**，见 §5.3                                                  |
 | TYPE-02 | 间距由行高推导：段落 0.75×、条目 0.5×、区块 2–3×；禁止零散 magic number                                                  | CDS 03 §3.1                       | 令牌 + 评审           | 采用公式；会话区输出 18px / 12px，区块仍用 2–3×                          |
 
 ## 二、动效与状态
@@ -175,16 +175,23 @@ Claude 的三层配方：
 
 行高按 CJK 阅读调整：会话 14/24（密集场景可退到 14/22），文章 16/28，卡片标题 16/24。这是与 Claude 的明确差异，原因在决策台账；不要为了“照搬”把中文行高压回 20/24。
 
+7 阶已落到 `@theme` 的 `--text-*`（含配套 `--text-*--line-height`），组件直接用 `text-body` / `text-prose` 等类；`tailwind-merge` 已识别这些名字，不要再写 `text-sm leading-*` 的组合。
+
 配套约束：
 
-- 输入框在 `<640px` 保底 16px，避免 iOS Safari 聚焦时自动缩放；桌面可用 14/24；占位符可 14px。
-- 文章内的 h2/h3、引用、列表、代码块继续由 Typography 控制，不在 7 阶内；迁移时不要只给容器加 `text-prose` 就认为完成。
+- 输入框在 `<640px` 保底 16px，避免 iOS Safari 聚焦时自动缩放；`sm` 以上用 14/24；占位符 14px。
+- 文章正文用 `text-prose`（16/28）；文章内代码用 `prose-code:text-code` / `prose-pre:text-code`（12/16）。h2/h3、引用、列表仍由 Typography 控制，不进入 7 阶。
 - `font-variant-numeric: tabular-nums` 用于日期、数量、统计；
 - `text-wrap: pretty` 用于回答段落，消除孤行；
 - 行内图标 `vertical-align: -0.125em`，11–12px 小字用 `-0.075em`；
 - 字体族继续用 Geist / Geist Mono，不引入 Anthropic 字体。
 
-**页面级标题例外**：7 阶里的 `title` 是桌面应用顶栏标题，不覆盖网页 H1。页面 H1 按需求约定用 36px；文章 H1 是编辑式版面，实际为 30/36（`sm` 以上 36/40），也不属于这 7 阶。
+**展示型例外**：以下不进入 7 阶，保持编辑式版面或空间约束：
+
+- 页面 H1：36/40；文章 H1：30/36（`sm` 以上 36/40）；首页自我介绍 H1 用 clamp。
+- Thoughts 的月份分组标题：24/30（`sm` 以上 26/32）。
+- About 统计大数字：36/40。
+- 站点导航在 `<380px` 用 10px，避免 320px 溢出；`min-[380px]` 起用 caption 11px。
 
 ### 5.4 动效与交互常量
 
@@ -209,7 +216,7 @@ Claude 的三层配方：
 
 - `tailwind-merge` 已扩展 `theme.text` / `theme.radius`；`cn("text-body", "text-muted-foreground")` 与 `cn("rounded-md", "rounded-panel")` 有单测锁定。
 - `npm run check:design`：扫描 `src` 的裸色值与未定义 CSS 变量，输出 `ENG-01`；注释、局部自定义属性、vendor 目录不误报。
-- `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态、VIS-05 的 1x / 2x 焦点环宽度。
+- `npm run test:ui`：无头 Playwright（desktop / mobile），覆盖 A11Y-01 名称、INT-04 320px、MOT-04 减动态、STATE-01 五态、VIS-05 的 1x / 2x 焦点环宽度、TYPE-01 的会话 / 卡片 / 文章字号与行高。
 - `.github/workflows/ui.yml`：PR / push 到 main 跑 `design` 与 `ui` 两个 job；UI job 注入 Turnstile 测试键，失败上传 `playwright-report` 与 `test-results`。
 
 仍需人工完成：
@@ -234,13 +241,14 @@ Claude 的三层配方：
 
 ## 七、首批 CI 检查
 
-对应 GitHub Actions 的第一版，只上这 6 条：
+对应 GitHub Actions 的第一版，只上这 7 条：
 
 1. `ENG-01`：令牌外裸色值、未定义 `var(--token)`（已接入 `check:design`）；禁用依赖、间距/圆角/时长尚未自动化；
 2. `INT-04`：320px 无整页横向滚动，文章代码块保持在视口内（已接入 `test:ui`）；
 3. `MOT-04`：`prefers-reduced-motion` 下等待与流式内容可见（已接入 `test:ui`）；
 4. `A11Y-01`：交互元素有可访问名称（已接入 axe）；
 5. `STATE-01`：空 / 加载 / 流式 / 错 / 完成五态 fixture（已接入 `test:ui`）；
-6. `VIS-05`：`:focus-visible` 在 1x / 2x 下的环宽与容器例外（已接入 `test:ui`）。
+6. `VIS-05`：`:focus-visible` 在 1x / 2x 下的环宽与容器例外（已接入 `test:ui`）；
+7. `TYPE-01`：会话、卡片、文章的关键字号 / 行高（已接入 `test:ui`）。
 
 `test:ui` 与 `check:design` 已接入 `.github/workflows/ui.yml`；在 GitHub 分支保护里设 required 之前，先保持 advisory。其余规则先进评审清单，稳定后再升级为 CI。
