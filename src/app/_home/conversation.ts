@@ -3,13 +3,33 @@ import { DefaultChatTransport } from "ai";
 import {
   answerDataSchema,
   answerErrors,
-  answerRequestSchema,
   questionTextOf,
   type AnswerMessage,
   type AnswerRequest,
 } from "@/lib/answer/schema";
 import { resolveReference } from "./catalog";
 import type { Message, PublicCatalog } from "./types";
+
+// AI SDK 7 types use the data name; its stream reader looks up the full part type.
+const answerPartSchemas = {
+  answer: answerDataSchema,
+  "data-answer": answerDataSchema,
+};
+
+function responseError(status: number): Error {
+  switch (status) {
+    case 400:
+      return new Error(answerErrors.invalid);
+    case 403:
+      return new Error(answerErrors.verification);
+    case 429:
+      return new Error(answerErrors.limited);
+    case 503:
+      return new Error(answerErrors.unavailable);
+    default:
+      return new Error(answerErrors.failed);
+  }
+}
 
 export function exchanges(messages: readonly AnswerMessage[]): Message[] {
   const result: Message[] = [];
@@ -44,17 +64,19 @@ export function shortRequest(
   if (!current?.metadata) throw new Error(answerErrors.invalid);
   const successful = exchanges(
     messages.slice(0, messages.indexOf(current)),
-  ).filter((m) => m.complete && m.answer);
+  ).flatMap((m) =>
+    m.complete && m.answer ? [{ question: m.question, answer: m.answer }] : [],
+  );
   const previous = successful.at(-1);
-  return answerRequestSchema.parse({
+  return {
     question: current.metadata.question,
     previous: previous
-      ? { question: previous.question, text: previous.answer!.text }
+      ? { question: previous.question, text: previous.answer.text }
       : undefined,
     lastShownReferences:
-      successful.findLast((m) => m.answer!.references.length)?.answer
-        ?.references ?? [],
-  });
+      successful.findLast((m) => m.answer.references.length)?.answer
+        .references ?? [],
+  };
 }
 
 export function createConversation(
@@ -62,69 +84,42 @@ export function createConversation(
   getToken: (signal?: AbortSignal | null) => Promise<string>,
   fetcher: typeof fetch = fetch,
 ) {
-  let accessCheck: Promise<void> | undefined;
   async function ensureAccess(signal?: AbortSignal | null) {
-    if (!accessCheck) {
-      accessCheck = (async () => {
-        const status = await fetcher("/api/answer/access", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-          signal: signal ?? undefined,
-        });
-        signal?.throwIfAborted();
-        if (status.status === 204) return;
-        if (status.status !== 401)
-          throw new Error(
-            status.status === 429
-              ? answerErrors.limited
-              : status.status === 503
-                ? answerErrors.unavailable
-                : answerErrors.failed,
-          );
-        const token = await getToken(signal);
-        signal?.throwIfAborted();
-        const handshake = await fetcher("/api/answer/access", {
-          method: "POST",
-          credentials: "same-origin",
-          cache: "no-store",
-          headers: { "x-turnstile-token": token },
-          signal: signal ?? undefined,
-        });
-        if (!handshake.ok)
-          throw new Error(
-            handshake.status === 429
-              ? answerErrors.limited
-              : handshake.status === 503
-                ? answerErrors.unavailable
-                : handshake.status === 403
-                  ? answerErrors.verification
-                  : answerErrors.failed,
-          );
-      })();
-    }
-    const current = accessCheck;
-    try {
-      await current;
-    } finally {
-      if (accessCheck === current) accessCheck = undefined;
-    }
+    const status = await fetcher("/api/answer/access", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      signal,
+    });
     signal?.throwIfAborted();
+    if (status.status === 204) return;
+    if (status.status !== 401) throw responseError(status.status);
+    const token = await getToken(signal);
+    signal?.throwIfAborted();
+    const handshake = await fetcher("/api/answer/access", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { "x-turnstile-token": token },
+      signal,
+    });
+    if (!handshake.ok) throw responseError(handshake.status);
   }
   function mark(outcome: "success" | "failed", error?: string) {
     const current = chat.messages.findLast((m) => m.role === "user");
     if (!current?.metadata) return;
+    const { question } = current.metadata;
     chat.messages = chat.messages.map((m) =>
       m.id === current.id
         ? {
             ...m,
-            metadata: { question: current.metadata!.question, outcome, error },
+            metadata: { question, outcome, error },
           }
         : m,
     );
   }
   const chat = new Chat<AnswerMessage>({
-    dataPartSchemas: { answer: answerDataSchema },
+    dataPartSchemas: answerPartSchemas,
     transport: new DefaultChatTransport({
       api: "/api/answer",
       prepareSendMessagesRequest: ({ messages }) => ({
@@ -137,18 +132,7 @@ export function createConversation(
           ...init,
           credentials: "same-origin",
         });
-        if (!response.ok)
-          throw new Error(
-            response.status === 429
-              ? answerErrors.limited
-              : response.status === 503
-                ? answerErrors.unavailable
-                : response.status === 403
-                  ? answerErrors.verification
-                  : response.status === 400
-                    ? answerErrors.invalid
-                    : answerErrors.failed,
-          );
+        if (!response.ok) throw responseError(response.status);
         return response;
       },
     }),

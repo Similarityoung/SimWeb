@@ -155,3 +155,113 @@ test("profile/projects remain available without matches; refs must be public and
     ),
   );
 });
+
+test("explicit and numeric followups select one supplied item or ask for clarification", () => {
+  const references = [
+    { type: "project" as const, id: "simweb" },
+    { type: "article" as const, id: "article-1" },
+    { type: "article" as const, id: "article-2" },
+  ];
+  for (const [text, target] of [
+    ["article-2", references[2]],
+    ["第1篇", references[1]],
+    ["1st project", references[0]],
+    ["first one", references[0]],
+  ] as const) {
+    const context = buildAnswerContext(
+      { ...request(text), lastShownReferences: references },
+      articles,
+    );
+    assert.equal(context.clarify, false, text);
+    assert.deepEqual(context.data.followup, target, text);
+  }
+  assert.equal(
+    buildAnswerContext(request("article-1 and article-2"), articles).clarify,
+    true,
+  );
+  for (const [ref, text, clarify] of [
+    [references[0], "这个项目", false],
+    [references[0], "这篇", true],
+    [references[1], "这篇", false],
+    [references[1], "这个项目", true],
+  ] as const) {
+    const context = buildAnswerContext(
+      { ...request(text), lastShownReferences: [ref] },
+      articles,
+    );
+    assert.equal(context.clarify, clarify, text);
+    assert.deepEqual(
+      context.data.followup,
+      clarify
+        ? "Ask which item the visitor means; do not guess or attach cards."
+        : ref,
+    );
+  }
+});
+
+test("topic selection uses the requested collection while free questions rank excerpts", () => {
+  const published: PublishedArticle[] = [
+    ...articles,
+    {
+      ...articles[0],
+      article: { ...articles[0].article, id: "thought-0", kind: "thoughts" },
+    },
+  ];
+  const thoughts = buildAnswerContext(
+    { question: { type: "topic", topic: "thoughts" }, lastShownReferences: [] },
+    published,
+  );
+  assert.deepEqual(thoughts.fixedReferences, [
+    { type: "article", id: "thought-0" },
+  ]);
+  const projects = buildAnswerContext(
+    { question: { type: "topic", topic: "projects" }, lastShownReferences: [] },
+    published,
+  );
+  assert.equal(projects.fixedReferences?.length, 5);
+  assert.ok(projects.fixedReferences?.every((ref) => ref.type === "project"));
+  const plain = buildAnswerContext(
+    {
+      ...request("topic6"),
+      lastShownReferences: [{ type: "project", id: "simweb" }],
+    },
+    published,
+  );
+  assert.equal(plain.fixedReferences, undefined);
+  assert.deepEqual(
+    validateAnswer(
+      {
+        kind: "answer",
+        text: "A public note",
+        references: [{ type: "article", id: "article-6" }],
+      },
+      plain,
+    ).references,
+    [{ type: "article", id: "article-6" }],
+  );
+  const history = buildAnswerContext(
+    {
+      ...request("no keywords match"),
+      lastShownReferences: [
+        { type: "project", id: "simweb" },
+        { type: "article", id: "article-1" },
+      ],
+    },
+    articles,
+  );
+  assert.deepEqual(
+    history.data.articles.map((article) => article.id),
+    ["article-1"],
+  );
+  const ambiguous = buildAnswerContext(
+    request("article-1 or topic6"),
+    articles,
+  );
+  assert.equal(ambiguous.clarify, false);
+  const clarify = buildAnswerContext(
+    request("article-1 or article-2, topic6"),
+    articles,
+  );
+  assert.equal(clarify.clarify, true);
+  assert.deepEqual(clarify.data.articles, []);
+});

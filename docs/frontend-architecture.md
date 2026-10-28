@@ -114,6 +114,8 @@ Projects 目录由 `ProjectDirectory` 用单列列表装配 `ProjectCard` 的 `d
 
 `_home/conversation.ts` 创建 SDK Chat，使用 DefaultChatTransport 将完整消息投影成短请求。只有完整业务结果、正常 stop 且无 error/abort/disconnect 才确认成功；卡片从公开目录解析，未完成结果没有卡片，也不进入短历史。`use-conversation.ts` 在共享根布局 Provider 内使用 useChat 订阅这唯一消息源，视图消息是派生结果，不另存一份会话。清空停止并替换 Chat 实例，旧回调只能影响旧实例；卸载停止请求。
 
+校验归数据入口：Composer 规范化自由输入，主题入口构造固定枚举，提交 Hook 与短请求投影直接使用 `Question`；服务端 HTTP 路由仍独立校验不可信请求。模型最终结构由 SDK 的 `Output.object({ schema: answerSchema })` 校验，`validateAnswer` 只检查本轮候选引用和澄清规则。浏览器流入口使用同一个 `answerDataSchema`；当前 AI SDK 7 的类型键是 `answer`、运行时查找键是 `data-answer`，配置两个键指向同一 schema，确保入口校验实际执行。浏览器目录可能落后于服务端，引用存在性仍在客户端成功判定时检查。资格 Cookie 在验签前检查格式和签名，验签后信任本站签发的声明结构，只判断协议版本、hostname 与到期时间；资格查询和问答是独立请求，各自鉴权。同步提交门禁保证一个 Chat 只提交一轮，资格流程按顺序执行，不维护共享 Promise；各异步阶段的取消边界继续保留。
+
 会话在同标签页站内导航中保留，刷新、关闭标签页或清空重置，不使用 localStorage、sessionStorage 或服务端持久化。请求处理中离开首页仍继续接收，返回显示真实进度。页面保留完整会话，每次只上传上一轮成功问答和最近非空卡片列表。客户端历史仅辅助理解，不是作者事实。
 
 `AnswerContent` 直接展示已到达的文字，卡片等待客户端确认正常结束后一次呈现。已删除预写回答、分类轮选、模拟分块、展示时间线和计时 Hook。HomeExperience 只在请求中禁止提交；起草、Bot、清空、阅读返回继续复用原交互。流更新不会强制抢回上滚位置，读屏不逐块重复全文。完成动作只对当前页面新完成的回答触发，返回历史不重播。

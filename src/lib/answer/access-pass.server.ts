@@ -4,6 +4,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const ACCESS_COOKIE = "simweb_answer_access";
 export const ACCESS_TTL_SECONDS = 6 * 60 * 60;
 
+type AccessClaims = { v: 1; host: string; exp: number };
+
 function signature(value: string, secret: string): string {
   return createHmac("sha256", secret)
     .update(`simweb-answer-access:v1:${value}`)
@@ -20,13 +22,12 @@ export function issueAccessPass(
 ): string | undefined {
   const key = secret();
   if (!key) return undefined;
-  const payload = Buffer.from(
-    JSON.stringify({
-      v: 1,
-      host: hostname,
-      exp: Math.floor(now / 1000) + ACCESS_TTL_SECONDS,
-    }),
-  ).toString("base64url");
+  const claims: AccessClaims = {
+    v: 1,
+    host: hostname,
+    exp: Math.floor(now / 1000) + ACCESS_TTL_SECONDS,
+  };
+  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
   return `${payload}.${signature(payload, key)}`;
 }
 
@@ -47,25 +48,15 @@ export function verifyAccessPass(
     !timingSafeEqual(suppliedBytes, expectedBytes)
   )
     return false;
-  try {
-    const claims: unknown = JSON.parse(
-      Buffer.from(payload, "base64url").toString(),
-    );
-    return (
-      typeof claims === "object" &&
-      claims !== null &&
-      "v" in claims &&
-      claims.v === 1 &&
-      "host" in claims &&
-      claims.host === hostname &&
-      "exp" in claims &&
-      typeof claims.exp === "number" &&
-      Number.isInteger(claims.exp) &&
-      claims.exp > Math.floor(now / 1000)
-    );
-  } catch {
-    return false;
-  }
+  // A valid signature authenticates claims produced by issueAccessPass.
+  const claims: AccessClaims = JSON.parse(
+    Buffer.from(payload, "base64url").toString(),
+  );
+  return (
+    claims.v === 1 &&
+    claims.host === hostname &&
+    claims.exp > Math.floor(now / 1000)
+  );
 }
 
 export function readCookie(request: Request, name: string): string | undefined {

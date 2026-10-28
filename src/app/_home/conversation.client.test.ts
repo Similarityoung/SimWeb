@@ -94,6 +94,10 @@ test("Chat consumes SDK UI protocol, retains transcript but sends only the bound
 for (const [label, fetcher] of [
   ["complete without finish", async () => response(answer, false)],
   [
+    "invalid answer data",
+    async () => response({ ...answer, kind: "invented" } as unknown as Answer),
+  ],
+  [
     "unknown catalog ref",
     async () =>
       response({ ...answer, references: [{ type: "article", id: "missing" }] }),
@@ -273,3 +277,35 @@ test("cancelling while Turnstile is pending ignores a late token", async () => {
   assert.deepEqual(calls, ["/api/answer/access"]);
   assert.equal(exchanges(chat.messages)[0].complete, false);
 });
+
+for (const stage of ["check", "handshake"] as const)
+  test(`cancelling during access ${stage} ignores a late success`, async () => {
+    let started!: () => void;
+    let complete!: (response: Response) => void;
+    const ready = new Promise<void>((resolve) => (started = resolve));
+    const pending = new Promise<Response>((resolve) => (complete = resolve));
+    const calls: string[] = [];
+    const chat = createConversation(
+      catalog,
+      async () => "test-token",
+      async (url, init) => {
+        calls.push(`${init?.method} ${url}`);
+        if (stage === "handshake" && init?.method === "GET")
+          return new Response(null, { status: 401 });
+        started();
+        return pending;
+      },
+    );
+    const sending = chat.sendMessage(message);
+    await ready;
+    await chat.stop();
+    complete(new Response(null, { status: 204 }));
+    await sending;
+    assert.deepEqual(
+      calls,
+      stage === "check"
+        ? ["GET /api/answer/access"]
+        : ["GET /api/answer/access", "POST /api/answer/access"],
+    );
+    assert.equal(exchanges(chat.messages)[0].complete, false);
+  });
