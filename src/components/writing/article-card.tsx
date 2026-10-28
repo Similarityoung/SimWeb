@@ -41,7 +41,7 @@ export function ArticleCard({
     >
       <Card
         className={cn(
-          "h-full p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50",
+          "card-lift h-full p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50",
           layout === "directory" ? "gap-0 sm:px-6" : "gap-4",
         )}
       >

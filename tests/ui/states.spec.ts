@@ -10,9 +10,17 @@ test("conversation exposes empty, loading, streaming, complete, and error states
     window.__answers.manual = true;
   });
   await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(
-    page.getByTestId("exchange").getByText("One moment…"),
-  ).toBeVisible();
+  const waiting = page.getByTestId("waiting-indicator");
+  await expect(waiting).toBeVisible();
+  await expect(waiting.locator(".waiting-dot")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      waiting
+        .locator(".waiting-dot")
+        .first()
+        .evaluate((element) => getComputedStyle(element).animationName),
+    )
+    .toBe("waiting-dot");
 
   await expect
     .poll(() => page.evaluate(() => window.__answers.pending.length))
@@ -47,9 +55,17 @@ test("reduced motion keeps waiting and streaming states visible", async ({
     window.__answers.manual = true;
   });
   await page.getByRole("button", { name: /^Notes/ }).click();
-  await expect(
-    page.getByTestId("exchange").getByText("One moment…"),
-  ).toBeVisible();
+  const waiting = page.getByTestId("waiting-indicator");
+  await expect(waiting).toBeVisible();
+  await expect(waiting.locator(".waiting-dot")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      waiting
+        .locator(".waiting-dot")
+        .first()
+        .evaluate((element) => getComputedStyle(element).animationName),
+    )
+    .toBe("none");
 
   await expect
     .poll(() => page.evaluate(() => window.__answers.pending.length))

@@ -36,7 +36,7 @@ export function AnswerContent({
         {state === "streaming" && (
           <span
             aria-hidden
-            className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
+            className="stream-caret ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
           />
         )}
       </p>

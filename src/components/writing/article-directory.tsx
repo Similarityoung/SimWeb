@@ -94,7 +94,7 @@ export function ArticleDirectorySkeleton() {
       {[0, 1, 2].map((item) => (
         <div
           key={item}
-          className="rounded-xl border p-5 motion-safe:animate-pulse sm:px-6"
+          className="skeleton-sweep rounded-xl border p-5 sm:px-6"
         >
           <div className="h-7 w-1/2 rounded-sm bg-muted" />
           <div className="mt-2 h-7 w-full rounded-sm bg-muted" />

@@ -22,13 +22,31 @@ for (const density of [1, 2] as const) {
       ).toBe(ringWidth);
 
       const textbox = page.getByRole("textbox", { name: "Ask a question" });
-      await textbox.focus();
-      const formRing = await page.locator("form").evaluate((element) => {
+      const form = page.locator("form");
+      const beforeFocus = await form.evaluate((element) => {
         const style = getComputedStyle(element);
-        return { shadow: style.boxShadow, style: style.outlineStyle };
+        return {
+          border: style.borderTopColor,
+          shadow: style.boxShadow,
+          transition: style.transitionProperty,
+        };
       });
-      expect(formRing.shadow).toContain(ringWidth);
-      expect(formRing.style).toBe("solid");
+      await textbox.focus();
+      await page.waitForTimeout(250);
+      const formFocus = await form.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          border: style.borderTopColor,
+          shadow: style.boxShadow,
+          width: style.borderTopWidth,
+          transition: style.transitionProperty,
+        };
+      });
+      expect(formFocus.border).not.toBe(beforeFocus.border);
+      expect(formFocus.shadow).toContain("inset");
+      expect(formFocus.width).toBe("1px");
+      expect(formFocus.transition).toContain("border-color");
+      expect(formFocus.transition).toContain("box-shadow");
 
       expect(
         await textbox.evaluate(

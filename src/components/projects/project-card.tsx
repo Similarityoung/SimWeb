@@ -27,7 +27,7 @@ export function ProjectCard({
   const Icon = projectIcons[project.icon];
   const card =
     layout === "directory" ? (
-      <Card className="grid grid-cols-[1.75rem_minmax(0,1fr)_1rem] items-start gap-x-3 gap-y-4 p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50 sm:grid-cols-[2rem_minmax(0,1fr)_1.25rem] sm:gap-x-4 sm:px-6">
+      <Card className="card-lift grid grid-cols-[1.75rem_minmax(0,1fr)_1rem] items-start gap-x-3 gap-y-4 p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50 sm:grid-cols-[2rem_minmax(0,1fr)_1.25rem] sm:gap-x-4 sm:px-6">
         <Icon
           className="mt-0.5 size-7 text-foreground-soft transition-colors group-hover:text-accent group-focus-visible:text-accent sm:size-8"
           strokeWidth={1.5}
@@ -65,7 +65,7 @@ export function ProjectCard({
         </div>
       </Card>
     ) : (
-      <Card className="h-full gap-5 p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50">
+      <Card className="card-lift h-full gap-5 p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50">
         <div className="flex items-start justify-between gap-3">
           <Icon
             className="size-5 text-muted-foreground"

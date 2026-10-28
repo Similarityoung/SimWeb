@@ -7,6 +7,7 @@ import type {
   ReactNode,
 } from "react";
 import { Input } from "@/components/ui/input";
+import { FilterActivePill } from "./filter-active-pill";
 import {
   Select,
   SelectContent,
@@ -216,7 +217,13 @@ export function DirectoryFilters({
             <ul>
               {[{ value: undefined, count: total }, ...values].map(
                 ({ value, count }) => (
-                  <li key={value === undefined ? "all" : `value-${value}`}>
+                  <li
+                    key={value === undefined ? "all" : `value-${value}`}
+                    className="relative isolate"
+                  >
+                    {query[field] === value && (
+                      <FilterActivePill layoutId={`${kind}-${field}-active`} />
+                    )}
                     <a
                       href={directoryHref(kind, {
                         ...query,
@@ -235,9 +242,9 @@ export function DirectoryFilters({
                           : undefined
                       }
                       className={cn(
-                        "flex min-h-8 items-center justify-between gap-3 rounded-md px-2 py-1.5 text-footnote transition-colors hover:bg-muted hover:text-foreground",
+                        "relative flex min-h-8 items-center justify-between gap-3 rounded-md px-2 py-1.5 text-footnote transition-colors hover:bg-muted hover:text-foreground",
                         query[field] === value
-                          ? "bg-muted font-medium text-accent"
+                          ? "font-medium text-accent"
                           : "text-muted-foreground",
                       )}
                     >
