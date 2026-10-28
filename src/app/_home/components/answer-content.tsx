@@ -26,7 +26,7 @@ export function AnswerContent({
     >
       <p
         lang={textLanguage(message.text)}
-        className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]"
+        className="max-w-2xl text-pretty whitespace-pre-line text-body text-foreground/80"
       >
         <span
           data-testid={state === "streaming" ? "streaming-text" : undefined}

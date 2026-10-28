@@ -61,7 +61,7 @@ export function Transcript({
           >
             <h2
               lang={textLanguage(message.question)}
-              className="mb-6 ml-auto w-fit max-w-[85%] rounded-bubble rounded-br-sm bg-muted px-[18px] py-3 text-sm leading-6"
+              className="mb-6 ml-auto w-fit max-w-[85%] rounded-bubble rounded-br-sm bg-muted px-[18px] py-3 text-body"
             >
               {message.question}
             </h2>
@@ -69,11 +69,11 @@ export function Transcript({
               <AnswerContent message={message} catalog={catalog} />
             )}
             {message.error ? (
-              <p role="alert" className="mt-3 text-sm text-accent">
+              <p role="alert" className="mt-3 text-body text-accent">
                 {message.error}
               </p>
             ) : !message.text ? (
-              <p className="font-mono text-xs text-muted-foreground">
+              <p className="font-mono text-code text-muted-foreground">
                 One moment…
               </p>
             ) : null}
