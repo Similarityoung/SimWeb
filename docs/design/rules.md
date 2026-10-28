@@ -1,6 +1,6 @@
 # 个人站设计规则
 
-状态：v0.3（2026-10-28）。Phase 0 守卫、Phase 1 原子控件、Phase 2 字号阶梯已落地；下一步做 Phase 3 的 CI 加固与视觉回归。
+状态：v0.4（2026-10-28）。Phase 0 守卫、Phase 1 原子控件、Phase 2 字号阶梯、Phase 3 CI 加固已落地；分支保护与视觉回归仍需外部配置或后续迭代。
 
 本表是规则 ID 的唯一登记处：规则从这里派生；令牌值以 [globals.css](../../src/app/globals.css) 为准，行为以 [frontend-refactor-spec.md](../frontend-refactor-spec.md) 为准，结构以 [frontend-architecture.md](../frontend-architecture.md) 为准。
 
@@ -223,7 +223,7 @@ Claude 的三层配方：
 
 - 在 GitHub 分支保护中把 `Design checks` / `UI tests` 设为 required；在 baseline 清零前保持非阻塞。
 - `sync-writing` 用 `GITHUB_TOKEN` 直推 main，不会触发新的 workflow；给该 workflow 配 bypass，或改成 PR。
-- 视觉回归、ENG-01 的间距/时长检查、多浏览器矩阵暂未接入。
+- 视觉回归、间距规则、多浏览器矩阵暂未接入。
 
 ---
 
