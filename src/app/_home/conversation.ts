@@ -62,6 +62,55 @@ export function createConversation(
   getToken: (signal?: AbortSignal | null) => Promise<string>,
   fetcher: typeof fetch = fetch,
 ) {
+  let accessCheck: Promise<void> | undefined;
+  async function ensureAccess(signal?: AbortSignal | null) {
+    if (!accessCheck) {
+      accessCheck = (async () => {
+        const status = await fetcher("/api/answer/access", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: signal ?? undefined,
+        });
+        signal?.throwIfAborted();
+        if (status.status === 204) return;
+        if (status.status !== 401)
+          throw new Error(
+            status.status === 429
+              ? answerErrors.limited
+              : status.status === 503
+                ? answerErrors.unavailable
+                : answerErrors.failed,
+          );
+        const token = await getToken(signal);
+        signal?.throwIfAborted();
+        const handshake = await fetcher("/api/answer/access", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "x-turnstile-token": token },
+          signal: signal ?? undefined,
+        });
+        if (!handshake.ok)
+          throw new Error(
+            handshake.status === 429
+              ? answerErrors.limited
+              : handshake.status === 503
+                ? answerErrors.unavailable
+                : handshake.status === 403
+                  ? answerErrors.verification
+                  : answerErrors.failed,
+          );
+      })();
+    }
+    const current = accessCheck;
+    try {
+      await current;
+    } finally {
+      if (accessCheck === current) accessCheck = undefined;
+    }
+    signal?.throwIfAborted();
+  }
   function mark(outcome: "success" | "failed", error?: string) {
     const current = chat.messages.findLast((m) => m.role === "user");
     if (!current?.metadata) return;
@@ -82,10 +131,12 @@ export function createConversation(
         body: shortRequest(messages),
       }),
       fetch: async (url, init) => {
-        const headers = new Headers(init?.headers);
-        headers.set("x-turnstile-token", await getToken(init?.signal));
+        await ensureAccess(init?.signal);
         init?.signal?.throwIfAborted();
-        const response = await fetcher(url, { ...init, headers });
+        const response = await fetcher(url, {
+          ...init,
+          credentials: "same-origin",
+        });
         if (!response.ok)
           throw new Error(
             response.status === 429

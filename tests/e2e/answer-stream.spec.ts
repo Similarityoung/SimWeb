@@ -174,7 +174,7 @@ test("stream updates do not pull a reader away from earlier messages", async ({
   expect(await region.evaluate((element) => element.scrollTop)).toBe(0);
 });
 
-test("topic and free-text submissions use fresh Turnstile tokens", async ({
+test("topic and free-text submissions use one Turnstile token per access handshake", async ({
   page,
 }) => {
   await page.goto("/");
@@ -203,6 +203,7 @@ test("topic and free-text submissions use fresh Turnstile tokens", async ({
     "en",
   );
   const tokens = await page.evaluate(() => window.__answers.tokens);
-  expect(tokens).toHaveLength(2);
-  expect(new Set(tokens).size).toBe(2);
+  expect(tokens).toHaveLength(1);
+  expect(new Set(tokens).size).toBe(1);
+  expect(await page.evaluate(() => window.__answers.requests.length)).toBe(2);
 });

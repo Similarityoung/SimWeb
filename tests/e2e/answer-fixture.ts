@@ -14,6 +14,7 @@ declare global {
     __answers: {
       manual: boolean;
       tokens: string[];
+      handshakes: number;
       requests: AnswerRequest[];
       pending: Array<() => boolean>;
       advance: (count?: number) => void;
@@ -105,6 +106,7 @@ export const test = base.extend<{ answerMock: void }>({
         window.__answers = {
           manual: false,
           tokens: [],
+          handshakes: 0,
           requests: [],
           pending: [],
           advance(count = 1) {
@@ -122,13 +124,24 @@ export const test = base.extend<{ answerMock: void }>({
               : input instanceof URL
                 ? input.href
                 : input.url;
-          if (!new URL(url, location.href).pathname.endsWith("/api/answer"))
-            return nativeFetch(input, init);
+          const pathname = new URL(url, location.href).pathname;
+          if (pathname === "/api/answer/access") {
+            if (init?.method === "POST") {
+              const token = new Headers(init?.headers).get("x-turnstile-token");
+              if (!token) throw new Error("Missing verification token");
+              window.__answers.tokens.push(token);
+              window.__answers.handshakes++;
+              return new Response(null, { status: 204 });
+            }
+            return new Response(null, {
+              status: window.__answers.handshakes ? 204 : 401,
+            });
+          }
+          if (pathname !== "/api/answer") return nativeFetch(input, init);
           const body = JSON.parse(String(init?.body)) as AnswerRequest;
           const control = window.__answers;
-          const token = new Headers(init?.headers).get("x-turnstile-token");
-          if (!token) throw new Error("Missing verification token");
-          control.tokens.push(token);
+          if (!control.handshakes)
+            throw new Error("Missing access qualification");
           control.requests.push(body);
           if (control.failNext) {
             const status = control.failNext;

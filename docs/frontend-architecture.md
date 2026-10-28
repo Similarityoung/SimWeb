@@ -110,6 +110,8 @@ Projects 目录由 `ProjectDirectory` 用单列列表装配 `ProjectCard` 的 `d
 
 `service.server.ts` 负责短提示词及一次 `streamText + Output.object`，使用 `@ai-sdk/deepseek` 直连，关闭推理、重试和自动续写。它把 SDK 已解析的部分对象映射为固定 ID 的 `data-answer`，不手写 SSE 或部分 JSON 解析。最终必须没有上游错误、finishReason 为 stop、schema 与候选引用均有效，才发 complete 与正常 finish；错误事件后出现合法 JSON/stop 仍失败。总超时 30 秒与 request.signal 共同传递给上游。路由只完成 HTTP 检查、调用服务和返回 SDK UI 流。
 
+访问资格由 `/api/answer/access` 握手路由负责：缺少资格时单独进行 Turnstile Siteverify，成功后签发固定六小时、hostname 绑定的 HMAC Cookie；`/api/answer` 只校验签名及过期时间，再决定是否建立模型流。Cookie 固定到期、不滑动续期、不使用共享存储；无效或缺失时返回 403，模型调用数为零。HMAC 使用现有 Turnstile secret，轮换 secret 会使已有资格失效。Cookie 是可复制 bearer 凭据，不能提供即时撤销、身份绑定或精确共享额度；仍依赖边缘限流防止费用滥用。握手路由与模型路由分离，避免首次验证和验证后的问答重发被同一 `/api/answer` 规则混淆。线上 Cloudflare 与 Vercel 规则仍须在部署前核验，文档中的历史值不视为当前事实。依据 [Cloudflare Siteverify](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/) 与 [Vercel WAF 限流](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)。
+
 `_home/conversation.ts` 创建 SDK Chat，使用 DefaultChatTransport 将完整消息投影成短请求。只有完整业务结果、正常 stop 且无 error/abort/disconnect 才确认成功；卡片从公开目录解析，未完成结果没有卡片，也不进入短历史。`use-conversation.ts` 在共享根布局 Provider 内使用 useChat 订阅这唯一消息源，视图消息是派生结果，不另存一份会话。清空停止并替换 Chat 实例，旧回调只能影响旧实例；卸载停止请求。
 
 会话在同标签页站内导航中保留，刷新、关闭标签页或清空重置，不使用 localStorage、sessionStorage 或服务端持久化。请求处理中离开首页仍继续接收，返回显示真实进度。页面保留完整会话，每次只上传上一轮成功问答和最近非空卡片列表。客户端历史仅辅助理解，不是作者事实。
