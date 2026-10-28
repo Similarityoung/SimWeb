@@ -43,7 +43,7 @@ for (const density of [1, 2] as const) {
         };
       });
       expect(formFocus.border).not.toBe(beforeFocus.border);
-      expect(formFocus.shadow).toContain("inset");
+      expect(formFocus.shadow).not.toBe(beforeFocus.shadow);
       expect(formFocus.width).toBe("1px");
       expect(formFocus.transition).toContain("border-color");
       expect(formFocus.transition).toContain("box-shadow");

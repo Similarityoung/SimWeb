@@ -167,9 +167,7 @@ Claude 的三层配方：
 .composer-shell {
   border: 1px solid var(--border-strong);
   background-color: var(--background);
-  box-shadow:
-    inset 0 0 0 1px transparent,
-    0 0 0 0 transparent;
+  box-shadow: 0 1px 2px transparent;
   transition:
     border-color var(--duration-base) var(--ease-cds-out),
     background-color var(--duration-base) var(--ease-cds-out),
@@ -177,18 +175,17 @@ Claude 的三层配方：
 }
 
 .composer-shell:focus-within {
-  border-color: var(--foreground);
-  background-color: color-mix(in srgb, var(--muted) 58%, var(--background));
-  box-shadow:
-    inset 0 0 0 1px var(--foreground),
-    0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  background-color: color-mix(in srgb, var(--muted) 52%, var(--background));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--foreground) 5%, transparent);
 }
 ```
 
-- 1px 边框 + 1px `inset` 前景色组成 2px 有效焦点指示，避免改变边框宽度引发布局跳动；前景色与画布对比 > 3:1。
-- 4px 强调色柔光只作辅助，不承担对比度；悬停与焦点都用 200ms `--ease-cds-out`，从当前值过渡。
+- 焦点只改 1px 边框到前景色 50%、表面提亮到 `muted` 52%，再加一层 5% 的前景色软阴影；不再用 inset 双线或强调色光晕。
+- 前景色 50% 边框与画布对比约 3:1；整个 Composer 表面的明度变化同时提供冗余提示。输入光标用 `caret-color: var(--accent)`，作为不增加视觉重量的焦点线索。
+- 悬停与焦点都用 200ms `--ease-cds-out`，从当前值过渡；forced-colors 下保留 2px `CanvasText` 轮廓。
 - 输入框本身仍是 `data-focus-ring="none"`，避免内外双环；发送按钮保留全局 `:focus-visible` 环。
-- `tests/ui/focus.spec.ts` 锁定焦点前后的边框色变化、`inset` 阴影与 200ms 过渡。
+- `tests/ui/focus.spec.ts` 锁定焦点前后的边框色、阴影变化与 200ms 过渡。
 
 ### 5.3 字号与行高
 
@@ -237,7 +234,7 @@ Claude 的三层配方：
 | 卡片悬停 | `scaleY(1.015) scaleX(1.005)`；底部径向微光；200ms `--ease-cds-out`；减动态与触屏不位移                     |
 | 筛选滑块 | 共享 `layoutId`；200ms `easeOut`；减动态时长 0                                                              |
 | 骨架扫光 | 105°；1.6s 循环；减动态隐藏                                                                                 |
-| 输入焦点 | 1px 边框 + 1px inset；4px 强调色 16% 柔光；200ms                                                            |
+| 输入焦点 | 1px 前景色 50% 边框 + 表面提亮 + 5% 软阴影；200ms                                                           |
 | 等待点   | 1.9s 循环；延迟 0.15s / 0.3s；点径 3px；间距 3.5px                                                          |
 | 滚动跟随 | 40px 容差；150ms 冷却                                                                                       |
 | 输入法   | 合成结束后 500ms 内的 Enter 丢弃                                                                            |
@@ -284,7 +281,7 @@ Claude 的三层配方：
 | ------------------------------ | ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
 | 圆角                           | 直接照搬 2 / 4 / 6 / 8 / 10 / 12 / 16 / 18 / 20 / 24                | CDS 01 §1.3                       | 无                                                                                      |
 | 焦点环                         | 1x 屏 2px、2x+ 屏 1.5px 强调色环 + 柔光；全局 ring + 容器例外       | CDS 01 §1.3.2/1.4.5 + WCAG 2.4.13 | 厚度按分辨率调整；改实现方式，不改色相                                                  |
-| Composer 焦点                  | 表面焦点：边框 + inset 共 2px 前景色，4px 强调色柔光；200ms 过渡    | CDS 02 §2.6 + 用户反馈            | 点击输入框不再出现硬环；焦点仍可度量，其他控件保留全局环                                |
+| Composer 焦点                  | 表面焦点：1px 前景色 50% 边框 + 表面提亮 + 5% 软阴影；200ms 过渡    | CDS 02 §2.6 + 用户反馈            | 点击输入框不再出现硬环或彩色光晕；焦点仍可见，其他控件保留全局环                        |
 | 卡片悬停                       | 1.5% / 0.5% 上浮 + 底部暖色微光；键盘焦点同态                       | CDS v2 §2.6                       | 不采用 3D 透视与冷色底色；触屏与减动态不位移                                            |
 | 滚动渐隐                       | 28px 7 档叠层，仅在可滚动方向出现                                   | CDS 04 §4.3                       | 用背景叠层替代 mask，防止裁掉滚动区焦点环                                               |
 | 筛选滑块                       | 共享 `layoutId` 的活动胶囊，200ms                                   | CDS 01 §2.2                       | 只用于短筛选列表；长列表与移动端 Select 不套用                                          |
