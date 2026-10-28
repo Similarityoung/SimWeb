@@ -88,7 +88,7 @@ export function Character({
       )}
     >
       {failed ? (
-        <span className="text-xs text-muted-foreground">
+        <span className="text-footnote text-muted-foreground">
           Character unavailable
         </span>
       ) : (
