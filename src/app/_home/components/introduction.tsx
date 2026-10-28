@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/browser-signals";
+import { LAYOUT_TRANSITION, respectReducedMotion } from "@/lib/motion";
 import { Bot, type BotMood } from "@/components/bot/bot";
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -57,11 +58,7 @@ export function Introduction({
         layoutDependency={compact}
         initial={false}
         transition={{
-          layout: {
-            type: "tween",
-            duration: reducedMotion ? 0 : 0.56,
-            ease: [0.22, 1, 0.36, 1],
-          },
+          layout: respectReducedMotion(LAYOUT_TRANSITION, reducedMotion),
         }}
         className="relative z-10 shrink-0"
       >

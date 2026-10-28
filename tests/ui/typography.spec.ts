@@ -8,6 +8,21 @@ async function textMetrics(locator: Locator) {
   });
 }
 
+test("site navigation grows from the narrow caption to the body scale", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const link = page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link")
+    .first();
+  expect(await textMetrics(link)).toEqual(
+    test.info().project.name === "desktop"
+      ? { fontSize: "14px", lineHeight: "24px" }
+      : { fontSize: "11px", lineHeight: "16px" },
+  );
+});
+
 test("session copy follows the body scale", async ({ page }) => {
   await page.goto("/");
 

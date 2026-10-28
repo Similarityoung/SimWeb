@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/browser-signals";
+import { HIGHLIGHT_TRANSITION, respectReducedMotion } from "@/lib/motion";
 import {
   ArrowUpRight,
   Feather,
@@ -88,10 +89,10 @@ export function TopicShortcuts({
               <motion.span
                 layoutId={highlightId}
                 initial={false}
-                transition={{
-                  duration: reducedMotion ? 0 : 0.2,
-                  ease: "easeOut",
-                }}
+                transition={respectReducedMotion(
+                  HIGHLIGHT_TRANSITION,
+                  reducedMotion,
+                )}
                 className="pointer-events-none absolute -inset-px -z-10 rounded-xl border border-accent/45 bg-accent/[0.07] dark:bg-accent/10"
                 aria-hidden
               />
