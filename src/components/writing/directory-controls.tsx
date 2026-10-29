@@ -124,10 +124,9 @@ export function DirectorySearch({
           <button
             type="button"
             aria-label="Clear search"
-            onClick={(event) => {
-              const input = event.currentTarget.previousElementSibling;
+            onClick={() => {
               onClear?.();
-              if (input instanceof HTMLInputElement) input.focus();
+              document.getElementById(`${kind}-search`)?.focus();
             }}
             className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/10 hover:text-accent"
           >
