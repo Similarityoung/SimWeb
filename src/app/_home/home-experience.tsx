@@ -65,8 +65,8 @@ export function HomeExperience() {
       className={cn(
         "site-container flex flex-col pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-[max(22px,env(safe-area-inset-bottom))]",
         active
-          ? "h-[calc(100dvh-4.75rem)] min-h-96"
-          : "min-h-[max(584px,calc(100svh-4.75rem))] sm:min-h-[max(564px,calc(100svh-4.75rem))]",
+          ? "h-[calc(100dvh-var(--site-header-height))] min-h-96"
+          : "min-h-[max(584px,calc(100svh-var(--site-header-height)))] sm:min-h-[max(564px,calc(100svh-var(--site-header-height)))]",
       )}
     >
       <div

@@ -77,6 +77,7 @@
   --duration-caret: 1400ms;
   --delay-waiting-dot: 150ms;
   --delay-article-header: 80ms;
+  --site-header-height: 4.75rem;
   --scroll-fade-size: 28px;
   --skeleton-angle: 105deg;
   --waiting-dot-size: 3px;

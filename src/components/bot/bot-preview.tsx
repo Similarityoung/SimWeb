@@ -13,10 +13,7 @@ export function BotPreview() {
   const [size, setSize] = useState(192);
   const [replay, setReplay] = useState(0);
   return (
-    <main
-      id="main-content"
-      className="mx-auto w-full max-w-4xl px-[18px] py-8 sm:px-7"
-    >
+    <main id="main-content" className="site-container py-8">
       <p className="font-mono text-caption text-muted-foreground">
         DEVELOPMENT PREVIEW
       </p>

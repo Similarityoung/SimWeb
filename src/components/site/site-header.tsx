@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function SiteHeader() {
   const pathname = usePathname();
   return (
-    <header className="site-container flex h-[76px] shrink-0 items-center justify-between gap-1.5 sm:gap-3">
+    <header className="site-container flex h-[var(--site-header-height)] shrink-0 items-center justify-between gap-1.5 sm:gap-3">
       <nav
         aria-label="Main navigation"
         className="-ml-1 flex items-center min-[380px]:-ml-[7px] sm:-ml-[9px] sm:gap-0.5"
