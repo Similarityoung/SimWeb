@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { format } from "prettier";
 import {
   findArbitraryDesignValues,
   findBareColors,
@@ -33,6 +34,100 @@ test("allows colors defined as local custom properties", () => {
     findBareColors("src/theme.css", "--accent: #fff; color: #000;").length,
     1,
   );
+});
+
+test("allows token colors after Prettier wraps their declaration", async () => {
+  const content =
+    ":root { --focus-ring-glow: 0 0 0 1px #faf9f6, 0 0 0 2px #c2431f, 0 0 6px 1px #c2431f40; }";
+  const formatted = await format(content, { parser: "css" });
+  assert.match(formatted, /--focus-ring-glow:\n/);
+  assert.deepEqual(findBareColors("src/theme.css", content), []);
+  assert.deepEqual(findBareColors("src/theme.css", formatted), []);
+});
+
+test("allows multiline duration and easing token declarations", () => {
+  const content = [
+    ":root {",
+    "  --duration-enter:",
+    "    180ms;",
+    "  --ease-enter:",
+    "    cubic-bezier(0.1, 0, 0.2, 1);",
+    "  --ease-exit:",
+    "    ease-out;",
+    "}",
+  ].join("\n");
+  assert.deepEqual(findArbitraryDesignValues("src/theme.css", content), []);
+});
+
+test("reports bare values after multiline tokens at their original lines", () => {
+  const content = [
+    ":root {",
+    "  --shadow:",
+    "    0 0 0 1px #fff; color: #123456;",
+    "  --duration:",
+    "    180ms",
+    "}",
+    ".card {",
+    "  color: #000;",
+    "  transition: color 250ms cubic-bezier(0.1, 0, 0.2, 1);",
+    "  animation: pulse 1.6s ease-out;",
+    "}",
+  ].join("\n");
+  assert.deepEqual(
+    findBareColors("src/theme.css", content).map(({ line }) => line),
+    [3, 8],
+  );
+  assert.deepEqual(
+    findArbitraryDesignValues("src/theme.css", content).map(
+      ({ rule, line }) => ({ rule, line }),
+    ),
+    [
+      { rule: "MOT-01", line: 9 },
+      { rule: "MOT-02", line: 9 },
+      { rule: "MOT-01", line: 10 },
+      { rule: "MOT-02", line: 10 },
+    ],
+  );
+});
+
+test("keeps comments and quoted delimiters inside multiline tokens", () => {
+  const content = [
+    ":root {",
+    "  --preview:",
+    "    /* ; } */",
+    "    url(\"data:image/svg+xml;utf8,<svg fill='#fff'/>\")",
+    "    180ms ease-out;",
+    "}",
+    "/*",
+    "  #123456 250ms ease-out",
+    "*/",
+    ".card { color: #000; transition: color 300ms ease-out; }",
+  ].join("\n");
+  assert.deepEqual(
+    findBareColors("src/theme.css", content).map(({ line }) => line),
+    [10],
+  );
+  assert.deepEqual(
+    findArbitraryDesignValues("src/theme.css", content).map(
+      ({ rule, line }) => ({ rule, line }),
+    ),
+    [
+      { rule: "MOT-01", line: 10 },
+      { rule: "MOT-02", line: 10 },
+    ],
+  );
+});
+
+test("still checks variable references inside multiline tokens", () => {
+  const violations = findUndefinedVars([
+    {
+      file: "src/theme.css",
+      content: ":root {\n  --shadow:\n    0 0 0 1px var(--missing);\n}",
+    },
+  ]);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].line, 3);
+  assert.match(violations[0].message, /--missing/);
 });
 
 test("ignores colors in comments", () => {

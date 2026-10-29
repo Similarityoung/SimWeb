@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { parse } from "postcss";
 
 export type Violation = {
   rule: "ENG-01" | "VIS-04" | "MOT-01" | "MOT-02";
@@ -56,6 +57,28 @@ function stripComments(line: string, file: string): string {
     .replace(/\{\/\*.*$/, "");
 }
 
+function designCheckLines(file: string, content: string): string[] {
+  if (!file.endsWith(".css"))
+    return content.split("\n").map((line) => stripComments(line, file));
+
+  const source = content.split("");
+  parse(content, { from: file }).walk((node) => {
+    if (
+      node.type !== "comment" &&
+      !(node.type === "decl" && node.prop.startsWith("--"))
+    )
+      return;
+    const start = node.source?.start?.offset;
+    const end = node.source?.end?.offset;
+    if (start === undefined || end === undefined) return;
+    // Preserve line breaks so diagnostics retain their original locations.
+    for (let index = start; index < end; index++) {
+      if (source[index] !== "\n" && source[index] !== "\r") source[index] = " ";
+    }
+  });
+  return source.join("").split("\n");
+}
+
 function isTokenDefinition(line: string, index: number): boolean {
   const before = line.slice(0, index);
   const declaration = before.match(/(?:^|[^\w-])--[\w-]+\s*:/g)?.at(-1);
@@ -65,8 +88,7 @@ function isTokenDefinition(line: string, index: number): boolean {
 }
 
 export function findBareColors(file: string, content: string): Violation[] {
-  return content.split("\n").flatMap((line, lineIndex) => {
-    const source = stripComments(line, file);
+  return designCheckLines(file, content).flatMap((source, lineIndex) => {
     const violations: Violation[] = [];
     for (const match of source.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
       if (isTokenDefinition(source, match.index ?? 0)) continue;
@@ -91,8 +113,7 @@ export function findArbitraryDesignValues(
   file: string,
   content: string,
 ): Violation[] {
-  return content.split("\n").flatMap((line, lineIndex) => {
-    const source = stripComments(line, file);
+  return designCheckLines(file, content).flatMap((source, lineIndex) => {
     const violations: Violation[] = [];
     const radius =
       /\brounded(?:-(?:t|r|b|l|s|e|tl|tr|br|bl|ss|se|es|ee))?-\[[^\]]+\]/g;
