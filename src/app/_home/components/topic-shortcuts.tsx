@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/browser-signals";
+import { HIGHLIGHT_TRANSITION, respectReducedMotion } from "@/lib/motion";
 import {
   ArrowUpRight,
   Feather,
@@ -88,10 +89,10 @@ export function TopicShortcuts({
               <motion.span
                 layoutId={highlightId}
                 initial={false}
-                transition={{
-                  duration: reducedMotion ? 0 : 0.2,
-                  ease: "easeOut",
-                }}
+                transition={respectReducedMotion(
+                  HIGHLIGHT_TRANSITION,
+                  reducedMotion,
+                )}
                 className="pointer-events-none absolute -inset-px -z-10 rounded-xl border border-accent/45 bg-accent/[0.07] dark:bg-accent/10"
                 aria-hidden
               />
@@ -106,18 +107,18 @@ export function TopicShortcuts({
             <span
               className={cn(
                 "block font-medium",
-                compact ? "text-[11px] sm:text-xs" : "text-sm",
+                compact ? "text-caption sm:text-footnote" : "text-body",
               )}
             >
               {topic.label}
             </span>
             {!compact && (
               <>
-                <span className="mt-1 block text-xs text-muted-foreground">
+                <span className="mt-1 block text-footnote text-muted-foreground">
                   {topic.description}
                 </span>
                 <ArrowUpRight
-                  className="absolute top-[13px] right-[13px] size-[15px] -translate-x-[3px] translate-y-[3px] text-accent opacity-0 transition-[opacity,translate] duration-200 group-data-[highlighted=true]:translate-0 group-data-[highlighted=true]:opacity-100 sm:top-[15px] sm:right-[15px]"
+                  className="absolute top-[13px] right-[13px] size-[15px] -translate-x-[3px] translate-y-[3px] text-accent opacity-0 transition-[opacity,translate] duration-[var(--duration-base)] group-data-[highlighted=true]:translate-0 group-data-[highlighted=true]:opacity-100 sm:top-[15px] sm:right-[15px]"
                   aria-hidden
                 />
               </>

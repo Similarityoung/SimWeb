@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/browser-signals";
+import { LAYOUT_TRANSITION, respectReducedMotion } from "@/lib/motion";
 import { Bot, type BotMood } from "@/components/bot/bot";
 import { site } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -57,11 +58,7 @@ export function Introduction({
         layoutDependency={compact}
         initial={false}
         transition={{
-          layout: {
-            type: "tween",
-            duration: reducedMotion ? 0 : 0.56,
-            ease: [0.22, 1, 0.36, 1],
-          },
+          layout: respectReducedMotion(LAYOUT_TRANSITION, reducedMotion),
         }}
         className="relative z-10 shrink-0"
       >
@@ -80,9 +77,9 @@ export function Introduction({
       </motion.div>
       <div ref={copy} className={cn("min-w-0", !compact && "max-w-[480px]")}>
         {!compact && (
-          <p className="mb-1.5 font-mono text-[11.5px] tracking-[0.01em] text-muted-foreground sm:text-[12.5px]">
+          <p className="mb-1.5 font-mono text-caption tracking-[0.01em] text-muted-foreground sm:text-footnote">
             <span
-              className="mr-2 -mt-0.5 inline-block h-3.5 w-[7px] rounded-[2px] bg-accent align-middle"
+              className="mr-2 -mt-0.5 inline-block h-3.5 w-[7px] rounded-xs bg-accent align-middle"
               aria-hidden
             />
             Hey, I’m
@@ -100,10 +97,10 @@ export function Introduction({
         </h1>
         {!compact && (
           <>
-            <p className="mt-2 font-mono text-[11px] leading-[1.6] text-foreground-soft sm:text-[12.5px]">
+            <p className="mt-2 font-mono text-caption text-foreground-soft sm:text-footnote">
               {site.role}
             </p>
-            <p className="mt-2.5 max-w-[46ch] text-[13px] leading-[1.6] text-muted-foreground sm:text-sm">
+            <p className="mt-2.5 max-w-[46ch] text-body text-muted-foreground">
               {site.bio}
             </p>
           </>

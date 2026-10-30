@@ -6,7 +6,7 @@ export function BackLink({ href, label }: { href: string; label: string }) {
     <Link
       lang="en"
       href={href}
-      className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      className="inline-flex min-h-11 items-center gap-2 text-footnote text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft className="size-4" aria-hidden />
       {label}

@@ -33,19 +33,19 @@ export function ArticleReader({
         <header className="mt-5 mb-12 border-b pb-9">
           <time
             dateTime={article.date}
-            className="font-mono text-xs text-muted-foreground"
+            className="font-mono text-caption text-muted-foreground"
           >
             {article.date.slice(0, 10)}
           </time>
-          <h1 className="mt-4 text-3xl leading-snug font-semibold tracking-tight sm:text-4xl">
+          <h1 className="mt-4 text-[30px] leading-9 font-semibold tracking-tight sm:text-4xl sm:leading-10">
             {article.title}
           </h1>
-          <p className="mt-5 text-base leading-8 text-muted-foreground">
+          <p className="mt-5 text-prose text-muted-foreground">
             {article.summary}
           </p>
         </header>
       </ViewTransition>
-      <div className="prose prose-neutral max-w-none text-foreground dark:prose-invert prose-headings:scroll-mt-8 prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground prose-p:leading-8 prose-a:text-accent prose-a:decoration-border hover:prose-a:decoration-accent prose-blockquote:border-accent/40 prose-blockquote:font-normal prose-blockquote:text-muted-foreground prose-strong:text-foreground prose-code:rounded-sm prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-muted/60 prose-pre:text-foreground prose-pre:shadow-none prose-pre:[&_code]:bg-transparent prose-pre:[&_code]:p-0 prose-li:leading-8 prose-th:text-foreground prose-img:rounded-lg">
+      <div className="prose prose-neutral max-w-none text-foreground dark:prose-invert prose-headings:scroll-mt-8 prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground prose-a:text-accent prose-a:decoration-border hover:prose-a:decoration-accent prose-blockquote:border-accent/40 prose-blockquote:font-normal prose-blockquote:text-muted-foreground prose-strong:text-foreground prose-code:rounded-sm prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-code prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:bg-muted/60 prose-pre:text-foreground prose-pre:text-code prose-pre:shadow-none prose-pre:[&_code]:bg-transparent prose-pre:[&_code]:p-0 prose-th:text-foreground prose-img:rounded-xl">
         <Markdown
           remarkPlugins={[
             remarkGfm,

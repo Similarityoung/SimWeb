@@ -27,17 +27,17 @@ export function ProjectCard({
   const Icon = projectIcons[project.icon];
   const card =
     layout === "directory" ? (
-      <Card className="grid grid-cols-[1.75rem_minmax(0,1fr)_1rem] items-start gap-x-3 gap-y-4 p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50 sm:grid-cols-[2rem_minmax(0,1fr)_1.25rem] sm:gap-x-4 sm:px-6">
+      <Card className="card-lift grid grid-cols-[1.75rem_minmax(0,1fr)_1rem] items-start gap-x-3 gap-y-4 p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50 sm:grid-cols-[2rem_minmax(0,1fr)_1.25rem] sm:gap-x-4 sm:px-6">
         <Icon
           className="mt-0.5 size-7 text-foreground-soft transition-colors group-hover:text-accent group-focus-visible:text-accent sm:size-8"
           strokeWidth={1.5}
           aria-hidden
         />
         <div className="min-w-0">
-          <h2 className="text-lg leading-7 font-medium tracking-tight [overflow-wrap:anywhere] transition-colors group-hover:text-accent group-focus-visible:text-accent sm:text-xl">
+          <h2 className="text-title font-medium tracking-tight [overflow-wrap:anywhere] transition-colors group-hover:text-accent group-focus-visible:text-accent">
             {project.title}
           </h2>
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+          <p className="mt-0.5 text-footnote text-muted-foreground">
             {project.role}
           </p>
         </div>
@@ -49,15 +49,15 @@ export function ProjectCard({
           />
         )}
         <div className="col-span-full min-w-0 sm:col-start-2 sm:col-end-3">
-          <p className="max-w-[64ch] text-sm leading-7 text-foreground-soft">
+          <p className="max-w-[64ch] text-body text-foreground-soft">
             {project.summary}
           </p>
           <ul
-            className="mt-4 flex flex-wrap gap-1.5 font-mono text-[11px] leading-5 text-muted-foreground"
+            className="mt-4 flex flex-wrap gap-1.5 font-mono text-caption text-muted-foreground"
             aria-label="Technologies"
           >
             {project.tags.map((tag) => (
-              <li key={tag} className="rounded bg-muted px-1.5 py-0.5">
+              <li key={tag} className="rounded-sm bg-muted px-1.5 py-0.5">
                 {tag}
               </li>
             ))}
@@ -65,7 +65,7 @@ export function ProjectCard({
         </div>
       </Card>
     ) : (
-      <Card className="h-full gap-5 p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50">
+      <Card className="card-lift h-full gap-5 p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50">
         <div className="flex items-start justify-between gap-3">
           <Icon
             className="size-5 text-muted-foreground"
@@ -81,17 +81,17 @@ export function ProjectCard({
           )}
         </div>
         <div>
-          <p className="mb-2 font-mono text-[11px] text-muted-foreground">
+          <p className="mb-2 font-mono text-caption text-muted-foreground">
             {project.role}
           </p>
-          <h3 className="text-base font-medium tracking-tight">
+          <h3 className="text-card-title font-medium tracking-tight">
             {project.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-body text-muted-foreground">
             {project.summary}
           </p>
         </div>
-        <p className="mt-auto font-mono text-[11px] text-muted-foreground">
+        <p className="mt-auto font-mono text-caption text-muted-foreground">
           {project.tags.join(" / ")}
         </p>
       </Card>

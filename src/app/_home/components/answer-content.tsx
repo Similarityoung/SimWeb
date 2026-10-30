@@ -26,7 +26,7 @@ export function AnswerContent({
     >
       <p
         lang={textLanguage(message.text)}
-        className="max-w-2xl whitespace-pre-line text-sm leading-7 text-foreground/80 sm:text-[15px]"
+        className="max-w-2xl text-pretty whitespace-pre-line text-body text-foreground/80"
       >
         <span
           data-testid={state === "streaming" ? "streaming-text" : undefined}
@@ -36,7 +36,7 @@ export function AnswerContent({
         {state === "streaming" && (
           <span
             aria-hidden
-            className="ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
+            className="stream-caret ml-1 inline-block size-1.5 rounded-full bg-accent align-middle"
           />
         )}
       </p>

@@ -1,0 +1,90 @@
+import type { Locator } from "@playwright/test";
+import { expect, test } from "../e2e/answer-fixture";
+
+async function textMetrics(locator: Locator) {
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { fontSize: style.fontSize, lineHeight: style.lineHeight };
+  });
+}
+
+test("site navigation grows from the narrow caption to the body scale", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const link = page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link")
+    .first();
+  expect(await textMetrics(link)).toEqual(
+    test.info().project.name === "desktop"
+      ? { fontSize: "14px", lineHeight: "24px" }
+      : { fontSize: "11px", lineHeight: "16px" },
+  );
+});
+
+test("session copy follows the body scale", async ({ page }) => {
+  await page.goto("/");
+
+  const input = page.getByRole("textbox", { name: "Ask a question" });
+  expect(await textMetrics(input)).toEqual(
+    test.info().project.name === "mobile"
+      ? { fontSize: "16px", lineHeight: "24px" }
+      : { fontSize: "14px", lineHeight: "24px" },
+  );
+
+  await page.getByRole("button", { name: /^Notes/ }).click();
+  await expect(page.getByTestId("exchange")).toBeVisible();
+
+  expect(await textMetrics(page.getByTestId("exchange").locator("h2"))).toEqual(
+    { fontSize: "14px", lineHeight: "24px" },
+  );
+  expect(
+    await textMetrics(page.getByTestId("answer").locator("p").first()),
+  ).toEqual({ fontSize: "14px", lineHeight: "24px" });
+});
+
+test("cards follow the card-title and title scale", async ({ page }) => {
+  await page.goto("/notes");
+  const noteCard = page.locator("a[aria-label] h2").first();
+  expect(await textMetrics(noteCard)).toEqual({
+    fontSize: "16px",
+    lineHeight: "24px",
+  });
+  expect(await textMetrics(noteCard.locator("xpath=..").locator("p"))).toEqual({
+    fontSize: "14px",
+    lineHeight: "24px",
+  });
+
+  await page.goto("/projects");
+  const projectCard = page.locator("a[aria-label] h2").first();
+  expect(await textMetrics(projectCard)).toEqual({
+    fontSize: "20px",
+    lineHeight: "24px",
+  });
+});
+
+test("article copy follows the prose scale", async ({ page }) => {
+  await page.goto("/notes");
+  const href = await page
+    .locator("a[aria-label]")
+    .filter({ has: page.locator("h2") })
+    .first()
+    .getAttribute("href");
+  expect(href).toBeTruthy();
+  await page.goto(href!);
+
+  expect(await textMetrics(page.locator("article h1"))).toEqual(
+    test.info().project.name === "mobile"
+      ? { fontSize: "30px", lineHeight: "36px" }
+      : { fontSize: "36px", lineHeight: "40px" },
+  );
+  expect(await textMetrics(page.locator("article header p"))).toEqual({
+    fontSize: "16px",
+    lineHeight: "28px",
+  });
+  expect(await textMetrics(page.locator(".prose p").first())).toEqual({
+    fontSize: "16px",
+    lineHeight: "28px",
+  });
+});

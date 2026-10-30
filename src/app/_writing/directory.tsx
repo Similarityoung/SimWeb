@@ -32,7 +32,7 @@ export function WritingDirectory({ kind }: { kind: WritingKind }) {
         >
           {kind === "notes" && (
             <p
-              className="mb-4 min-h-5 text-xs text-muted-foreground"
+              className="mb-4 min-h-5 text-footnote text-muted-foreground"
               role="status"
             >
               Loading filters…

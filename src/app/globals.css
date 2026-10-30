@@ -21,11 +21,35 @@
   --color-destructive: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 0.875rem;
-  --animate-enter: enter 300ms ease-out both;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-footnote: 0.75rem;
+  --text-footnote--line-height: 0.9375rem;
+  --text-code: 0.75rem;
+  --text-code--line-height: 1rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.5rem;
+  --text-prose: 1rem;
+  --text-prose--line-height: 1.75rem;
+  --text-heading: 0.875rem;
+  --text-heading--line-height: 1.125rem;
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.5rem;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-panel: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-bubble: 1.125rem;
+  --radius-composer: 1.25rem;
+  --radius-pill: 9999px;
+  --animate-enter: enter var(--duration-sheet) var(--ease-cds-out) both;
+  --ease-cds-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-cds-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-cds-pulse: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root {
@@ -39,6 +63,31 @@
   --border: #e5e1d9;
   --border-strong: #cfc9bc;
   --accent: #c2431f;
+  --focus-ring-width: 2px;
+  --focus-ring-glow: 0 0 6px 1px
+    color-mix(in srgb, var(--accent) 25%, transparent);
+  --field-focus-shadow: 0 2px 8px
+    color-mix(in srgb, var(--foreground) 5%, transparent);
+  --duration-snap: 120ms;
+  --duration-base: 200ms;
+  --duration-sheet: 300ms;
+  --duration-settle: 450ms;
+  --duration-skeleton: 1600ms;
+  --duration-waiting: 1900ms;
+  --duration-caret: 1400ms;
+  --delay-waiting-dot: 150ms;
+  --delay-article-header: 80ms;
+  --site-header-height: 4.75rem;
+  --scroll-fade-size: 28px;
+  --skeleton-angle: 105deg;
+  --waiting-dot-size: 3px;
+  --waiting-dot-gap: 3.5px;
+}
+
+@media (min-resolution: 2dppx) {
+  :root {
+    --focus-ring-width: 1.5px;
+  }
 }
 
 .dark {
@@ -74,11 +123,13 @@
   a {
     cursor: pointer;
   }
-  :focus-visible {
-    @apply outline-2 outline-offset-4 outline-ring;
-  }
   ::selection {
     @apply bg-foreground text-background;
+  }
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
 
@@ -93,25 +144,251 @@
   }
 }
 
+/* Shared surface focus for text fields: a card-like shift, not a ring. */
+.field-shell {
+  border: 1px solid var(--border-strong);
+  background-color: var(--background);
+  box-shadow: 0 1px 2px transparent;
+  transition:
+    border-color var(--duration-base) var(--ease-cds-out),
+    background-color var(--duration-base) var(--ease-cds-out),
+    box-shadow var(--duration-base) var(--ease-cds-out);
+}
+
+@media (hover: hover) {
+  .field-shell:hover {
+    border-color: color-mix(in srgb, var(--foreground) 26%, transparent);
+    background-color: color-mix(in srgb, var(--muted) 38%, var(--background));
+  }
+}
+
+.field-shell:focus,
+.field-shell:focus-within {
+  border-color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  background-color: color-mix(in srgb, var(--muted) 52%, var(--background));
+  box-shadow: var(--field-focus-shadow);
+}
+
+.field-shell,
+.field-shell input {
+  caret-color: var(--accent);
+}
+
+/* Card hover: a 1.5% lift, with no glow or extra surface. */
+.card-lift {
+  transition:
+    transform var(--duration-base) var(--ease-cds-out),
+    border-color var(--duration-base) var(--ease-cds-out),
+    background-color var(--duration-base) var(--ease-cds-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .card-lift {
+    transform: scaleY(1.015) scaleX(1.005);
+  }
+}
+
+.group:focus-visible .card-lift {
+  transform: scaleY(1.015) scaleX(1.005);
+}
+
+.scroll-fade {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  height: var(--scroll-fade-size);
+  opacity: 0;
+  transition: opacity var(--duration-snap) var(--ease-cds-out);
+  pointer-events: none;
+}
+
+.scroll-fade[data-visible="true"] {
+  opacity: 1;
+}
+
+.scroll-fade-top {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 87%, transparent) 14%,
+    color-mix(in srgb, var(--background) 75%, transparent) 28%,
+    color-mix(in srgb, var(--background) 60%, transparent) 43%,
+    color-mix(in srgb, var(--background) 45%, transparent) 57%,
+    color-mix(in srgb, var(--background) 30%, transparent) 71%,
+    color-mix(in srgb, var(--background) 15%, transparent) 86%,
+    transparent 100%
+  );
+}
+
+.scroll-fade-bottom {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 87%, transparent) 14%,
+    color-mix(in srgb, var(--background) 75%, transparent) 28%,
+    color-mix(in srgb, var(--background) 60%, transparent) 43%,
+    color-mix(in srgb, var(--background) 45%, transparent) 57%,
+    color-mix(in srgb, var(--background) 30%, transparent) 71%,
+    color-mix(in srgb, var(--background) 15%, transparent) 86%,
+    transparent 100%
+  );
+}
+
+.skeleton-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-sweep::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--skeleton-angle),
+    transparent 32%,
+    color-mix(in srgb, var(--background) 70%, transparent) 50%,
+    transparent 68%
+  );
+  transform: translateX(-100%);
+  animation: skeleton-sweep var(--duration-skeleton) var(--ease-cds-out)
+    infinite;
+  pointer-events: none;
+  content: "";
+}
+
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.waiting-dots {
+  display: inline-flex;
+  gap: var(--waiting-dot-gap);
+  align-items: center;
+  height: 1em;
+}
+
+.waiting-dot {
+  width: var(--waiting-dot-size);
+  height: var(--waiting-dot-size);
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  animation: waiting-dot var(--duration-waiting) var(--ease-cds-pulse) infinite;
+}
+
+.waiting-dot:nth-child(2) {
+  animation-delay: var(--delay-waiting-dot);
+}
+
+.waiting-dot:nth-child(3) {
+  animation-delay: calc(var(--delay-waiting-dot) * 2);
+}
+
+@keyframes waiting-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.stream-caret {
+  animation: stream-caret var(--duration-caret) var(--ease-cds-pulse) infinite;
+}
+
+@keyframes stream-caret {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group:hover .card-lift,
+  .group:focus-visible .card-lift {
+    transform: none;
+  }
+
+  .waiting-dot,
+  .stream-caret,
+  .skeleton-sweep::after {
+    animation: none;
+  }
+
+  .waiting-dot {
+    opacity: 0.65;
+  }
+
+  .stream-caret {
+    opacity: 1;
+    transform: none;
+  }
+
+  .skeleton-sweep::after {
+    opacity: 0;
+  }
+}
+
+/* Unlayered so the ring also wins over component shadow utilities. */
+:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--accent),
+    var(--focus-ring-glow);
+}
+
+:focus-visible[data-focus-ring="none"] {
+  outline: none;
+  box-shadow: none;
+}
+
+:focus-visible[data-focus-ring="none"].field-shell {
+  box-shadow: var(--field-focus-shadow);
+}
+
+@media (forced-colors: active) {
+  :focus-visible:not([data-focus-ring="none"]),
+  .field-shell:focus,
+  .field-shell:focus-within {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
+  }
+}
+
 ::view-transition {
   pointer-events: none;
 }
 
 ::view-transition-group(.article-opening) {
-  animation-duration: 420ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-duration: var(--duration-settle);
+  animation-timing-function: var(--ease-cds-enter);
 }
 
 ::view-transition-old(.article-opening) {
-  animation: article-card-exit 120ms ease-out both;
+  animation: article-card-exit var(--duration-snap) var(--ease-cds-out) both;
 }
 
 ::view-transition-new(.article-opening) {
-  animation: article-header-reveal 300ms ease-out 80ms both;
+  animation: article-header-reveal var(--duration-sheet) var(--ease-cds-out)
+    var(--delay-article-header) both;
 }
 
 ::view-transition-new(.article-enter) {
-  animation: article-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: article-enter var(--duration-settle) var(--ease-cds-enter) both;
 }
 
 @keyframes article-card-exit {

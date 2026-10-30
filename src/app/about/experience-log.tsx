@@ -17,16 +17,16 @@ export function ExperienceLog() {
               index === 0 ? "bg-accent" : "bg-background",
             )}
           />
-          <div className="leading-7 sm:flex sm:items-baseline sm:gap-4">
+          <div className="sm:flex sm:items-baseline sm:gap-4">
             <time
               dateTime={entry.date.replace(".", "-")}
-              className="block shrink-0 font-mono text-xs leading-5 text-muted-foreground sm:leading-7"
+              className="block shrink-0 font-mono text-caption text-muted-foreground"
             >
               {entry.date}
             </time>
             <div>
-              <p className="text-[15px] text-pretty text-foreground">
-                <span className="mr-2 font-mono text-[13px] text-accent">
+              <p className="text-body text-pretty text-foreground">
+                <span className="mr-2 font-mono text-footnote text-accent">
                   feat:
                 </span>
                 {"href" in entry ? (
@@ -42,13 +42,13 @@ export function ExperienceLog() {
                   entry.text
                 )}
                 {index === 0 && (
-                  <span className="ml-2 inline-block rounded bg-foreground px-1.5 align-[1px] font-mono text-[11px] leading-5 text-background">
+                  <span className="ml-2 inline-block rounded-sm bg-foreground px-1.5 align-[1px] font-mono text-caption text-background">
                     HEAD
                   </span>
                 )}
               </p>
               {"detail" in entry && (
-                <p className="mt-0.5 text-[15px] leading-7 text-pretty text-foreground/70">
+                <p className="mt-0.5 text-body text-pretty text-foreground/70">
                   {entry.detail}
                 </p>
               )}

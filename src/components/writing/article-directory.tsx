@@ -22,8 +22,8 @@ export function ArticleDirectory({
           }
           lang="en"
         >
-          <h2 className="text-base font-medium">No articles found</h2>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
+          <h2 className="text-card-title font-medium">No articles found</h2>
+          <p className="mt-2 text-body text-muted-foreground">
             {page.query.q || page.query.category || page.query.tag
               ? "Try a different search or clear a filter."
               : "There are no published articles here yet."}
@@ -73,7 +73,7 @@ export function ArticleDirectory({
                         timeZone: "UTC",
                       })}
                     </span>{" "}
-                    <span className="font-mono text-xs leading-5 font-normal tracking-normal text-muted-foreground">
+                    <span className="font-mono text-caption font-normal tracking-normal text-muted-foreground">
                       {month.slice(0, 4)}
                     </span>
                   </time>
@@ -94,13 +94,13 @@ export function ArticleDirectorySkeleton() {
       {[0, 1, 2].map((item) => (
         <div
           key={item}
-          className="rounded-xl border p-5 motion-safe:animate-pulse sm:px-6"
+          className="skeleton-sweep rounded-xl border p-5 sm:px-6"
         >
-          <div className="h-7 w-1/2 rounded bg-muted" />
-          <div className="mt-2 h-7 w-full rounded bg-muted" />
+          <div className="h-7 w-1/2 rounded-sm bg-muted" />
+          <div className="mt-2 h-7 w-full rounded-sm bg-muted" />
           <div className="mt-4 flex justify-between">
-            <div className="h-5 w-16 rounded bg-muted" />
-            <div className="h-5 w-24 rounded bg-muted" />
+            <div className="h-5 w-16 rounded-sm bg-muted" />
+            <div className="h-5 w-24 rounded-sm bg-muted" />
           </div>
         </div>
       ))}
@@ -145,13 +145,13 @@ function ArchiveEntries({
           >
             <div className="max-w-xl [overflow-wrap:anywhere]">
               <h3
-                className="text-base leading-[26px] font-normal text-foreground-soft transition-colors group-hover:text-accent group-focus-visible:text-accent"
+                className="text-card-title font-normal text-foreground-soft transition-colors group-hover:text-accent group-focus-visible:text-accent"
                 lang="zh-CN"
               >
                 {article.title}
               </h3>
               <p
-                className="mt-1 text-sm leading-6 text-pretty text-muted-foreground"
+                className="mt-1 text-body text-pretty text-muted-foreground"
                 lang="zh-CN"
               >
                 {article.summary}

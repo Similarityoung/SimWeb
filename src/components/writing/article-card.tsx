@@ -23,7 +23,7 @@ export function ArticleCard({
     <time
       dateTime={article.date}
       lang="en"
-      className="shrink-0 whitespace-nowrap font-mono text-[11px] text-muted-foreground"
+      className="shrink-0 whitespace-nowrap font-mono text-caption text-muted-foreground"
     >
       {new Date(article.date).toLocaleDateString("en-US", {
         year: "numeric",
@@ -41,7 +41,7 @@ export function ArticleCard({
     >
       <Card
         className={cn(
-          "h-full p-5 shadow-none transition-colors group-hover:border-foreground/30 group-hover:bg-muted/50",
+          "card-lift h-full p-5 shadow-none group-hover:border-foreground/30 group-hover:bg-muted/50 group-focus-visible:border-foreground/30 group-focus-visible:bg-muted/50",
           layout === "directory" ? "gap-0 sm:px-6" : "gap-4",
         )}
       >
@@ -57,16 +57,13 @@ export function ArticleCard({
         )}
         <Heading
           lang="zh-CN"
-          className={cn(
-            "leading-relaxed font-medium tracking-tight transition-colors group-hover:text-accent",
-            layout === "directory" ? "text-lg" : "text-base",
-          )}
+          className="text-card-title font-medium tracking-tight transition-colors group-hover:text-accent"
         >
           {article.title}
         </Heading>
         <p
           className={cn(
-            "text-sm leading-7 text-muted-foreground",
+            "text-body text-muted-foreground",
             layout === "directory" && "mt-1.5 line-clamp-2",
           )}
           lang="zh-CN"
@@ -74,10 +71,10 @@ export function ArticleCard({
           {article.summary}
         </p>
         {layout === "directory" ? (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 text-[11px] text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 text-caption text-muted-foreground">
             <div className="flex flex-wrap items-center gap-1.5" lang="zh-CN">
               {tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="rounded bg-muted px-1.5 py-0.5">
+                <span key={tag} className="rounded-sm bg-muted px-1.5 py-0.5">
                   {tag}
                 </span>
               ))}
@@ -86,7 +83,7 @@ export function ArticleCard({
             {date}
           </div>
         ) : tags.length > 0 ? (
-          <p className="mt-auto font-mono text-[11px] text-muted-foreground">
+          <p className="mt-auto font-mono text-caption text-muted-foreground">
             {tags.slice(0, 3).join(" / ")}
             {tags.length > 3 && ` +${tags.length - 3}`}
           </p>
